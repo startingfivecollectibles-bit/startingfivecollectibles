@@ -431,19 +431,27 @@ select option{background:var(--surface2);}
     </div>
     <div class="page" id="page-admin">
       <div class="page-header"><span class="page-title">Team Access</span></div>
+
+      <!-- Who has access -->
       <div class="admin-section">
-        <h3>Business Collection Access</h3>
-        <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px;line-height:1.6">People with Business access share the same inventory, sales, and tax data. Personal collections are always private.</p>
+        <h3>Current Members</h3>
+        <p style="color:var(--text2);font-size:.83rem;margin-bottom:16px;line-height:1.6">Business collection is shared — everyone with Business access sees the same inventory, sales, and tax data. Personal collections are always private.</p>
         <div id="members-list"></div>
       </div>
+
+      <!-- How to add someone -->
       <div class="admin-section">
-        <h3>Invite Someone</h3>
-        <div style="display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap">
-          <div class="form-group" style="flex:1;min-width:190px"><label>Gmail Address</label><input id="invite-email" placeholder="brother@gmail.com"></div>
-          <div class="form-group"><label>Access Level</label><select id="invite-role"><option value="business">Business + Personal</option><option value="personal_only">Personal Only</option></select></div>
-          <button class="btn btn-primary" onclick="inviteMember()">Send Invite</button>
+        <h3>Adding a New Member</h3>
+        <p style="color:var(--text2);font-size:.83rem;line-height:1.7;margin-bottom:14px">Accounts are created manually in Supabase. To add someone:</p>
+        <ol style="color:var(--text2);font-size:.83rem;line-height:2;padding-left:18px">
+          <li>Go to your <strong style="color:var(--text)">Supabase dashboard</strong> → Authentication → Users</li>
+          <li>Click <strong style="color:var(--text)">Invite user</strong> and enter their email</li>
+          <li>They'll get an email to set their password</li>
+          <li>They sign in at <strong style="color:var(--accent)">startingfivecollectibles.vercel.app</strong></li>
+        </ol>
+        <div style="margin-top:16px;background:rgba(26,111,212,.08);border:1px solid rgba(26,111,212,.25);border-radius:var(--radius);padding:12px 15px;font-size:.82rem;color:var(--text2);line-height:1.6">
+          <strong style="color:var(--text)">Business vs Personal:</strong> The Business / Mine toggle in the sidebar controls which collection is shown. Andrew will see the shared Business collection and his own Personal — same as you.
         </div>
-        <p style="color:var(--text2);font-size:.78rem;margin-top:9px">They sign in at startingfivecollectibles.netlify.app with that Google account.</p>
       </div>
     </div>
   </div>
@@ -1265,8 +1273,18 @@ function resetCenter(){CPT=[];document.getElementById('center-results').style.di
 function handleCenterClick(e){if(CPT.length>=4)return;const cv=document.getElementById('center-canvas');const rect=cv.getBoundingClientRect();const x=e.clientX-rect.left,y=e.clientY-rect.top;CPT.push({x,y});const ctx=cv.getContext('2d');ctx.drawImage(CIMG,0,0,cv.width,cv.height);const cols=['#f5a623','#e8394a','#2ecc71','#8888ff'];const lbs=['L','R','T','B'];CPT.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=cols[i];ctx.fill();ctx.fillStyle='white';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbs[i],p.x,p.y);ctx.beginPath();ctx.setLineDash([4,4]);ctx.strokeStyle=cols[i];ctx.lineWidth=1;if(i<2){ctx.moveTo(p.x,0);ctx.lineTo(p.x,cv.height);}else{ctx.moveTo(0,p.y);ctx.lineTo(cv.width,p.y);}ctx.stroke();ctx.setLineDash([]);});document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===CPT.length));if(CPT.length===4)calcCenter();}
 function calcCenter(){const[l,r,t,b]=CPT;const cv=document.getElementById('center-canvas');const lS=l.x,rS=cv.width-r.x,tS=t.y,bS=cv.height-b.y;const lrP=Math.min(lS,rS)/Math.max(lS,rS)*100;const tbP=Math.min(tS,bS)/Math.max(tS,bS)*100;const w=Math.min(lrP,tbP);document.getElementById('lr-ratio').textContent=lS<=rS?Math.round(lS)+'/'+Math.round(rS):Math.round(rS)+'/'+Math.round(lS);document.getElementById('tb-ratio').textContent=tS<=bS?Math.round(tS)+'/'+Math.round(bS):Math.round(bS)+'/'+Math.round(tS);const g=w>=90?{psa:'10',bgs:'9.5',sgc:'10',note:'Excellent centering'}:w>=80?{psa:'9',bgs:'9',sgc:'9',note:'Good centering'}:w>=70?{psa:'8',bgs:'8.5',sgc:'8',note:'Decent centering'}:w>=60?{psa:'7',bgs:'8',sgc:'7',note:'Slightly off-center'}:w>=50?{psa:'6',bgs:'7',sgc:'6',note:'Off-center'}:{psa:'5 or lower',bgs:'6 or lower',sgc:'5 or lower',note:'Significantly off-center'};document.getElementById('grade-grid').innerHTML=`<div class="grade-card"><div class="co">PSA</div><div class="gr">${g.psa}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card"><div class="co">BGS</div><div class="gr">${g.bgs}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering subgrade</div></div><div class="grade-card"><div class="co">SGC</div><div class="gr">${g.sgc}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card" style="grid-column:1/-1;text-align:left"><div class="co">Assessment</div><div style="font-size:.85rem;margin-top:4px">${g.note}. Score: <span style="color:var(--accent);font-family:'DM Mono',monospace">${w.toFixed(1)}%</span>. Note: final grade also depends on corners, edges, and surface.</div></div>`;document.getElementById('center-results').style.display='block';}
 
-async function renderAdmin(){document.getElementById('members-list').innerHTML=`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.86rem"><span>${CU.email} <span style="color:var(--text2);font-size:.76rem">(you)</span></span><span style="padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;background:rgba(245,166,35,.15);color:var(--accent)">Owner</span></div><div style="color:var(--text2);font-size:.83rem;margin-top:11px;line-height:1.6">To invite your brother or son, enter their Gmail below. They go to <strong style="color:var(--text)">startingfivecollectibles.netlify.app</strong> and sign in with that Google account to automatically get access.</div>`;}
-async function inviteMember(){const email=document.getElementById('invite-email').value;if(!email){showToast('Enter an email','error');return;}showToast('Tell '+email+' to go to startingfivecollectibles.netlify.app and sign in with Google!','success');document.getElementById('invite-email').value='';}
+async function renderAdmin(){
+  const{data:users}=await sb.from('team_members').select('*').order('created_at',{ascending:true}).catch(()=>({data:null}));
+  let html=`<div style="padding:9px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.86rem"><span>${CU.email} <span style="color:var(--text2);font-size:.75rem">(you)</span></span><span style="padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;background:rgba(245,166,35,.15);color:var(--accent)">Owner</span></div>`;
+  if(users&&users.length){
+    users.forEach(u=>{
+      if(u.email===CU.email)return;
+      html+=`<div style="padding:9px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.86rem"><span>${u.email}</span><span style="padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;background:rgba(46,204,113,.12);color:var(--success)">Member</span></div>`;
+    });
+  }
+  if(!users||users.length<=1)html+=`<div style="color:var(--text2);font-size:.82rem;margin-top:12px">No other members yet. See instructions below to add someone.</div>`;
+  document.getElementById('members-list').innerHTML=html;
+}
 
 function downloadTemplate(){
   const h='player,team,sport,year,card_set,card_number,variation,condition,status,autograph,serial_numbered,serial_number,grade,cost_paid,purchase_date,already_sold,sold_price,sold_date,notes\n';
