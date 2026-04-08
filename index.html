@@ -1,555 +1,1729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Starting Five Collectibles</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        
-        .auth-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .auth-box {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .auth-box h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-            text-align: center;
-            font-size: 28px;
-        }
-        
-        .auth-box p {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-bottom: 10px;
-        }
-        
-        .btn:hover {
-            background: #5568d3;
-        }
-        
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .btn-secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-        
-        .btn-secondary:hover {
-            background: #f5f7ff;
-        }
-        
-        .auth-toggle {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .auth-toggle a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .auth-toggle a:hover {
-            text-decoration: underline;
-        }
-        
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #c33;
-        }
-        
-        .success-message {
-            background: #efe;
-            color: #3c3;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #3c3;
-        }
-        
-        .app-container {
-            display: none;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header h1 {
-            color: #667eea;
-            font-size: 24px;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .user-info span {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .btn-logout {
-            padding: 8px 16px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .btn-logout:hover {
-            background: #c0392b;
-        }
-        
-        .nav-tabs {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .nav-tab {
-            padding: 10px 20px;
-            background: #f5f5f5;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: #666;
-            transition: all 0.3s;
-        }
-        
-        .nav-tab:hover {
-            background: #e0e0e0;
-        }
-        
-        .nav-tab.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .content-section {
-            display: none;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .content-section.active {
-            display: block;
-        }
-        
-        .content-section h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 22px;
-        }
-        
-        .welcome-message {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        
-        .welcome-message h2 {
-            font-size: 32px;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-        
-        .welcome-message p {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 30px;
-        }
-        
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .nav-tabs {
-                flex-direction: column;
-            }
-            
-            .nav-tab {
-                width: 100%;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starting Five Collectibles</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;--accent:#1a6fd4;--accent2:#f5c623;--text:#f0f0f5;--text2:#8888aa;--success:#2ecc71;--purple:#8888ff;--radius:8px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,#0a1a2e 0%,var(--bg) 60%);}
+.auth-box{text-align:center;padding:60px 50px;background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:420px;width:90%;}
+.auth-box h1{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:3px;color:var(--accent);line-height:1;}
+.auth-box p{color:var(--text2);margin:12px 0 36px;font-size:.95rem;}
+.auth-logo{font-size:3rem;margin-bottom:16px;}
+.btn-google{width:100%;padding:14px 24px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-google:hover{background:#2d85f0;transform:translateY(-1px);}
+#app{display:none;min-height:100vh;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto;}
+.sidebar-logo{padding:18px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo h2{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:2px;color:var(--accent);line-height:1.2;}
+.sidebar-logo span{font-size:.68rem;color:var(--text2);letter-spacing:1px;text-transform:uppercase;}
+.collection-toggle{display:flex;margin:10px;gap:6px;}
+.col-btn{flex:1;padding:7px;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:6px;cursor:pointer;font-size:.73rem;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s;}
+.col-btn.active{background:var(--accent);color:#ffffff;border-color:var(--accent);}
+nav{flex:1;padding:6px;}
+.nav-section{font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;padding:8px 12px 3px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:.86rem;transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--surface2);color:var(--accent);}
+.nav-item .icon{font-size:.95rem;width:18px;text-align:center;}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+.user-info{font-size:.73rem;color:var(--text2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-signout{width:100%;padding:7px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;cursor:pointer;font-size:.76rem;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.btn-signout:hover{border-color:var(--accent2);color:var(--accent2);}
+.main{margin-left:220px;padding:26px;min-height:100vh;}
+.page{display:none;}.page.active{display:block;}
+.page-header{margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:2px;}
+.collection-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-left:10px;}
+.badge-business{background:rgba(245,166,35,.15);color:var(--accent);border:1px solid rgba(245,166,35,.3);}
+.badge-personal{background:rgba(232,57,74,.15);color:var(--accent2);border:1px solid rgba(232,57,74,.3);}
+.btn{padding:8px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:500;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#ffffff;font-weight:600;}
+.btn-primary:hover{background:#2d85f0;transform:translateY(-1px);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:transparent;color:var(--accent2);border:1px solid var(--accent2);}
+.btn-danger:hover{background:var(--accent2);color:white;}
+.btn-success{background:var(--success);color:#ffffff;font-weight:600;}
+.btn-success:hover{background:#27ae60;}
+.btn-sm{padding:5px 9px;font-size:.76rem;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);}
+.stat-card.red::before{background:var(--accent2);}.stat-card.green::before{background:var(--success);}.stat-card.purple::before{background:var(--purple);}
+.stat-label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.stat-value{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--text);letter-spacing:1px;}
+.stat-value.positive{color:var(--success);}.stat-value.negative{color:var(--accent2);}
+.table-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.table-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.search-input,.filter-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.83rem;}
+.search-input{flex:1;min-width:150px;}
+.search-input:focus,.filter-select:focus{outline:none;border-color:var(--accent);}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 13px;text-align:left;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.83rem;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}tr:hover td{background:var(--surface2);}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.status-in_collection{background:rgba(46,204,113,.15);color:var(--success);}
+.status-listed{background:rgba(245,166,35,.15);color:var(--accent);}
+.status-sold{background:rgba(136,136,170,.15);color:var(--text2);}
+.status-being_graded{background:rgba(136,136,255,.15);color:var(--purple);}
+.status-psa_vault{background:rgba(46,204,113,.15);color:var(--success);border:1px solid rgba(46,204,113,.3);}
+.card-thumb{width:30px;height:42px;object-fit:cover;border-radius:3px;}
+.no-thumb{width:30px;height:42px;background:var(--surface2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+.empty-state{padding:48px;text-align:center;color:var(--text2);}
+.empty-state .empty-icon{font-size:2.2rem;margin-bottom:10px;}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;}
+.gallery-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;}
+.gallery-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.gallery-img{width:100%;height:190px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:2.5rem;}
+.gallery-img img{width:100%;height:190px;object-fit:cover;}
+.gallery-info{padding:9px;}
+.gallery-info .g-player{font-weight:600;font-size:.85rem;margin-bottom:2px;}
+.gallery-info .g-meta{font-size:.73rem;color:var(--text2);}
+.gallery-info .g-price{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--accent);margin-top:4px;}
+.view-toggle{display:flex;gap:5px;}
+.view-btn{padding:6px 11px;border:1px solid var(--border);background:transparent;color:var(--text2);border-radius:6px;cursor:pointer;font-size:.78rem;transition:all .2s;}
+.view-btn.active{background:var(--surface2);color:var(--accent);border-color:var(--accent);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;margin-bottom:16px;color:var(--accent);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:500;}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.86rem;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+textarea{resize:vertical;min-height:65px;}
+select option{background:var(--surface2);}
+.modal-footer{display:flex;gap:9px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.section-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:2px 0;}
+.section-label{grid-column:1/-1;font-size:.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-top:2px;}
+.photo-preview-img{width:65px;height:92px;object-fit:cover;border-radius:4px;margin-top:5px;display:none;}
+.alert-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.alert-box.warning{border-left:4px solid var(--accent);}.alert-box.info{border-left:4px solid var(--purple);}.alert-box.ok{border-left:4px solid var(--success);}
+.alert-title{font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+.alert-items{list-style:none;}
+.alert-items li{padding:5px 0;border-bottom:1px solid var(--border);font-size:.86rem;color:var(--text2);display:flex;justify-content:space-between;align-items:center;}
+.alert-items li:last-child{border-bottom:none;}
+.tax-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:13px;}
+.tax-section h3{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:2px;margin-bottom:12px;color:var(--text2);}
+.tax-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem;}
+.tax-row:last-child{border-bottom:none;}
+.tax-row.total{font-weight:700;font-size:1.02rem;padding-top:12px;margin-top:5px;border-top:2px solid var(--border);border-bottom:none;}
+.tax-row .amount{font-family:'DM Mono',monospace;}
+.tax-row .amount.positive{color:var(--success);}.tax-row .amount.negative{color:var(--accent2);}
+.turbotax-hint{background:rgba(46,204,113,.08);border:1px solid rgba(46,204,113,.2);border-radius:var(--radius);padding:13px 16px;margin-top:13px;font-size:.83rem;color:var(--text2);line-height:1.6;}
+.turbotax-hint strong{color:var(--success);}
+.intel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-bottom:22px;}
+.intel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.intel-card.active-now{border-color:var(--success);background:rgba(46,204,113,.05);}
+.intel-card.coming-soon{border-color:var(--accent);background:rgba(245,166,35,.05);}
+.intel-card.off-season{opacity:.55;}
+.intel-status{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.intel-status.active{color:var(--success);}.intel-status.soon{color:var(--accent);}.intel-status.off{color:var(--text2);}
+.intel-sport{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:1px;margin-bottom:3px;}
+.release-list{display:flex;flex-direction:column;gap:9px;}
+.release-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 16px;display:flex;align-items:center;gap:13px;}
+.release-item.today{border-color:var(--accent2);background:rgba(232,57,74,.05);}
+.release-item.upcoming{border-color:var(--accent);background:rgba(245,166,35,.05);}
+.release-date-box{text-align:center;min-width:45px;}
+.release-date-box .rday{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;line-height:1;}
+.release-date-box .rmon{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);}
+.release-info{flex:1;}
+.release-info h4{font-weight:600;margin-bottom:2px;}
+.release-info p{font-size:.8rem;color:var(--text2);}
+.want-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px;}
+.want-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;}
+.want-card h4{font-weight:600;margin-bottom:2px;}
+.want-card .target{font-family:'DM Mono',monospace;color:var(--accent);font-size:.86rem;margin:4px 0;}
+.note-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.note-card h4{font-weight:600;margin-bottom:5px;}
+.note-body{font-size:.86rem;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.note-tag{display:inline-block;padding:2px 7px;background:var(--surface2);border-radius:20px;font-size:.68rem;color:var(--text2);margin-top:7px;margin-right:3px;}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:11px;}
+.player-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;cursor:pointer;transition:all .2s;}
+.player-card:hover{border-color:var(--accent);}
+.player-card .count{font-family:'Bebas Neue',sans-serif;font-size:2.3rem;color:var(--accent);line-height:1;}
+.totals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+.totals-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.totals-section h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--text2);margin-bottom:12px;}
+.totals-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.85rem;}
+.totals-row:last-child{border-bottom:none;}
+.totals-row .tval{font-family:'DM Mono',monospace;color:var(--accent);}
+.consol-wrap{display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start;}
+.consol-target{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:sticky;top:20px;}
+.consol-target h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent);margin-bottom:12px;}
+.grail-price{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;color:var(--accent);text-align:center;line-height:1;}
+.progress-bar-wrap{background:var(--surface2);border-radius:20px;height:9px;overflow:hidden;margin:9px 0;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:20px;transition:width .4s;}
+.sell-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.83rem;}
+.sell-row:last-child{border-bottom:none;}
+.sell-cb{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
+.center-upload{border:2px dashed var(--border);border-radius:var(--radius);padding:36px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:18px;}
+.center-upload:hover{border-color:var(--accent);}
+.cstep{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 11px;font-size:.8rem;color:var(--text2);display:inline-block;margin-right:5px;margin-bottom:5px;}
+.cstep.active{border-color:var(--accent);color:var(--accent);}
+.grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:13px;}
+.grade-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+.grade-card .co{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.grade-card .gr{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--accent);}
+.admin-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.admin-section h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent);margin-bottom:12px;}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:34px;text-align:center;color:var(--text2);cursor:pointer;transition:all .2s;margin-bottom:14px;}
+.upload-zone:hover{border-color:var(--accent);color:var(--text);}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:.83rem;z-index:9999;transform:translateY(80px);transition:transform .3s;max-width:300px;}
+.toast.show{transform:translateY(0);}
+.toast.success{border-left:3px solid var(--success);}.toast.error{border-left:3px solid var(--accent2);}
+.mono{font-family:'DM Mono',monospace;}
+.pp{color:var(--success);font-family:'DM Mono',monospace;}
+.pn{color:var(--accent2);font-family:'DM Mono',monospace;}
+.tag-a{display:inline-block;padding:2px 6px;background:rgba(136,136,255,.15);color:var(--purple);border-radius:4px;font-size:.68rem;font-weight:600;margin-left:3px;}
+.tag-s{display:inline-block;padding:2px 6px;background:rgba(245,166,35,.15);color:var(--accent);border-radius:4px;font-size:.68rem;font-weight:600;margin-left:3px;}
+</style>
 </head>
 <body>
-    <!-- Authentication Screen -->
-    <div id="authContainer" class="auth-container">
-        <div class="auth-box">
-            <h1>Starting Five Collectibles</h1>
-            <p>Card Management System</p>
-            
-            <div id="authMessage"></div>
-            
-            <!-- Sign In Form -->
-            <form id="signInForm" style="display: block;">
-                <div class="form-group">
-                    <label for="signInEmail">Email</label>
-                    <input type="email" id="signInEmail" required autocomplete="email">
-                </div>
-                <div class="form-group">
-                    <label for="signInPassword">Password</label>
-                    <input type="password" id="signInPassword" required autocomplete="current-password">
-                </div>
-                <button type="submit" class="btn">Sign In</button>
-                <div class="auth-toggle">
-                    Don't have an account? <a id="showSignUp">Sign Up</a>
-                </div>
-            </form>
-            
-            <!-- Sign Up Form -->
-            <form id="signUpForm" style="display: none;">
-                <div class="form-group">
-                    <label for="signUpEmail">Email</label>
-                    <input type="email" id="signUpEmail" required autocomplete="email">
-                </div>
-                <div class="form-group">
-                    <label for="signUpPassword">Password</label>
-                    <input type="password" id="signUpPassword" required autocomplete="new-password" minlength="6">
-                </div>
-                <div class="form-group">
-                    <label for="signUpConfirmPassword">Confirm Password</label>
-                    <input type="password" id="signUpConfirmPassword" required autocomplete="new-password" minlength="6">
-                </div>
-                <div class="form-group">
-                    <label for="signUpName">Display Name</label>
-                    <input type="text" id="signUpName" required placeholder="Matt or Andrew">
-                </div>
-                <button type="submit" class="btn">Create Account</button>
-                <div class="auth-toggle">
-                    Already have an account? <a id="showSignIn">Sign In</a>
-                </div>
-            </form>
-        </div>
+<div id="auth-screen">
+  <div class="auth-box">
+    <!-- Branded header replacing signup space -->
+    <div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:2.2rem">🏀⚾🏈</span>
+      </div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:3px;color:var(--accent);line-height:1;margin-bottom:4px">Starting Five<br>Collectibles</h1>
+      <div style="font-size:.72rem;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-top:6px">Card Management Platform</div>
+      <div style="width:48px;height:2px;background:var(--accent2);margin:12px auto 0;border-radius:2px"></div>
     </div>
-    
-    <!-- Main Application -->
-    <div id="appContainer" class="app-container">
-        <div class="header">
-            <h1>Starting Five Collectibles</h1>
-            <div class="user-info">
-                <span id="userEmail"></span>
-                <button class="btn-logout" onclick="signOut()">Sign Out</button>
-            </div>
+    <!-- Login form -->
+    <div id="auth-error" style="display:none;background:rgba(232,57,74,.12);border:1px solid rgba(232,57,74,.35);border-radius:6px;padding:10px 13px;margin-bottom:14px;font-size:.83rem;color:#e8394a;text-align:left"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
+      <div>
+        <label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:block;margin-bottom:6px">Email</label>
+        <input id="login-email" type="email" autocomplete="email" placeholder="you@example.com"
+          style="width:100%;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.9rem"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+      </div>
+      <div>
+        <label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:block;margin-bottom:6px">Password</label>
+        <div style="position:relative">
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••"
+            style="width:100%;padding:11px 40px 11px 13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.9rem"
+            onkeydown="if(event.key==='Enter')signIn()">
+          <button type="button" onclick="togglePassword()"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 4px;line-height:1"
+            title="Show/hide password" id="pw-toggle">&#128065;</button>
         </div>
-        
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showSection('dashboard')">Dashboard</button>
-            <button class="nav-tab" onclick="showSection('cards')">All Cards</button>
-            <button class="nav-tab" onclick="showSection('addCard')">Add Card</button>
-            <button class="nav-tab" onclick="showSection('sales')">Sales</button>
-            <button class="nav-tab" onclick="showSection('analytics')">Analytics</button>
-        </div>
-        
-        <div id="dashboard" class="content-section active">
-            <div class="welcome-message">
-                <h2>Welcome to Starting Five Collectibles</h2>
-                <p>Your card management system is ready to go.</p>
-                <p style="color: #999; font-size: 14px;">Use the tabs above to navigate</p>
-            </div>
-        </div>
-        
-        <div id="cards" class="content-section">
-            <h2>All Cards</h2>
-            <p>Card catalog functionality will be loaded here.</p>
-        </div>
-        
-        <div id="addCard" class="content-section">
-            <h2>Add New Card</h2>
-            <p>Add card form will be loaded here.</p>
-        </div>
-        
-        <div id="sales" class="content-section">
-            <h2>Sales History</h2>
-            <p>Sales tracking will be loaded here.</p>
-        </div>
-        
-        <div id="analytics" class="content-section">
-            <h2>Analytics</h2>
-            <p>Analytics and reports will be loaded here.</p>
-        </div>
+      </div>
+      <button id="login-btn" class="btn-google" onclick="signIn()" style="margin-top:4px;justify-content:center">
+        Sign In
+      </button>
     </div>
+  </div>
+</div>
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>Card Tracker v2</span></div>
+    <div class="collection-toggle">
+      <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
+      <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
+    </div>
+    <nav>
+      <div class="nav-section">Overview</div>
+      <button class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Dashboard</button>
+      <button class="nav-item" onclick="showPage('totals')"><span class="icon">📈</span> Totals</button>
+      <div class="nav-section">Collection</div>
+      <button class="nav-item" onclick="showPage('collection')"><span class="icon">🗂️</span> All Cards</button>
+      <button class="nav-item" onclick="showPage('players')"><span class="icon">⭐</span> By Player</button>
+      <button class="nav-item" onclick="showPage('wantlist')"><span class="icon">🎯</span> Want List</button>
+      <div class="nav-section">Business</div>
+      <button class="nav-item" onclick="showPage('sales')"><span class="icon">💰</span> Sales History</button>
+      <button class="nav-item" onclick="showPage('tax')"><span class="icon">🧾</span> Tax Summary</button>
+      <button class="nav-item" onclick="showPage('consolidation')"><span class="icon">🔄</span> Consolidation</button>
+      <div class="nav-section">Tools</div>
+      <button class="nav-item" onclick="showPage('intel')"><span class="icon">🧠</span> Buy Intel</button>
+      <button class="nav-item" onclick="showPage('releases')"><span class="icon">📅</span> Releases</button>
+      <button class="nav-item" onclick="showPage('centering')"><span class="icon">📐</span> Centering Tool</button>
+      <button class="nav-item" onclick="showPage('research')"><span class="icon">📝</span> Research</button>
+      <button class="nav-item" onclick="showPage('upload')"><span class="icon">📤</span> Bulk Upload</button>
+      <button class="nav-item" onclick="showPage('boxes')"><span class="icon">📦</span> Box Tracker</button>
+      <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
+      <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
+      <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info" id="user-email">—</div>
+      <button class="btn-signout" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="page active" id="page-dashboard">
+      <div class="page-header"><div><span class="page-title">Dashboard</span><span class="collection-badge badge-business" id="col-badge">Business</span></div></div>
+      <div class="stats-grid" id="dash-stats"></div>
+      <div id="dash-alerts"></div>
+    </div>
+    <div class="page" id="page-totals">
+      <div class="page-header"><span class="page-title">Totals &amp; Analytics</span></div>
+      <div class="stats-grid" id="totals-top"></div>
+      <div class="totals-grid" id="totals-grid"></div>
+    </div>
+    <div class="page" id="page-collection">
+      <div class="page-header">
+        <div><span class="page-title">Collection</span><span class="collection-badge badge-business" id="col-badge2">Business</span></div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <div class="view-toggle">
+            <button class="view-btn active" id="vbtn-list" onclick="setView('list')">☰ List</button>
+            <button class="view-btn" id="vbtn-gallery" onclick="setView('gallery')">⊞ Gallery</button>
+          </div>
+          <button class="btn btn-secondary" onclick="openTransactionModal()">⚡ Record Transaction</button><button class="btn btn-primary" onclick="openCardModal()">+ Add Card</button>
+        </div>
+      </div>
+      <div id="col-list-wrap">
+        <div id="mass-update-bar" style="display:none;background:rgba(26,111,212,.1);border:1px solid rgba(26,111,212,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="mass-select-count" style="font-size:.85rem;color:var(--text2)">0 selected</span>
+          <select class="filter-select" id="mass-field"><option value="">Choose field to update...</option><option value="location">Location</option><option value="status">Status</option></select>
+          <select class="filter-select" id="mass-location" style="display:none"><option value="">Select...</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option></select>
+          <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+          <button class="btn btn-primary btn-sm" onclick="applyMassUpdate()">Apply to Selected</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Cancel</button>
+        </div>
+        <div class="table-container">
+          <div class="table-toolbar">
+            <input class="search-input" placeholder="Search player, set, year, grade..." id="col-search" oninput="syncAndRender()">
+            <button class="btn btn-secondary btn-sm" onclick="toggleFilterPanel()" id="filter-btn">⚙️ Filters</button>
+            <select class="filter-select" id="col-sort" onchange="renderCol()"><option value="newest">Newest</option><option value="player">Player A-Z</option><option value="team">Team A-Z</option><option value="year">Year ↓</option><option value="cost">Cost ↓</option></select>
+          </div>
+          <div id="filter-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);gap:7px;background:var(--surface2);flex-wrap:wrap">
+            <select class="filter-select" id="col-sport" onchange="renderCol()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
+            <select class="filter-select" id="col-status" onchange="renderCol()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+            <select class="filter-select" id="col-grade-co" onchange="renderCol()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option></select>
+            <select class="filter-select" id="col-features" onchange="renderCol()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
+            <input class="search-input" style="max-width:90px" placeholder="Year" id="col-year" oninput="renderCol()">
+            <input class="search-input" style="max-width:130px" placeholder="Set name" id="col-set-filter" oninput="renderCol()">
+            <input class="search-input" style="max-width:100px" placeholder="Card #" id="col-cardno" oninput="renderCol()">
+            <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()">✕ Clear</button>
+          </div>
+          <div id="collection-table"></div>
+        </div>
+      </div>
+      <div id="col-gallery-wrap" style="display:none">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px">
+          <div style="padding:10px 12px;display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+            <input class="search-input" placeholder="Search player, set, year, grade..." id="col-search2" oninput="syncAndRenderGallery()">
+            <button class="btn btn-secondary btn-sm" onclick="toggleGalleryFilters()" id="gallery-filter-btn">⚙️ Filters</button>
+          </div>
+          <div id="gallery-filter-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--border);flex-wrap:wrap;gap:7px;background:var(--surface2)">
+            <select class="filter-select" id="gal-sport" onchange="renderGallery()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
+            <select class="filter-select" id="gal-status" onchange="renderGallery()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+            <select class="filter-select" id="gal-grade-co" onchange="renderGallery()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option></select>
+            <select class="filter-select" id="gal-features" onchange="renderGallery()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
+            <input class="search-input" style="max-width:100px" placeholder="Year" id="gal-year" oninput="renderGallery()">
+            <input class="search-input" style="max-width:130px" placeholder="Set name" id="gal-set" oninput="renderGallery()">
+            <button class="btn btn-secondary btn-sm" onclick="clearGalleryFilters()">✕ Clear</button>
+          </div>
+        </div>
+        <div class="gallery-grid" id="gallery-grid"></div>
+      </div>
+    </div>
+    <div class="page" id="page-players"><div class="page-header"><span class="page-title">By Player</span></div><div class="player-grid" id="player-grid"></div></div>
+    <div class="page" id="page-sales">
+      <div class="page-header"><span class="page-title">Sales History</span></div>
+      <div class="stats-grid" id="sales-stats"></div>
+      <div class="table-container">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="Search player, set..." id="sales-search" oninput="renderSales()">
+          <select class="filter-select" id="sales-sport" onchange="renderSales()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
+        </div>
+        <div id="sales-table"></div>
+      </div>
+    </div>
+    <div class="page" id="page-tax">
+      <div class="page-header"><span class="page-title">Tax Summary</span><div style="display:flex;align-items:center;gap:9px"><label style="color:var(--text2);font-size:.83rem">Year:</label><select class="filter-select" id="tax-year" onchange="renderTax()"></select></div></div>
+      <div id="tax-content"></div>
+    </div>
+    <div class="page" id="page-wantlist"><div class="page-header"><span class="page-title">Want List</span><button class="btn btn-primary" onclick="openWantModal()">+ Add Card</button></div><div class="want-grid" id="want-grid"></div></div>
+    <div class="page" id="page-intel"><div class="page-header"><span class="page-title">Buy Intelligence</span><button class="btn btn-primary" onclick="openIntelModal()">+ Add Window</button></div><div id="intel-active"></div><div id="intel-soon"></div><div id="intel-off"></div></div>
+    <div class="page" id="page-releases"><div class="page-header"><span class="page-title">Release Calendar</span><button class="btn btn-primary" onclick="openReleaseModal()">+ Add Release</button></div><div class="release-list" id="release-list"></div></div>
+    <div class="page" id="page-centering">
+      <div class="page-header"><span class="page-title">Centering Tool</span></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px">
+        <p style="color:var(--text2);margin-bottom:14px;font-size:.88rem;line-height:1.6">Upload a card photo then click to mark the four borders: Left, Right, Top, Bottom. The tool estimates your grade based on centering.</p>
+        <div class="center-upload" id="center-upload-zone" onclick="document.getElementById('center-img-input').click()">
+          <div style="font-size:2rem;margin-bottom:7px">📐</div>
+          <div style="font-weight:600;margin-bottom:3px">Click to upload card photo</div>
+          <div style="font-size:.8rem">Best with a straight-on photo</div>
+          <input type="file" id="center-img-input" accept="image/*" style="display:none" onchange="loadCenterImg(event)">
+        </div>
+        <div id="center-workspace" style="display:none">
+          <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+            <span class="cstep active" id="cstep-0">1. LEFT border</span>
+            <span class="cstep" id="cstep-1">2. RIGHT border</span>
+            <span class="cstep" id="cstep-2">3. TOP border</span>
+            <span class="cstep" id="cstep-3">4. BOTTOM border</span>
+            <button class="btn btn-secondary btn-sm" onclick="resetCenter()">Reset</button>
+          </div>
+          <canvas id="center-canvas" onclick="handleCenterClick(event)" style="max-width:100%;cursor:crosshair;border-radius:6px;display:block"></canvas>
+          <div id="center-results" style="display:none;margin-top:14px">
+            <div style="margin-bottom:10px;font-size:.88rem"><span style="color:var(--text2)">Left/Right: </span><span id="lr-ratio" class="mono" style="color:var(--accent)"></span>&nbsp;&nbsp;<span style="color:var(--text2)">Top/Bottom: </span><span id="tb-ratio" class="mono" style="color:var(--accent)"></span></div>
+            <div class="grade-grid" id="grade-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="page-consolidation">
+      <div class="page-header"><span class="page-title">Consolidation Calculator</span></div>
+      <p style="color:var(--text2);margin-bottom:16px;font-size:.88rem">Pick cards you are willing to sell and track progress toward your grail card.</p>
+      <div class="consol-wrap">
+        <div id="consol-cards"></div>
+        <div class="consol-target">
+          <h3>🏆 Grail Target</h3>
+          <div class="form-group" style="margin-bottom:9px"><label>Target Card Name</label><input id="grail-name" placeholder="e.g. 2011 Topps Trout RC" oninput="updateConsol()"></div>
+          <div class="form-group" style="margin-bottom:14px"><label>Target Price ($)</label><input id="grail-price" type="number" placeholder="0.00" oninput="updateConsol()"></div>
+          <div style="text-align:center;padding:10px 0"><div style="font-size:.8rem;color:var(--text2);margin-bottom:4px" id="grail-name-disp">Set target above</div><div class="grail-price" id="grail-price-disp">$0</div></div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+          <div style="font-size:.8rem;color:var(--text2);text-align:center;margin-bottom:12px" id="prog-label">Select cards to sell</div>
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:5px"><span style="color:var(--text2)">Selected:</span><span class="mono" id="sel-total" style="color:var(--success)">$0.00</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:.83rem"><span style="color:var(--text2)">Still need:</span><span class="mono" id="still-need" style="color:var(--accent2)">$0.00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="page-research"><div class="page-header"><span class="page-title">Research Notes</span><button class="btn btn-primary" onclick="openNoteModal()">+ Add Note</button></div><div class="note-grid" id="note-grid"></div></div>
+    <div class="page" id="page-upload">
+      <div class="page-header"><span class="page-title">Bulk Upload</span></div>
+      <div style="background:rgba(232,57,74,.08);border:1px solid rgba(232,57,74,.3);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div><div style="font-weight:600;margin-bottom:3px;color:var(--accent2)">⚠️ Reset Collection</div><div style="font-size:.83rem;color:var(--text2)">Delete all cards in your current collection. Use with caution.</div></div>
+        <button class="btn btn-danger" onclick="resetCollection()">Reset Current Collection</button>
+      </div>
+      <div class="table-container" style="padding:22px">
+        <p style="color:var(--text2);margin-bottom:13px;line-height:1.6;font-size:.88rem">Download the template, fill it in, then upload it here to add many cards at once.</p>
+        <button class="btn btn-secondary" style="margin-bottom:18px" onclick="downloadTemplate()">⬇️ Download CSV Template</button>
+        <div class="upload-zone" onclick="document.getElementById('csv-upload').click()">
+          <div style="font-size:1.8rem;margin-bottom:7px">📂</div>
+          <div style="font-weight:600;margin-bottom:3px">Click to upload CSV</div>
+          <div style="font-size:.8rem">Drag and drop also works</div>
+          <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleCSV(event)">
+        </div>
+        <div id="upload-preview"></div>
+      </div>
+    </div>
+    <div class="page" id="page-boxes">
+      <div class="page-header"><span class="page-title">Box Tracker</span><button class="btn btn-primary" onclick="openBoxModal()">+ Add Box</button></div>
+      <div class="stats-grid" id="box-stats"></div>
+      <div class="table-container"><div id="box-table"></div></div>
+    </div>
+    <div class="page" id="page-rankings">
+      <div class="page-header"><span class="page-title">Buy Rankings</span><button class="btn btn-primary" onclick="openRankingModal()">+ Add Card to Watch</button></div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Set strike prices and target margins. The site flags cards as a good buy when market price hits your target.</p>
+      <div id="rankings-table"></div>
+    </div>
+    <div class="page" id="page-costs">
+      <div class="page-header"><span class="page-title">Daily Costs</span><button class="btn btn-primary" onclick="openCostModal()">+ Add Cost</button></div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Track day-to-day business expenses like envelopes, top loaders, tape, and boxes. These are reflected in your tax summary.</p>
+      <div class="stats-grid" id="cost-stats"></div>
+      <div class="table-container"><div id="cost-table"></div></div>
+    </div>
+    <div class="page" id="page-admin">
+      <div class="page-header"><span class="page-title">Team Access</span></div>
+      <div class="admin-section">
+        <h3>Business Collection Access</h3>
+        <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px;line-height:1.6">People with Business access share the same inventory, sales, and tax data. Personal collections are always private.</p>
+        <div id="members-list"></div>
+      </div>
+      <div class="admin-section">
+        <h3>Invite Someone</h3>
+        <div style="display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:190px"><label>Gmail Address</label><input id="invite-email" placeholder="brother@gmail.com"></div>
+          <div class="form-group"><label>Access Level</label><select id="invite-role"><option value="business">Business + Personal</option><option value="personal_only">Personal Only</option></select></div>
+          <button class="btn btn-primary" onclick="inviteMember()">Send Invite</button>
+        </div>
+        <p style="color:var(--text2);font-size:.78rem;margin-top:9px">They sign in at startingfivecollectibles.netlify.app with that Google account.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- CARD MODAL -->
+<div class="modal-overlay" id="card-modal" style="display:none" onclick="if(event.target===this)closeCardModal()">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="card-modal-title" style="margin-bottom:0">Add Card</h3>
+      <div id="card-nav-btns" style="display:none;gap:6px;align-items:center">
+        <button class="btn btn-secondary btn-sm" onclick="navigateCard(-1)">← Prev</button>
+        <span id="card-nav-pos" style="font-size:.78rem;color:var(--text2)"></span>
+        <button class="btn btn-secondary btn-sm" onclick="navigateCard(1)">Next →</button>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="section-label">Card Info</div>
+      <div class="form-group"><label>Player / Driver</label><input id="f-player" placeholder="e.g. Mike Trout"></div>
+      <div class="form-group"><label>Team</label><input id="f-team" placeholder="e.g. Angels"></div>
+      <div class="form-group"><label>Sport</label><select id="f-sport"><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select></div>
+      <div class="form-group"><label>Year</label><input id="f-year" type="number" placeholder="2024"></div>
+      <div class="form-group"><label>Set</label><input id="f-set" placeholder="e.g. Topps Chrome"></div>
+      <div class="form-group"><label>Card #</label><input id="f-cardnum" placeholder="e.g. 150"></div>
+      <div class="form-group"><label>Condition</label><select id="f-condition"><option>Raw - Mint</option><option>Raw - Near Mint</option><option>Raw - Excellent</option><option>Raw - Good</option><option>Raw - Poor</option><option>Graded</option></select></div>
+      <div class="form-group"><label>Status</label><select id="f-status"><option value="in_collection">In Collection</option><option value="listed">Listed for Sale</option><option value="being_graded">Currently Being Graded</option><option value="sold">Sold</option></select></div>
+      <hr class="section-divider"><div class="section-label">Serial Number &amp; Auto</div>
+      <div class="form-group"><label>Serial Number (e.g. 45/99)</label><input id="f-serial" placeholder="e.g. 45/99"></div>
+      <div class="form-group"><label>Autograph?</label><select id="f-auto"><option value="">No Auto</option><option value="on-card">On-Card Auto</option><option value="sticker">Sticker Auto</option><option value="inscribed">Inscribed Auto</option><option value="cut">Cut Auto</option><option value="other">Other Auto</option></select></div><div class="form-group"><label>Relic / Memorabilia?</label><select id="f-relic"><option value="">No Relic</option><option value="jersey">Jersey</option><option value="patch">Patch</option><option value="bat">Bat</option><option value="shoe">Shoe</option><option value="ball">Ball</option><option value="other">Other Relic</option></select></div>
+      <hr class="section-divider"><div class="section-label">Grading</div>
+      <div class="form-group"><label>Grade Company</label><select id="f-grade-co"><option value="">None / Raw</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grade</label><input id="f-grade-num" placeholder="e.g. 9.5"></div>
+      <div class="form-group full"><label>Cert #</label><input id="f-cert" placeholder="Certification number"></div>
+      <hr class="section-divider"><div class="section-label">Listing Details</div><div class="form-group"><label>Asking Price ($)</label><input id="f-asking" type="number" step="0.01" placeholder="0.00"></div><div class="form-group"><label>Date Listed</label><input id="f-listed-date" type="date"></div><hr class="section-divider"><div class="section-label">What You Paid</div>
+      <div class="form-group"><label>Cost Paid ($)</label><input id="f-cost" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Purchase Date</label><input id="f-buydate" type="date"></div>
+      <div class="form-group"><label>Where Purchased</label><input id="f-buyfrom" placeholder="e.g. eBay, card show, COMC"></div><div class="form-group"><label>Card Location</label><select id="f-location"><option value="">Unknown</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option></select></div>
+      <hr class="section-divider"><div class="section-label">Photo &amp; Notes</div>
+      <div class="form-group"><label>Card Photo — Front</label><input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event,'photo-preview')"><img id="photo-preview" class="photo-preview-img"></div><div class="form-group"><label>Card Photo — Back</label><input type="file" id="f-photo-back" accept="image/*" onchange="previewPhoto(event,'photo-preview-back')"><img id="photo-preview-back" class="photo-preview-img"></div>
+      <div class="form-group full"><label>Variation</label><input id="f-variation" placeholder="e.g. Refractor, Holo, Gold, Short Print"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Any notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeCardModal()">Cancel</button><button class="btn btn-primary" onclick="saveCard()">Save Card</button></div>
+  </div>
+</div>
 
-    <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://pxkbjbvcikjukwpbehdv.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4a2JqYnZjaWtqdWt3cGJlaGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MTQ0OTksImV4cCI6MjA1OTk5MDQ5OX0.YJw3vO8VCnfHMjJjIFRSE8ktAWqOABh_wRrQZLM1EGE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // Global state
-        let currentUser = null;
-        
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check for existing session
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                showApp();
-            }
-            
-            // Listen for auth changes
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN') {
-                    currentUser = session.user;
-                    showApp();
-                } else if (event === 'SIGNED_OUT') {
-                    currentUser = null;
-                    showAuth();
-                }
-            });
-            
-            // Setup form handlers
-            setupAuthForms();
-        });
-        
-        function setupAuthForms() {
-            const signInForm = document.getElementById('signInForm');
-            const signUpForm = document.getElementById('signUpForm');
-            const showSignUpBtn = document.getElementById('showSignUp');
-            const showSignInBtn = document.getElementById('showSignIn');
-            
-            // Toggle between sign in and sign up
-            showSignUpBtn.addEventListener('click', () => {
-                signInForm.style.display = 'none';
-                signUpForm.style.display = 'block';
-                clearAuthMessage();
-            });
-            
-            showSignInBtn.addEventListener('click', () => {
-                signUpForm.style.display = 'none';
-                signInForm.style.display = 'block';
-                clearAuthMessage();
-            });
-            
-            // Sign In
-            signInForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('signInEmail').value;
-                const password = document.getElementById('signInPassword').value;
-                
-                const submitBtn = signInForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Signing in...';
-                
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign In';
-                
-                if (error) {
-                    showAuthMessage(error.message, 'error');
-                } else {
-                    // Auth state change will handle showing the app
-                    signInForm.reset();
-                }
-            });
-            
-            // Sign Up
-            signUpForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('signUpEmail').value;
-                const password = document.getElementById('signUpPassword').value;
-                const confirmPassword = document.getElementById('signUpConfirmPassword').value;
-                const displayName = document.getElementById('signUpName').value;
-                
-                if (password !== confirmPassword) {
-                    showAuthMessage('Passwords do not match', 'error');
-                    return;
-                }
-                
-                if (password.length < 6) {
-                    showAuthMessage('Password must be at least 6 characters', 'error');
-                    return;
-                }
-                
-                const submitBtn = signUpForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Creating account...';
-                
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            display_name: displayName
-                        }
-                    }
-                });
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Account';
-                
-                if (error) {
-                    showAuthMessage(error.message, 'error');
-                } else {
-                    showAuthMessage('Account created! Please check your email to verify your account.', 'success');
-                    signUpForm.reset();
-                    // Switch to sign in form after a delay
-                    setTimeout(() => {
-                        signUpForm.style.display = 'none';
-                        signInForm.style.display = 'block';
-                        clearAuthMessage();
-                    }, 3000);
-                }
-            });
-        }
-        
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('authMessage');
-            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
-            messageDiv.textContent = message;
-        }
-        
-        function clearAuthMessage() {
-            document.getElementById('authMessage').innerHTML = '';
-        }
-        
-        function showAuth() {
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('appContainer').style.display = 'none';
-        }
-        
-        function showApp() {
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            document.getElementById('userEmail').textContent = currentUser.email;
-        }
-        
-        async function signOut() {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                alert('Error signing out: ' + error.message);
-            }
-        }
-        
-        function showSection(sectionId) {
-            // Hide all sections
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Remove active class from all tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected section
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Add active class to clicked tab
-            event.target.classList.add('active');
-        }
-    </script>
+<!-- SALE MODAL -->
+<div class="modal-overlay" id="sale-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:500px">
+    <h3>Record Sale</h3>
+    <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="sale-card-name"></p>
+    <div class="form-grid">
+      <div class="form-group"><label>Sale Date</label><input id="s-date" type="date"></div>
+      <div class="form-group"><label>Subtotal ($)</label><input id="s-subtotal" type="number" step="0.01" placeholder="0.00" oninput="calcSaleNet()"></div>
+      <div class="form-group"><label>Sales Tax ($)</label><input id="s-tax" type="number" step="0.01" placeholder="0.00" oninput="calcSaleNet()"></div>
+      <div class="form-group"><label>Transaction Fees ($)</label><input id="s-fees" type="number" step="0.01" placeholder="0.00" oninput="calcSaleNet()"></div>
+      <div class="form-group"><label>Shipping ($)</label><input id="s-ship" type="number" step="0.01" placeholder="0.00" oninput="calcSaleNet()"></div>
+      <div class="form-group"><label>Ad / Promo Fee ($)</label><input id="s-ad" type="number" step="0.01" placeholder="0.00" oninput="calcSaleNet()"></div>
+      <div class="form-group full" style="background:var(--surface2);border-radius:6px;padding:12px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Subtotal</span><span class="mono" id="sn-subtotal">$0.00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Sales Tax</span><span class="mono" id="sn-tax">$0.00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Transaction Fees</span><span class="mono" id="sn-fees">$0.00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Shipping</span><span class="mono" id="sn-ship">$0.00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.83rem"><span style="color:var(--text2)">Ad / Promo Fee</span><span class="mono" id="sn-ad">$0.00</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;border-top:1px solid var(--border);padding-top:8px"><span>Net Profit</span><span id="sn-net" class="mono">$0.00</span></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('sale-modal').style.display='none'">Cancel</button><button class="btn btn-success" onclick="saveSale()">✓ Record Sale</button></div>
+  </div>
+</div>
+
+<!-- BOX MODAL -->
+<div class="modal-overlay" id="box-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:500px">
+    <h3 id="box-modal-title">Add Box</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Box Name / Product</label><input id="bx-name" placeholder="e.g. 2024 Topps Chrome Hobby Box"></div>
+      <div class="form-group"><label>Sport</label><select id="bx-sport"><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select></div>
+      <div class="form-group"><label>Purchase Date</label><input id="bx-date" type="date"></div>
+      <div class="form-group"><label>Price Paid ($)</label><input id="bx-cost" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Cards Pulled</label><input id="bx-cards" type="number" placeholder="e.g. 24"></div>
+      <div class="form-group"><label>Amount Sold For ($)</label><input id="bx-sold" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group full"><label>Notable Pulls</label><textarea id="bx-notes" placeholder="e.g. Trout auto, Ohtani refractor..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('box-modal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="saveBox()">Save Box</button></div>
+  </div>
+</div>
+
+<!-- WANT MODAL -->
+<div class="modal-overlay" id="want-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:480px">
+    <h3>Add to Want List</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Player</label><input id="w-player" placeholder="Player name"></div>
+      <div class="form-group"><label>Team</label><input id="w-team"></div>
+      <div class="form-group"><label>Sport</label><select id="w-sport"><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select></div>
+      <div class="form-group"><label>Year</label><input id="w-year" type="number"></div>
+      <div class="form-group"><label>Set</label><input id="w-set"></div>
+      <div class="form-group"><label>Target Price ($)</label><input id="w-price" type="number" step="0.01"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="w-notes" placeholder="Why you want it..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('want-modal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="saveWant()">Save</button></div>
+  </div>
+</div>
+
+<!-- INTEL MODAL -->
+<div class="modal-overlay" id="intel-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:480px">
+    <h3>Add Buying Window</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Sport</label><input id="i-sport" placeholder="e.g. Football"></div>
+      <div class="form-group"><label>Window Start</label><select id="i-start"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+      <div class="form-group"><label>Window End</label><select id="i-end"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7" selected>July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+      <div class="form-group full"><label>Card Type to Target</label><input id="i-cardtype" placeholder="e.g. Rookie cards, refractors"></div>
+      <div class="form-group full"><label>Strategy Notes</label><textarea id="i-notes" placeholder="Your research..."></textarea></div>
+      <div class="form-group full"><label>Best Platforms</label><input id="i-platforms" placeholder="e.g. eBay, COMC, Whatnot"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('intel-modal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="saveIntel()">Save</button></div>
+  </div>
+</div>
+
+<!-- RELEASE MODAL -->
+<div class="modal-overlay" id="release-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:480px">
+    <h3>Add Release</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Product Name</label><input id="r-name" placeholder="e.g. Topps Chrome NFL"></div>
+      <div class="form-group"><label>Release Date</label><input id="r-date" type="date"></div>
+      <div class="form-group"><label>Release Time</label><input id="r-time" type="time"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="r-notes" placeholder="Where to buy, what to look for..."></textarea></div>
+      <div class="form-group full" style="flex-direction:row;align-items:center;gap:16px">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.86rem"><input type="checkbox" id="r-day" checked> Remind 1 day before</label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.86rem"><input type="checkbox" id="r-hour" checked> Remind 1 hour before</label>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('release-modal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="saveRelease()">Save</button></div>
+  </div>
+</div>
+
+<!-- NOTE MODAL -->
+<div class="modal-overlay" id="note-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:480px">
+    <h3>Add Research Note</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Title</label><input id="n-title" placeholder="e.g. Best football sets to buy"></div>
+      <div class="form-group"><label>Sport</label><input id="n-sport"></div>
+      <div class="form-group"><label>Tags (comma separated)</label><input id="n-tags" placeholder="rookies, chrome"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="n-body" style="min-height:120px" placeholder="Your research..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('note-modal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="saveNote()">Save</button></div>
+  </div>
+</div>
+
+<!-- TRANSACTION MODAL - Step 1: Select Card -->
+<div class="modal-overlay" id="txn-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:600px">
+    <h3 id="txn-title">Record Transaction</h3>
+    <div id="txn-step1">
+      <p style="color:var(--text2);font-size:.86rem;margin-bottom:14px">Search for and select the card you want to record a transaction for.</p>
+      <input class="search-input" style="width:100%;margin-bottom:12px" placeholder="Search player, set, year..." id="txn-search" oninput="filterTxnCards()">
+      <div id="txn-card-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="proceedTxn('sale')" id="txn-sale-btn" disabled>💰 Record Sale</button>
+        <button class="btn btn-secondary" onclick="proceedTxn('grade')" id="txn-grade-btn" disabled>🏆 Record Grade</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('txn-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CARD DETAIL MODAL -->
+<div class="modal-overlay" id="card-detail-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+      <div style="display:flex;gap:10px">
+        <div id="detail-front" style="width:90px;height:126px;background:var(--surface2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden"></div>
+        <div id="detail-back" style="width:90px;height:126px;background:var(--surface2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--text2);overflow:hidden"></div>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:1px" id="detail-player"></div>
+        <div style="color:var(--text2);font-size:.85rem;margin-bottom:6px" id="detail-meta"></div>
+        <div id="detail-status"></div>
+        <div style="margin-top:8px;font-size:.83rem" id="detail-grade"></div>
+        <div style="margin-top:4px;font-family:'DM Mono',monospace;font-size:.85rem;color:var(--accent)" id="detail-cost"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-success" id="detail-sale-btn">💰 Record Sale</button>
+      <button class="btn btn-secondary" id="detail-grade-btn">🏆 Record Grade</button>
+      <button class="btn btn-secondary" id="detail-edit-btn">✏️ Edit Card</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('card-detail-modal').style.display='none'">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- GRADE MODAL -->
+<div class="modal-overlay" id="grade-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:440px">
+    <h3>Record Grade</h3>
+    <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="grade-card-name"></p>
+    <div class="form-grid">
+      <div class="form-group"><label>Grading Company</label><select id="g-company"><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grade Received</label><input id="g-grade" placeholder="e.g. 9.5"></div>
+      <div class="form-group"><label>Cert Number</label><input id="g-cert" placeholder="Certification #"></div>
+      <div class="form-group"><label>Grading Fee ($)</label><input id="g-fee" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Date Sent</label><input id="g-sent" type="date"></div>
+      <div class="form-group"><label>Date Returned</label><input id="g-returned" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('grade-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGrade()">Save Grade</button>
+    </div>
+  </div>
+</div>
+<!-- EDIT SALE MODAL -->
+<div class="modal-overlay" id="edit-sale-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:420px">
+    <h3>Edit Sale</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Sale Date</label><input id="es-date" type="date"></div>
+      <div class="form-group"><label>Sale Price ($)</label><input id="es-price" type="number" step="0.01"></div>
+      <div class="form-group"><label>Transaction Fees ($)</label><input id="es-fees" type="number" step="0.01"></div>
+      <div class="form-group"><label>Shipping ($)</label><input id="es-ship" type="number" step="0.01"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('edit-sale-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditSale()">Save Changes</button>
+    </div>
+  </div>
+</div>
+<!-- EDIT NOTE MODAL -->
+<div class="modal-overlay" id="edit-note-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:600px">
+    <h3>Edit Note</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Title</label><input id="en-title"></div>
+      <div class="form-group"><label>Sport</label><input id="en-sport"></div>
+      <div class="form-group"><label>Tags</label><input id="en-tags"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="en-body" style="min-height:160px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('edit-note-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditNote()">Save Changes</button>
+    </div>
+  </div>
+</div>
+<!-- COST MODAL -->
+<div class="modal-overlay" id="cost-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:440px">
+    <h3>Add Daily Cost</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Item Description</label><input id="co-desc" placeholder="e.g. Top loaders 100pk, Bubble mailers"></div>
+      <div class="form-group"><label>Amount ($)</label><input id="co-amount" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Date</label><input id="co-date" type="date"></div>
+      <div class="form-group full"><label>Category</label>
+        <select id="co-cat"><option value="supplies">Supplies (envelopes, tape, bags)</option><option value="packaging">Packaging (boxes, mailers)</option><option value="shipping">Shipping Materials</option><option value="fees">Platform Fees</option><option value="other">Other</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('cost-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCost()">Save</button>
+    </div>
+  </div>
+</div>
+<!-- RANKING MODAL -->
+<div class="modal-overlay" id="ranking-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:520px">
+    <h3>Add Card to Watch</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Card Name</label><input id="rk-name" placeholder="e.g. 2025 Topps Cooper Flagg PSA 10"></div>
+      <div class="form-group"><label>Sport</label><select id="rk-sport"><option>Basketball</option><option>Baseball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select></div>
+      <div class="form-group"><label>Strike Price ($) — max you'd pay</label><input id="rk-strike" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Target Sell Price ($)</label><input id="rk-target" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Current Market Price ($)</label><input id="rk-market" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="rk-notes" placeholder="Why you want it, strategy..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('ranking-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRanking()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESEARCH TOOL MODAL -->
+<div class="modal-overlay" id="research-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:520px">
+    <h3>Research Card</h3>
+    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px" id="research-card-name"></p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <a id="ebay-sold-link" href="#" target="_blank" class="btn btn-primary" style="text-align:center;text-decoration:none">🔍 View eBay Sold Listings</a>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">
+        <div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Record Market Price</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="market-price-input" type="number" step="0.01" placeholder="Current price ($)" style="flex:1">
+          <button class="btn btn-primary" onclick="saveMarketPrice()">Save Price</button>
+        </div>
+        <div id="market-price-history" style="margin-top:10px;font-size:.82rem;color:var(--text2)"></div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">
+        <div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Quick List on eBay</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <input id="listing-price" type="number" step="0.01" placeholder="Your asking price ($)" style="flex:1" oninput="calcListingProfit()">
+        </div>
+        <div id="listing-calc" style="font-size:.83rem"></div>
+        <a id="ebay-list-link" href="#" target="_blank" class="btn btn-success" style="display:block;text-align:center;text-decoration:none;margin-top:10px">📦 List on eBay</a>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('research-modal').style.display='none'">Close</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://pxkbjbvcikjukwpbehdv.supabase.co';
+const SB_KEY='sb_publishable_7rOxD23Xnmzk1exmdBIA-w_ZCFmlkGp';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let CU=null,CC='business',EID=null,SID=null,SCOST=0,VIEW='list',CPT=[],CIMG=null;
+const MO=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+sb.auth.onAuthStateChange(async(ev,session)=>{
+  if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage(currentPage||'dashboard');}
+  else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
+});
+async function signIn(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const btn=document.getElementById('login-btn');
+  const errBox=document.getElementById('auth-error');
+  if(!email||!password){showAuthError('Please enter your email and password.');return;}
+  btn.disabled=true;btn.textContent='Signing in…';
+  errBox.style.display='none';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  btn.disabled=false;btn.textContent='Sign In';
+  if(error){showAuthError(error.message);}
+}
+function showAuthError(msg){const e=document.getElementById('auth-error');e.textContent=msg;e.style.display='block';}
+function togglePassword(){const i=document.getElementById('login-password');const b=document.getElementById('pw-toggle');if(i.type==='password'){i.type='text';b.style.opacity='1';}else{i.type='password';b.style.opacity='.45';}}
+async function signOut(){await sb.auth.signOut();}
+
+let currentPage='dashboard';
+function syncSearch(sourceId){
+  const val=document.getElementById(sourceId)?.value||'';
+  const targets={'col-search':'col-search2','col-search2':'col-search'};
+  const target=document.getElementById(targets[sourceId]);
+  if(target&&target.value!==val)target.value=val;
+}
+function toggleFilters(){
+  const panel=document.getElementById('filter-panel');
+  const btn=document.getElementById('filter-toggle-btn');
+  if(!panel)return;
+  const showing=panel.style.display==='flex';
+  panel.style.display=showing?'none':'flex';
+  btn.style.background=showing?'':'var(--accent)';
+  btn.style.color=showing?'':'#0a0a0f';
+}
+function clearFilters(){
+  ['col-sport','col-status','col-grade-co','col-features'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  renderCol();
+}
+
+function syncAndRenderGallery(){
+  const v=document.getElementById('col-search2')?.value||'';
+  const s=document.getElementById('col-search');
+  if(s&&s.value!==v)s.value=v;
+  renderGallery();
+}
+function toggleGalleryFilters(){
+  const p=document.getElementById('gallery-filter-panel');
+  const b=document.getElementById('gallery-filter-btn');
+  if(!p)return;
+  const open=p.style.display==='flex';
+  p.style.display=open?'none':'flex';
+  if(b){b.style.background=open?'':'var(--accent)';b.style.color=open?'':'#0a0a0f';}
+}
+function clearGalleryFilters(){
+  ['gal-sport','gal-status','gal-grade-co','gal-features'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  ['gal-year','gal-set'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  renderGallery();
+}
+
+// ─── PREV/NEXT CARD NAVIGATION ────────────────────────────────────────────
+let navCardIds=[];
+let navCurrentIdx=0;
+async function editCard(id){
+  navCardIds=cardCache.length?cardCache.map(c=>c.id):[id];
+  navCurrentIdx=navCardIds.indexOf(id);
+  await populateCardModal(id);
+}
+async function navigateCard(dir){
+  const newIdx=navCurrentIdx+dir;
+  if(newIdx<0||newIdx>=navCardIds.length)return;
+  navCurrentIdx=newIdx;
+  await populateCardModal(navCardIds[newIdx]);
+}
+async function populateCardModal(id){
+  const c=cardCache.find(x=>x.id===id)||(await sb.from('cards').select('*').eq('id',id).single()).data;
+  if(!c)return;
+  EID=id;
+  document.getElementById('card-modal-title').textContent='Edit Card';
+  const navBtns=document.getElementById('card-nav-btns');
+  const navPos=document.getElementById('card-nav-pos');
+  if(navBtns){navBtns.style.display=navCardIds.length>1?'flex':'none';}
+  if(navPos)navPos.textContent=(navCardIds.indexOf(id)+1)+' / '+navCardIds.length;
+  // Clear file inputs first
+  document.getElementById('f-photo').value='';
+  document.getElementById('f-photo-back').value='';
+  // Populate all fields
+  const fv=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
+  fv('f-player',c.player);fv('f-team',c.team);fv('f-year',c.year);
+  fv('f-set',c.card_set);fv('f-cardnum',c.card_number);fv('f-serial',c.serial_number);
+  fv('f-auto',c.auto_type);fv('f-relic',c.relic_type);fv('f-grade-co',c.grade_company);
+  fv('f-grade-num',c.grade_number);fv('f-cert',c.cert_number);fv('f-cost',c.cost_paid);
+  fv('f-buydate',c.purchase_date);fv('f-buyfrom',c.purchased_from);fv('f-variation',c.variation);
+  fv('f-notes',c.notes);fv('f-location',c.location);fv('f-asking',c.asking_price);
+  fv('f-listed-date',c.listed_date);
+  const sel=(sid,val)=>{const el=document.getElementById(sid);if(el)el.value=val||el.options[0].value;};
+  sel('f-sport',c.sport||'Baseball');sel('f-condition',c.condition||'Raw - Mint');
+  sel('f-status',c.status||'in_collection');
+  // Photos
+  const pf=document.getElementById('photo-preview');
+  const pb=document.getElementById('photo-preview-back');
+  if(c.photo_url){pf.src=c.photo_url;pf.style.display='block';}else{pf.src='';pf.style.display='none';}
+  if(c.photo_back_url){pb.src=c.photo_back_url;pb.style.display='block';}else{pb.src='';pb.style.display='none';}
+  document.getElementById('card-modal').style.display='flex';
+}
+
+function syncAndRender(){
+  const v = document.getElementById('col-search')?.value||'';
+  const g = document.getElementById('col-search2');
+  if(g && g.value!==v) g.value=v;
+  renderCol();
+}
+function toggleFilterPanel(){
+  const p = document.getElementById('filter-panel');
+  const b = document.getElementById('filter-btn');
+  if(!p) return;
+  const open = p.style.display==='flex';
+  p.style.display = open ? 'none' : 'flex';
+  if(b){ b.style.background=open?'':'var(--accent)'; b.style.color=open?'':'#0a0a0f'; }
+}
+function clearAllFilters(){
+  ['col-sport','col-status','col-grade-co','col-features'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['col-year','col-set-filter','col-cardno'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  renderCol();
+}
+
+function showPage(n){
+  currentPage=n;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+n)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes};
+  if(L[n])L[n]();
+}
+function switchCollection(t){
+  CC=t;
+  document.getElementById('btn-business').classList.toggle('active',t==='business');
+  document.getElementById('btn-personal').classList.toggle('active',t==='personal');
+  ['col-badge','col-badge2'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=t.charAt(0).toUpperCase()+t.slice(1);el.className='collection-badge badge-'+t;}});
+  cardCache=[];
+  const ap=document.querySelector('.page.active')?.id?.replace('page-','');
+  if(ap)showPage(ap);
+}
+function setView(v){VIEW=v;document.getElementById('vbtn-list').classList.toggle('active',v==='list');document.getElementById('vbtn-gallery').classList.toggle('active',v==='gallery');document.getElementById('col-list-wrap').style.display=v==='list'?'block':'none';document.getElementById('col-gallery-wrap').style.display=v==='gallery'?'block':'none';if(v==='gallery')renderGallery();else renderCol();}
+function getQ(){if(CC==='business')return sb.from('cards').select('*').eq('collection_type','business');return sb.from('cards').select('*').eq('user_id',CU.id).eq('collection_type','personal');}
+
+async function loadDash(){
+  const{data:cards}=await getQ();const{data:rel}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');const{data:intel}=await sb.from('buying_calendar').select('*').eq('user_id',CU.id);
+  if(!cards)return;
+  const sold=cards.filter(c=>c.status==='sold');const rev=sold.reduce((s,c)=>s+(c.sale_price||0),0);const cost=sold.reduce((s,c)=>s+(c.cost_paid||0),0);const fees=sold.reduce((s,c)=>s+(c.platform_fees||0)+(c.shipping_cost||0),0);const net=rev-cost-fees;
+  document.getElementById('dash-stats').innerHTML=`<div class="stat-card"><div class="stat-label">Total Cards</div><div class="stat-value">${cards.length}</div></div><div class="stat-card"><div class="stat-label">In Collection</div><div class="stat-value">${cards.filter(c=>c.status==='in_collection').length}</div></div><div class="stat-card"><div class="stat-label">Cards Sold</div><div class="stat-value">${sold.length}</div></div><div class="stat-card ${net>=0?'green':'red'}"><div class="stat-label">Net Profit</div><div class="stat-value ${net>=0?'positive':'negative'}">${net>=0?'+':''}$${net.toFixed(2)}</div></div><div class="stat-card purple"><div class="stat-label">Being Graded</div><div class="stat-value">${cards.filter(c=>c.status==='being_graded').length}</div></div>`;
+  const today=new Date();today.setHours(0,0,0,0);const t2=new Date(today);t2.setDate(t2.getDate()+2);
+  const sR=(rel||[]).filter(r=>{const d=new Date(r.release_date);return d>=today&&d<=t2;});
+  const mo=today.getMonth()+1;const aI=(intel||[]).filter(i=>i.start_month<=i.end_month?mo>=i.start_month&&mo<=i.end_month:mo>=i.start_month||mo<=i.end_month);
+  let al='';
+  if(sR.length)al+=`<div class="alert-box warning"><div class="alert-title">🚨 Upcoming Releases</div><ul class="alert-items">${sR.map(r=>`<li><span>${r.product_name}</span><span style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--accent)">${r.release_date} ${r.release_time||''}</span></li>`).join('')}</ul></div>`;
+  if(aI.length)al+=`<div class="alert-box info"><div class="alert-title">🧠 What to Buy Right Now</div><ul class="alert-items">${aI.map(i=>`<li><span><strong>${i.sport}</strong>${i.card_type?' — '+i.card_type:''}</span><span style="font-size:.76rem">${MO[i.start_month]}–${MO[i.end_month]}</span></li>`).join('')}</ul></div>`;
+  document.getElementById('dash-alerts').innerHTML=al||`<div class="alert-box ok"><div class="alert-title">✅ All clear</div><p style="color:var(--text2);font-size:.86rem">No upcoming releases or alerts right now.</p></div>`;
+}
+
+async function renderTotals(){
+  const{data:cards}=await getQ();
+  if(!cards?.length){document.getElementById('totals-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">📈</div><div>No cards yet</div></div>`;return;}
+  const active=cards.filter(c=>c.status!=='sold');
+  const autos=cards.filter(c=>c.auto_type);
+  const serials=cards.filter(c=>c.serial_number);
+  const relics=cards.filter(c=>c.variation&&c.variation.toLowerCase().includes('relic'));
+  const graded=cards.filter(c=>c.grade_company);
+  const sold=cards.filter(c=>c.status==='sold');
+  const totalInv=active.reduce((s,c)=>s+(c.cost_paid||0),0);
+  const perCard=active.length?totalInv/active.length:0;
+  const sC={};cards.forEach(c=>{if(c.sport)sC[c.sport]=(sC[c.sport]||0)+1;});
+  const setC={};cards.forEach(c=>{if(c.card_set)setC[c.card_set]=(setC[c.card_set]||0)+1;});
+  const pC={};cards.forEach(c=>{if(c.player)pC[c.player]=(pC[c.player]||0)+1;});
+  const gradeC={};cards.forEach(c=>{const g=c.grade_company?c.grade_company+(c.grade_number?' '+c.grade_number:''):'Raw';gradeC[g]=(gradeC[g]||0)+1;});
+  // monthly investment
+  const monthly={};active.forEach(c=>{if(!c.purchase_date)return;const m=c.purchase_date.slice(0,7);monthly[m]=(monthly[m]||0)+(c.cost_paid||0);});
+  const months=Object.keys(monthly).sort();
+  let running=0;const timeline=months.map(m=>{running+=monthly[m];return{m,v:running};});
+  const pct=n=>active.length?((n/active.length)*100).toFixed(1)+'%':'0%';
+  document.getElementById('totals-top').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total Cards</div><div class="stat-value">${cards.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Investment</div><div class="stat-value">$${totalInv.toFixed(0)}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Per Card</div><div class="stat-value">$${perCard.toFixed(2)}</div></div>
+    <div class="stat-card purple"><div class="stat-label">Autos (${pct(autos.length)})</div><div class="stat-value">${autos.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Serial Numbered (${pct(serials.length)})</div><div class="stat-value">${serials.length}</div></div>
+    <div class="stat-card green"><div class="stat-label">Sold</div><div class="stat-value">${sold.length}</div></div>`;
+
+  // Draw pie charts using canvas
+  function drawPie(canvasId,data,colors){const canvas=document.getElementById(canvasId);if(!canvas)return;const ctx=canvas.getContext('2d');const total=Object.values(data).reduce((a,b)=>a+b,0);if(!total)return;let angle=-Math.PI/2;const cx=canvas.width/2,cy=canvas.height/2,r=Math.min(cx,cy)-10;Object.entries(data).forEach(([label,val],i)=>{const slice=(val/total)*2*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=colors[i%colors.length];ctx.fill();angle+=slice;});}
+  const PIE_COLORS=['#1a6fd4','#f5c623','#2ecc71','#8888ff','#e8394a','#00bcd4','#ff9800','#9c27b0'];
+
+  document.getElementById('totals-grid').innerHTML=`
+    <div class="totals-section"><h3>By Sport</h3>
+      <canvas id="pie-sport" width="160" height="160" style="display:block;margin:0 auto 12px"></canvas>
+      ${Object.entries(sC).sort((a,b)=>b[1]-a[1]).map(([s,c],i)=>`<div class="totals-row"><span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${PIE_COLORS[i%PIE_COLORS.length]};margin-right:6px"></span>${s}</span><span class="tval">${c}</span></div>`).join('')||'<div style="color:var(--text2);font-size:.83rem">None yet</div>'}
+    </div>
+    <div class="totals-section"><h3>Grade Breakdown</h3>
+      <canvas id="pie-grade" width="160" height="160" style="display:block;margin:0 auto 12px"></canvas>
+      ${Object.entries(gradeC).sort((a,b)=>b[1]-a[1]).map(([g,c],i)=>`<div class="totals-row"><span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${PIE_COLORS[i%PIE_COLORS.length]};margin-right:6px"></span>${g}</span><span class="tval">${c}</span></div>`).join('')||'<div style="color:var(--text2);font-size:.83rem">None yet</div>'}
+    </div>
+    <div class="totals-section"><h3>Top Sets</h3>${Object.entries(setC).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([s,c])=>`<div class="totals-row"><span>${s}</span><span class="tval">${c}</span></div>`).join('')||'<div style="color:var(--text2);font-size:.83rem">None yet</div>'}</div>
+    <div class="totals-section"><h3>Top Players</h3>${Object.entries(pC).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([p,c])=>`<div class="totals-row"><span>${p}</span><span class="tval">${c}</span></div>`).join('')||'<div style="color:var(--text2);font-size:.83rem">None yet</div>'}</div>
+    <div class="totals-section" style="grid-column:1/-1"><h3>Financial Dashboard</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)"><div style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Total Outlay</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem" id="fd-outlay">—</div><div style="font-size:.72rem;color:var(--text2)">All cards ever purchased</div></div>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)"><div style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Realized Profit</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem" id="fd-profit">—</div><div style="font-size:.72rem;color:var(--text2)" id="fd-sold-count">From sold cards</div></div>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)"><div style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Inventory Value</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--accent)" id="fd-inv">—</div><div style="font-size:.72rem;color:var(--text2)" id="fd-inv-count">Cards in collection</div></div>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)"><div style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Avg Cost Paid</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem" id="fd-avg">—</div><div style="font-size:.72rem;color:var(--text2)">Per active card</div></div>
+      </div>
+      <div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Cumulative Investment Over Time</div>
+      <div id="fd-chart-wrap"><div style="color:var(--text2);font-size:.83rem;padding:12px 0">Add purchase dates to see investment over time</div></div>
+    </div>`;
+  // Populate financial dashboard
+  const totalOutlay=cards.reduce((s,c)=>s+(c.cost_paid||0),0);
+  const realizedProfit=sold.reduce((s,c)=>s+(c.sale_price||0)-(c.cost_paid||0),0);
+  const invValue=active.reduce((s,c)=>s+(c.cost_paid||0),0);
+  const fdOutlay=document.getElementById('fd-outlay');
+  const fdProfit=document.getElementById('fd-profit');
+  const fdInv=document.getElementById('fd-inv');
+  const fdAvg=document.getElementById('fd-avg');
+  if(fdOutlay)fdOutlay.textContent='$'+totalOutlay.toFixed(2);
+  if(fdProfit){fdProfit.textContent=(realizedProfit>=0?'+':'')+'$'+realizedProfit.toFixed(2);fdProfit.style.color=realizedProfit>=0?'var(--success)':'var(--accent2)';}
+  if(document.getElementById('fd-sold-count'))document.getElementById('fd-sold-count').textContent='From '+sold.length+' sold cards';
+  if(fdInv)fdInv.textContent='$'+invValue.toFixed(2);
+  if(document.getElementById('fd-inv-count'))document.getElementById('fd-inv-count').textContent=active.length+' cards in collection';
+  if(fdAvg)fdAvg.textContent='$'+perCard.toFixed(2);
+  // Draw investment chart
+  const chartWrap=document.getElementById('fd-chart-wrap');
+  if(chartWrap&&timeline.length>=2){
+    const maxV=Math.max(...timeline.map(t=>t.v),1);
+    const pts=timeline.map((t,i)=>{const x=(i/(timeline.length-1))*580+10;const y=100-((t.v/maxV)*85);return x+','+y;}).join(' ');
+    const apts='10,110 '+timeline.map((t,i)=>{const x=(i/(timeline.length-1))*580+10;const y=100-((t.v/maxV)*85);return x+','+y;}).join(' ')+' '+(580+10)+',110';
+    chartWrap.innerHTML=`<svg width="100%" height="120" viewBox="0 0 600 120" preserveAspectRatio="none" style="display:block;border-radius:6px"><defs><linearGradient id="ig3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a6fd4" stop-opacity="0.35"/><stop offset="100%" stop-color="#1a6fd4" stop-opacity="0"/></linearGradient></defs><polygon points="${apts}" fill="url(#ig3)"/><polyline points="${pts}" fill="none" stroke="#1a6fd4" stroke-width="2.5"/></svg><div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2);margin-top:5px"><span>${timeline[0]?.m||''}</span><span style="color:var(--accent);font-family:'DM Mono',monospace">$${totalOutlay.toFixed(0)} total</span><span>${timeline[timeline.length-1]?.m||''}</span></div>`;
+  }
+  setTimeout(()=>{drawPie('pie-sport',sC,PIE_COLORS);drawPie('pie-grade',gradeC,PIE_COLORS);},50);
+}
+
+function renderCol(){
+  if(!cardCache.length){loadCardCache().then(()=>renderCol());return;}
+  const search=(document.getElementById('col-search')?.value||'').toLowerCase().trim();
+  const sport=document.getElementById('col-sport')?.value||'';
+  const status=document.getElementById('col-status')?.value||'';
+  const sort=document.getElementById('col-sort')?.value||'newest';
+  const gradeCo=document.getElementById('col-grade-co')?.value||'';
+  const features=document.getElementById('col-features')?.value||'';
+  const yearF=(document.getElementById('col-year')?.value||'').trim();
+  const setF=(document.getElementById('col-set-filter')?.value||'').toLowerCase().trim();
+  const cardNoF=(document.getElementById('col-cardno')?.value||'').trim();
+  let cards=filterCards(search,sport,status);
+  if(gradeCo==='raw')cards=cards.filter(c=>!c.grade_company);
+  else if(gradeCo)cards=cards.filter(c=>c.grade_company===gradeCo);
+  if(features==='auto')cards=cards.filter(c=>c.auto_type);
+  else if(features==='relic')cards=cards.filter(c=>c.relic_type);
+  else if(features==='serial')cards=cards.filter(c=>c.serial_number);
+  if(yearF)cards=cards.filter(c=>String(c.year||'').includes(yearF));
+  if(setF)cards=cards.filter(c=>(c.card_set||'').toLowerCase().includes(setF));
+  if(cardNoF)cards=cards.filter(c=>(c.card_number||'').toLowerCase().includes(cardNoF.toLowerCase()));
+  const sf={newest:(a,b)=>new Date(b.created_at)-new Date(a.created_at),player:(a,b)=>(a.player||'').localeCompare(b.player||''),team:(a,b)=>(a.team||'').localeCompare(b.team||''),year:(a,b)=>(b.year||0)-(a.year||0),cost:(a,b)=>(b.cost_paid||0)-(a.cost_paid||0)};
+  cards.sort(sf[sort]||sf.newest);
+  if(!cards.length){document.getElementById('collection-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🃏</div><div>No cards found. Add your first card!</div></div>`;return;}
+  let html=`<table><thead><tr><th><input type='checkbox' id='select-all-cards' onchange='toggleSelectAll(this)' style='accent-color:var(--accent)'></th><th></th><th>Player</th><th>Team</th><th>Year/Set</th><th>Status</th><th>Grade</th><th>Tags</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>`;
+  cards.forEach(c=>{
+    const profit=c.status==='sold'?(c.sale_price||0)-(c.cost_paid||0)-(c.platform_fees||0)-(c.shipping_cost||0):null;
+    const pH=profit!==null?`<span class="${profit>=0?'pp':'pn'}">${profit>=0?'+':''}$${profit.toFixed(2)}</span>`:'—';
+    const grade=c.grade_company?c.grade_company+' '+(c.grade_number||''):'—';
+    const thumb=c.photo_url?`<img src="${c.photo_url}" class="card-thumb" onerror="this.parentElement.innerHTML='🃏'">`:`<div class="no-thumb">🃏</div>`;
+    const tags=`${c.auto_type?'<span class="tag-a">AUTO</span>':''}${c.serial_number?'<span class="tag-s">#'+c.serial_number+'</span>':''}`;
+    const sBtn=c.status!=='sold'?`<button class="btn btn-success btn-sm" onclick="openSaleModal('${c.id}',${c.cost_paid||0},'${(c.player||'').replace(/'/g,"\\'")} ${c.year||''} ${(c.card_set||'').replace(/'/g,"\\'")}')">💰 Sold</button>`:'';
+    const today2=new Date();const daysOld=c.purchase_date?Math.floor((today2-new Date(c.purchase_date))/86400000):null;const ageTag=daysOld!==null&&c.status==='in_collection'?(daysOld>=90?'<span style="color:var(--accent2);font-size:.7rem"> 90d+</span>':daysOld>=60?'<span style="color:var(--accent);font-size:.7rem"> 60d+</span>':daysOld>=30?'<span style="color:var(--purple);font-size:.7rem"> 30d+</span>':''):'';
+    html+=`<tr><td><input type='checkbox' class='card-select-cb' data-id='${c.id}' style='accent-color:var(--accent)'></td><td>${thumb}</td><td><strong>${c.player||'—'}</strong>${ageTag}</td><td>${c.team||'—'} ${c.location?'<span style="font-size:.72rem;color:var(--accent)">'+c.location+'</span>':''}</td><td>${c.year||'—'} <span style="color:var(--text2);font-size:.76rem">${c.card_set||''}</span></td><td><span class="status-badge status-${c.status}">${(c.status||'').replace(/_/g,' ')}</span></td><td>${grade}</td><td>${tags}</td><td class="mono">$${(c.cost_paid||0).toFixed(2)}</td><td>${pH}</td><td style="display:flex;gap:4px;padding:7px 13px;flex-wrap:wrap">${sBtn}<button class="btn btn-secondary btn-sm" onclick="openResearchTool('${c.id}')">🔍</button><button class="btn btn-secondary btn-sm" onclick="editCard('${c.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}')">Del</button></td></tr>`;
+  });
+  document.getElementById('collection-table').innerHTML=html+'</tbody></table>';
+}
+
+function renderGallery(){
+  if(!cardCache.length){loadCardCache().then(()=>renderGallery());return;}
+  const search=(document.getElementById('col-search2')?.value||'').toLowerCase().trim();
+  const sport=document.getElementById('gal-sport')?.value||'';
+  const status=document.getElementById('gal-status')?.value||'';
+  const gradeCo=document.getElementById('gal-grade-co')?.value||'';
+  const features=document.getElementById('gal-features')?.value||'';
+  const yearF=(document.getElementById('gal-year')?.value||'').trim();
+  const setF=(document.getElementById('gal-set')?.value||'').toLowerCase().trim();
+  let cards=filterCards(search,sport,status);
+  if(gradeCo==='raw')cards=cards.filter(c=>!c.grade_company);
+  else if(gradeCo)cards=cards.filter(c=>c.grade_company===gradeCo);
+  if(features==='auto')cards=cards.filter(c=>c.auto_type);
+  else if(features==='relic')cards=cards.filter(c=>c.relic_type);
+  else if(features==='serial')cards=cards.filter(c=>c.serial_number);
+  if(yearF)cards=cards.filter(c=>String(c.year||'').includes(yearF));
+  if(setF)cards=cards.filter(c=>(c.card_set||'').toLowerCase().includes(setF));
+  if(!cards.length){document.getElementById('gallery-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">🃏</div><div>No cards found</div></div>`;return;}
+  const today=new Date();
+  document.getElementById('gallery-grid').innerHTML=cards.map(c=>{
+    const days=c.purchase_date?Math.floor((today-new Date(c.purchase_date))/86400000):null;
+    const ageBadge=days!==null&&c.status==='in_collection'?(days>=90?'<span style="background:rgba(232,57,74,.2);color:var(--accent2);border-radius:4px;padding:1px 6px;font-size:.68rem;margin-left:4px">90d+</span>':days>=60?'<span style="background:rgba(245,166,35,.2);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:.68rem;margin-left:4px">60d+</span>':days>=30?'<span style="background:rgba(136,136,255,.2);color:var(--purple);border-radius:4px;padding:1px 6px;font-size:.68rem;margin-left:4px">30d+</span>':''):'';
+    const img=c.photo_url?`<img src="${c.photo_url}" alt="${c.player||''}" style="width:100%;height:100%;object-fit:contain;display:block;background:#0a0a0f" onerror="this.parentElement.innerHTML='🃏'">` :'🃏';
+    return `<div class="gallery-card" onclick="openCardDetail('${c.id}')">
+      <div style="width:100%;height:220px;background:#0a0a0f;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:3rem">${img}</div>
+      <div class="gallery-info">
+        <div class="g-player">${c.player||'—'}${ageBadge}</div>
+        <div class="g-meta">${c.year||''} ${c.card_set||''}</div>
+        <div class="g-meta">${c.team||''}${c.location?' · <span style="color:var(--accent)">'+c.location+'</span>':''}</div>
+        <div style="margin-top:5px;display:flex;justify-content:space-between;align-items:center">
+          <span class="status-badge status-${c.status}">${(c.status||'').replace(/_/g,' ')}</span>
+          <span class="g-price">$${(c.cost_paid||0).toFixed(2)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCardModal(){EID=null;document.getElementById('card-modal-title').textContent='Add Card';['player','team','year','set','cardnum','serial','cert','cost','notes','buyfrom','variation'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});document.getElementById('f-photo').value='';document.getElementById('f-photo-back').value='';const locEl=document.getElementById('f-location');if(locEl)locEl.value='';const askEl=document.getElementById('f-asking');if(askEl)askEl.value='';const listEl=document.getElementById('f-listed-date');if(listEl)listEl.value='';document.getElementById('f-buydate').value='';['f-sport','f-condition','f-status','f-grade-co','f-grade-num','f-auto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.options?el.options[0].value:''});document.getElementById('f-status').value='in_collection';document.getElementById('photo-preview').style.display='none';document.getElementById('card-modal').style.display='flex';}
+function closeCardModal(){document.getElementById('card-modal').style.display='none';}
+
+async function editCard(id){
+  const{data:c}=await sb.from('cards').select('*').eq('id',id).single();if(!c)return;
+  EID=id;document.getElementById('card-modal-title').textContent='Edit Card';
+  document.getElementById('f-player').value=c.player||'';document.getElementById('f-team').value=c.team||'';document.getElementById('f-sport').value=c.sport||'Baseball';document.getElementById('f-year').value=c.year||'';document.getElementById('f-set').value=c.card_set||'';document.getElementById('f-cardnum').value=c.card_number||'';document.getElementById('f-condition').value=c.condition||'Raw - Mint';document.getElementById('f-status').value=c.status||'in_collection';document.getElementById('f-serial').value=c.serial_number||'';document.getElementById('f-auto').value=c.auto_type||'';document.getElementById('f-relic').value=c.relic_type||'';document.getElementById('f-grade-co').value=c.grade_company||'';document.getElementById('f-grade-num').value=c.grade_number||'';document.getElementById('f-cert').value=c.cert_number||'';document.getElementById('f-cost').value=c.cost_paid||'';document.getElementById('f-buydate').value=c.purchase_date||'';document.getElementById('f-buyfrom').value=c.purchased_from||'';document.getElementById('f-variation').value=c.variation||'';document.getElementById('f-notes').value=c.notes||'';
+  const locElE=document.getElementById('f-location');if(locElE)locElE.value=c.location||'';
+  const askElE=document.getElementById('f-asking');if(askElE)askElE.value=c.asking_price||'';
+  const listElE=document.getElementById('f-listed-date');if(listElE)listElE.value=c.listed_date||'';
+  // Clear file inputs so previous selection doesn't carry over
+  document.getElementById('f-photo').value='';
+  document.getElementById('f-photo-back').value='';
+  // Show only THIS card's saved photos
+  const prevFront = document.getElementById('photo-preview');
+  const prevBack = document.getElementById('photo-preview-back');
+  if(c.photo_url){prevFront.src=c.photo_url;prevFront.style.display='block';}
+  else{prevFront.src='';prevFront.style.display='none';}
+  if(c.photo_back_url){prevBack.src=c.photo_back_url;prevBack.style.display='block';}
+  else{prevBack.src='';prevBack.style.display='none';}
+  document.getElementById('card-modal').style.display='flex';
+}
+
+async function saveCard(){
+  // Convert photos to base64 for reliable storage
+  let photoUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_url || null) : null;
+  let photoBackUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_back_url || null) : null;
+
+  async function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  async function resizeAndEncode(file) {
+    const base64 = await toBase64(file);
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 600;
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = h * maxDim / w; w = maxDim; }
+        else if (h > maxDim) { w = w * maxDim / h; h = maxDim; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = base64;
+    });
+  }
+
+  const pf = document.getElementById('f-photo').files[0];
+  if (pf) { try { photoUrl = await resizeAndEncode(pf); } catch(e) { console.error('Photo error:', e); } }
+  const pb = document.getElementById('f-photo-back').files[0];
+  if (pb) { try { photoBackUrl = await resizeAndEncode(pb); } catch(e) { console.error('Back photo error:', e); } }
+  const p={user_id:CU.id,collection_type:CC,player:document.getElementById('f-player').value,team:document.getElementById('f-team').value,sport:document.getElementById('f-sport').value,year:parseInt(document.getElementById('f-year').value)||null,card_set:document.getElementById('f-set').value,card_number:document.getElementById('f-cardnum').value,condition:document.getElementById('f-condition').value,status:document.getElementById('f-status').value,serial_number:document.getElementById('f-serial').value||null,auto_type:document.getElementById('f-auto').value||null,relic_type:document.getElementById('f-relic').value||null,grade_company:document.getElementById('f-grade-co').value||null,grade_number:document.getElementById('f-grade-num').value||null,cert_number:document.getElementById('f-cert').value||null,cost_paid:parseFloat(document.getElementById('f-cost').value)||0,purchase_date:document.getElementById('f-buydate').value||null,purchased_from:document.getElementById('f-buyfrom').value||null,variation:document.getElementById('f-variation').value||null,location:document.getElementById('f-location')?.value||null,asking_price:parseFloat(document.getElementById('f-asking')?.value)||null,listed_date:document.getElementById('f-listed-date')?.value||null,notes:document.getElementById('f-notes').value||null};
+  p.photo_url=photoUrl;
+  p.photo_back_url=photoBackUrl;
+  let err;if(EID){({error:err}=await sb.from('cards').update(p).eq('id',EID));}else{({error:err}=await sb.from('cards').insert(p));}
+  if(err){showToast('Error: '+err.message,'error');return;}
+  showToast(EID?'Card updated!':'Card added!','success');closeCardModal();await loadCardCache();if(VIEW==='gallery')renderGallery();else renderCol();
+}
+async function deleteCard(id){if(!confirm('Delete this card?'))return;await sb.from('cards').delete().eq('id',id);showToast('Deleted','success');await loadCardCache();renderCol();}
+function previewPhoto(e,targetId){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=document.getElementById(targetId||'photo-preview');p.src=ev.target.result;p.style.display='block';};r.readAsDataURL(f);}
+
+function openSaleModal(id,cost,name){
+  SID=id;SCOST=cost;
+  document.getElementById('sale-card-name').textContent=name;
+  // Show location popup if card has a location
+  const card=cardCache.find(c=>c.id===id);
+  if(card?.location){
+    showToast('📍 This card is at: '+card.location,'success');
+  }['s-subtotal','s-tax','s-fees','s-ship','s-ad'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-date').value=new Date().toISOString().split('T')[0];calcSaleNet();document.getElementById('sale-modal').style.display='flex';}
+function calcSaleNet(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const net=sub-SCOST-fees-ship-ad;document.getElementById('sn-subtotal').textContent='$'+sub.toFixed(2);document.getElementById('sn-tax').textContent='$'+tax.toFixed(2);document.getElementById('sn-fees').textContent='$'+fees.toFixed(2);document.getElementById('sn-ship').textContent='$'+ship.toFixed(2);document.getElementById('sn-ad').textContent='$'+ad.toFixed(2);const el=document.getElementById('sn-net');el.textContent=(net>=0?'+':'')+'$'+net.toFixed(2);el.style.color=net>=0?'var(--success)':'var(--accent2)';}
+async function saveSale(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const net=sub-SCOST-fees-ship-ad;const{error}=await sb.from('cards').update({status:'sold',sale_price:sub,sales_tax:tax,platform_fees:fees,shipping_cost:ship,ad_fee:ad,net_profit:net,sale_date:document.getElementById('s-date').value,platform_sold:'eBay'}).eq('id',SID);if(error){showToast('Error: '+error.message,'error');return;}showToast('Sale recorded! Net: '+(net>=0?'+':'')+'$'+net.toFixed(2),'success');document.getElementById('sale-modal').style.display='none';await loadCardCache();renderCol();}
+
+async function renderPlayers(){const{data:c}=await getQ();if(!c?.length){document.getElementById('player-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">⭐</div><div>No cards yet</div></div>`;return;}const cnt={};c.forEach(x=>{if(!x.player)return;if(!cnt[x.player])cnt[x.player]={count:0,team:x.team,sport:x.sport};cnt[x.player].count++;});document.getElementById('player-grid').innerHTML=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count).map(([n,i])=>`<div class="player-card"><div class="count">${i.count}</div><h4>${n}</h4><p style="font-size:.75rem;color:var(--text2)">${i.team||''}${i.sport?' · '+i.sport:''}</p></div>`).join('');}
+
+async function renderSales(){
+  const{data:c}=await getQ();
+  const search=(document.getElementById('sales-search')?.value||'').toLowerCase();
+  const sportF=document.getElementById('sales-sport')?.value||'';
+  let sold=(c||[]).filter(x=>x.status==='sold');
+  if(search)sold=sold.filter(x=>[x.player,x.card_set,x.year+''].join(' ').toLowerCase().includes(search));
+  if(sportF)sold=sold.filter(x=>x.sport===sportF);
+  sold=sold.sort((a,b)=>new Date(b.sale_date||0)-new Date(a.sale_date||0));
+  if(!sold.length){document.getElementById('sales-table').innerHTML=`<div class="empty-state"><div class="empty-icon">💰</div><div>No sales yet</div></div>`;document.getElementById('sales-stats').innerHTML='';return;}
+  const rev=sold.reduce((s,x)=>s+(x.sale_price||0),0);
+  const cost=sold.reduce((s,x)=>s+(x.cost_paid||0),0);
+  const fees=sold.reduce((s,x)=>s+(x.platform_fees||0)+(x.shipping_cost||0),0);
+  const net=rev-cost-fees;
+  // Include box totals in stats
+  let bqStats=sb.from('boxes').select('*').not('amount_sold','is',null);
+  if(CC==='business')bqStats=bqStats.eq('collection_type','business');
+  else bqStats=bqStats.eq('user_id',CU.id).eq('collection_type','personal');
+  const{data:statsBoxes}=await bqStats;
+  const boxRev=(statsBoxes||[]).reduce((s,b)=>s+(b.amount_sold||0),0);
+  const boxCostStat=(statsBoxes||[]).reduce((s,b)=>s+(b.price_paid||0),0);
+  const totalRev=rev+boxRev;
+  const totalNet=net+(boxRev-boxCostStat);
+  document.getElementById('sales-stats').innerHTML=`<div class="stat-card"><div class="stat-label">Card Sales</div><div class="stat-value">${sold.length}</div></div><div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value">$${totalRev.toFixed(2)}</div></div><div class="stat-card red"><div class="stat-label">Cost+Fees</div><div class="stat-value">$${(cost+fees+boxCostStat).toFixed(2)}</div></div><div class="stat-card ${totalNet>=0?'green':'red'}"><div class="stat-label">Net Profit</div><div class="stat-value ${totalNet>=0?'positive':'negative'}">${totalNet>=0?'+':''}$${totalNet.toFixed(2)}</div></div>`;
+  let html=`<table><thead><tr><th>Player</th><th>Year/Set</th><th>Date</th><th>Sale Price</th><th>Fees+Ship</th><th>Net</th><th></th></tr></thead><tbody>`;
+  sold.forEach(x=>{
+    const n=(x.sale_price||0)-(x.cost_paid||0)-(x.platform_fees||0)-(x.shipping_cost||0);
+    html+=`<tr><td><strong>${x.player||'—'}</strong></td><td>${x.year||'—'} ${x.card_set||''}</td><td>${x.sale_date||'—'}</td><td class="mono">$${(x.sale_price||0).toFixed(2)}</td><td class="mono">$${((x.platform_fees||0)+(x.shipping_cost||0)).toFixed(2)}</td><td><span class="${n>=0?'pp':'pn'}">${n>=0?'+':''}$${n.toFixed(2)}</span></td><td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openEditSaleModal('${x.id}',${x.sale_price||0},${x.platform_fees||0},${x.shipping_cost||0},'${x.sale_date||''}')">Edit</button><button class="btn btn-danger btn-sm" onclick="cancelSale('${x.id}','${(x.player||'').replace(/'/g,'')}')">Cancel</button></td></tr>`;
+  });document.getElementById('sales-table').innerHTML=html+'</tbody></table>';
+  // Show boxes sold
+  {
+    let bq=sb.from('boxes').select('*').not('amount_sold','is',null).order('purchase_date',{ascending:false});
+    if(CC==='business')bq=bq.eq('collection_type','business');
+    else bq=bq.eq('user_id',CU.id).eq('collection_type','personal');
+    const{data:boxes}=await bq;
+    if(boxes?.length){
+      let bhtml=`<div style="margin-top:20px"><h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-bottom:10px">📦 Boxes</h3><div class="table-container"><table><thead><tr><th>Box</th><th>Sport</th><th>Date</th><th>Paid</th><th>Sold For</th><th>Net</th></tr></thead><tbody>`;
+      boxes.forEach(b=>{const n=(b.amount_sold||0)-(b.price_paid||0);bhtml+=`<tr><td><strong>${b.box_name||'—'}</strong></td><td>${b.sport||'—'}</td><td>${b.purchase_date||'—'}</td><td class="mono">$${(b.price_paid||0).toFixed(2)}</td><td class="mono">$${(b.amount_sold||0).toFixed(2)}</td><td><span class="${n>=0?'pp':'pn'}">${n>=0?'+':''}$${n.toFixed(2)}</span></td></tr>`;});
+      document.getElementById('sales-table').innerHTML+=bhtml+'</tbody></table></div></div>';
+    }
+  }}
+
+function initTaxYears(){const sel=document.getElementById('tax-year');if(sel.options.length>0)return;const yr=new Date().getFullYear();for(let y=yr;y>=yr-5;y--){const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);}}
+async function renderTax(){if(CC==='personal'){document.getElementById('tax-content').innerHTML=`<div class="alert-box info"><div class="alert-title" style="color:var(--text2)">ℹ️ Business collection only</div><p style="color:var(--text2);font-size:.86rem">Switch to Business to see your tax summary.</p></div>`;return;}const yr=parseInt(document.getElementById('tax-year').value);const{data:c}=await getQ();const f=(c||[]).filter(x=>x.status==='sold'&&x.sale_date&&new Date(x.sale_date).getFullYear()===yr);const rev=f.reduce((s,x)=>s+(x.sale_price||0),0);const cost=f.reduce((s,x)=>s+(x.cost_paid||0),0);const fees=f.reduce((s,x)=>s+(x.platform_fees||0),0);const ship=f.reduce((s,x)=>s+(x.shipping_cost||0),0);const net=rev-cost-fees-ship;// Also get boxes for this year
+  const{data:allBoxes}=await sb.from('boxes').select('*').eq('collection_type','business');
+  const boxesYr=(allBoxes||[]).filter(b=>b.purchase_date&&new Date(b.purchase_date).getFullYear()===yr);
+  const boxCost=boxesYr.reduce((s,b)=>s+(b.price_paid||0),0);
+  const boxSold=boxesYr.reduce((s,b)=>s+(b.amount_sold||0),0);
+  const totalRev=rev+boxSold;
+  const totalCost=cost+boxCost;
+  const totalNet=totalRev-totalCost-fees-ship;
+  // Get daily costs for this year
+  const{data:allCosts}=await sb.from('daily_costs').select('*').eq('user_id',CU.id);
+  const costsYr=(allCosts||[]).filter(c=>c.date&&new Date(c.date).getFullYear()===yr);
+  const dailyCostTotal=costsYr.reduce((s,c)=>s+(c.amount||0),0);
+  const grandNet=totalNet-dailyCostTotal;
+  document.getElementById('tax-content').innerHTML=`<div class="tax-section"><h3>📋 ${yr} Tax Year — Business</h3>
+    <div class="tax-row"><span style="font-weight:600;color:var(--text2)">CARDS</span><span></span></div>
+    <div class="tax-row"><span>Card Sales Revenue (${f.length} cards)</span><span class="amount">$${rev.toFixed(2)}</span></div>
+    <div class="tax-row"><span>Card Cost Basis</span><span class="amount negative">− $${cost.toFixed(2)}</span></div>
+    <div class="tax-row"><span>eBay Fees</span><span class="amount negative">− $${fees.toFixed(2)}</span></div>
+    <div class="tax-row"><span>Shipping</span><span class="amount negative">− $${ship.toFixed(2)}</span></div>
+    ${boxesYr.length?`<div class="tax-row" style="margin-top:8px"><span style="font-weight:600;color:var(--text2)">BOXES (${boxesYr.length} boxes)</span><span></span></div>
+    <div class="tax-row"><span>Box Sales Revenue</span><span class="amount">$${boxSold.toFixed(2)}</span></div>
+    <div class="tax-row"><span>Box Purchase Cost</span><span class="amount negative">− $${boxCost.toFixed(2)}</span></div>`:''}
+    ${costsYr.length?`<div class="tax-row" style="margin-top:8px"><span style="font-weight:600;color:var(--text2)">DAILY COSTS (${costsYr.length} entries)</span><span></span></div>
+    <div class="tax-row"><span>Supplies, Packaging, Misc</span><span class="amount negative">− $${dailyCostTotal.toFixed(2)}</span></div>`:''}
+    <div class="tax-row total"><span>Net Taxable Profit</span><span class="amount ${grandNet>=0?'positive':'negative'}">${grandNet>=0?'+':''}$${grandNet.toFixed(2)}</span></div>
+  </div><div class="turbotax-hint"><strong>📝 TurboTax:</strong> Report on <strong>Schedule C</strong>. Net profit for ${yr}: $${grandNet.toFixed(2)}. All fees, shipping, and daily costs already deducted.</div>`;}
+
+async function renderWant(){const{data:items}=await sb.from('want_list').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});if(!items?.length){document.getElementById('want-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>No cards on your want list</div></div>`;return;}document.getElementById('want-grid').innerHTML=items.map(w=>`<div class="want-card"><h4>${w.player||'—'}</h4><div style="font-size:.76rem;color:var(--text2)">${w.year||''} ${w.card_set||''} · ${w.sport||''}</div>${w.target_price?'<div class="target">Target: $'+w.target_price.toFixed(2)+'</div>':''}<p style="font-size:.8rem;color:var(--text2)">${w.notes||''}</p><div style="margin-top:9px;display:flex;gap:5px"><a href="https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent((w.player||'')+' '+(w.year||'')+' '+(w.card_set||''))}" target="_blank" class="btn btn-secondary btn-sm">🔍 eBay</a><button class="btn btn-danger btn-sm" onclick="deleteWant('${w.id}')">Remove</button></div></div>`).join('');}
+function openWantModal(){['player','team','year','set','notes'].forEach(f=>document.getElementById('w-'+f).value='');document.getElementById('w-price').value='';document.getElementById('want-modal').style.display='flex';}
+async function saveWant(){const{error}=await sb.from('want_list').insert({user_id:CU.id,player:document.getElementById('w-player').value,team:document.getElementById('w-team').value,sport:document.getElementById('w-sport').value,year:parseInt(document.getElementById('w-year').value)||null,card_set:document.getElementById('w-set').value,target_price:parseFloat(document.getElementById('w-price').value)||null,notes:document.getElementById('w-notes').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('want-modal').style.display='none';renderWant();}
+async function deleteWant(id){await sb.from('want_list').delete().eq('id',id);showToast('Removed','success');renderWant();}
+
+async function renderIntel(){const{data:items}=await sb.from('buying_calendar').select('*').eq('user_id',CU.id);const mo=new Date().getMonth()+1;const ac=[],so=[],of=[];(items||[]).forEach(i=>{const inW=i.start_month<=i.end_month?mo>=i.start_month&&mo<=i.end_month:mo>=i.start_month||mo<=i.end_month;const cs=!inW&&[1,2].includes(((i.start_month-mo+12)%12));if(inW)ac.push(i);else if(cs)so.push(i);else of.push(i);});const rc=(i,cl,sl,sc)=>`<div class="intel-card ${cl}"><div class="intel-status ${sc}">${sl}</div><div class="intel-sport">${i.sport}</div><div style="font-size:.78rem;color:var(--text2);margin-bottom:5px">${MO[i.start_month]} – ${MO[i.end_month]}</div>${i.card_type?'<div style="font-size:.78rem;color:var(--accent);margin-bottom:5px">🎯 '+i.card_type+'</div>':''}${i.strategy_notes?'<div style="font-size:.81rem;line-height:1.5">'+i.strategy_notes+'</div>':''}${i.platforms?'<div style="font-size:.74rem;color:var(--text2);margin-top:7px">📍 '+i.platforms+'</div>':''}<div style="margin-top:11px"><button class="btn btn-danger btn-sm" onclick="deleteIntel(\''+i.id+'\')">Remove</button></div></div>`;document.getElementById('intel-active').innerHTML=ac.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--success);margin-bottom:10px">✅ Buy Right Now</h3><div class="intel-grid">${ac.map(i=>rc(i,'active-now','● Active Now','active')).join('')}</div>`:'';document.getElementById('intel-soon').innerHTML=so.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent);margin-bottom:10px">🔜 Coming Soon</h3><div class="intel-grid">${so.map(i=>rc(i,'coming-soon','Coming Soon','soon')).join('')}</div>`:'';document.getElementById('intel-off').innerHTML=of.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-bottom:10px">💤 Off Season</h3><div class="intel-grid">${of.map(i=>rc(i,'off-season','Off Season','off')).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🧠</div><div>No buying windows yet</div></div>`;}
+function openIntelModal(){['sport','cardtype','notes','platforms'].forEach(f=>document.getElementById('i-'+f).value='');document.getElementById('intel-modal').style.display='flex';}
+async function saveIntel(){const{error}=await sb.from('buying_calendar').insert({user_id:CU.id,sport:document.getElementById('i-sport').value,start_month:parseInt(document.getElementById('i-start').value),end_month:parseInt(document.getElementById('i-end').value),card_type:document.getElementById('i-cardtype').value,strategy_notes:document.getElementById('i-notes').value,platforms:document.getElementById('i-platforms').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('intel-modal').style.display='none';renderIntel();}
+async function deleteIntel(id){await sb.from('buying_calendar').delete().eq('id',id);showToast('Removed','success');renderIntel();}
+
+async function renderReleases(){const{data:items}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');if(!items?.length){document.getElementById('release-list').innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div>No releases added yet</div></div>`;return;}const today=new Date();today.setHours(0,0,0,0);const MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('release-list').innerHTML=items.map(r=>{const rd=new Date(r.release_date+'T12:00:00');const isT=rd.toDateString()===today.toDateString();const isU=rd>today&&(rd-today)<7*24*60*60*1000;return`<div class="release-item ${isT?'today':isU?'upcoming':''}"><div class="release-date-box"><div class="rday">${rd.getDate()}</div><div class="rmon">${MNS[rd.getMonth()]}</div></div><div class="release-info"><h4>${r.product_name}${isT?' <span style="color:var(--accent2);font-size:.7rem">● TODAY</span>':''}</h4>${r.release_time?'<div style="font-family:\'DM Mono\',monospace;font-size:.78rem;color:var(--accent)">⏰ '+r.release_time+'</div>':''}${r.notes?'<p>'+r.notes+'</p>':''}</div><button class="btn btn-danger btn-sm" onclick="deleteRelease(\''+r.id+'\')">Remove</button></div>`;}).join('');}
+function openReleaseModal(){['name','notes'].forEach(f=>document.getElementById('r-'+f).value='');document.getElementById('r-date').value='';document.getElementById('r-time').value='';document.getElementById('release-modal').style.display='flex';}
+async function saveRelease(){const{error}=await sb.from('release_calendar').insert({user_id:CU.id,product_name:document.getElementById('r-name').value,release_date:document.getElementById('r-date').value,release_time:document.getElementById('r-time').value||null,notes:document.getElementById('r-notes').value,remind_day_before:document.getElementById('r-day').checked,remind_hour_before:document.getElementById('r-hour').checked});if(error){showToast('Error: '+error.message,'error');return;}showToast('Release added!','success');document.getElementById('release-modal').style.display='none';renderReleases();}
+async function deleteRelease(id){await sb.from('release_calendar').delete().eq('id',id);showToast('Removed','success');renderReleases();}
+
+async function renderResearch(){const{data:notes}=await sb.from('research_notes').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});if(!notes?.length){document.getElementById('note-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">📝</div><div>No research notes yet</div></div>`;return;}document.getElementById('note-grid').innerHTML=notes.map(n=>{const nid=n.id;return`<div class="note-card"><h4>${n.title||'Untitled'}</h4>${n.sport?`<div style="font-size:.74rem;color:var(--accent);margin-bottom:7px">${n.sport}</div>`:''}<div class="note-body">${n.content||''}</div>${n.tags?n.tags.split(',').map(t=>'<span class="note-tag">'+t.trim()+'</span>').join(''):''}<div style="margin-top:11px;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="editNoteModal('${nid}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteNote('${nid}')">Delete</button></div></div>`;}).join('');}
+function openNoteModal(){['title','sport','tags','body'].forEach(f=>document.getElementById('n-'+f).value='');document.getElementById('note-modal').style.display='flex';}
+async function saveNote(){const{error}=await sb.from('research_notes').insert({user_id:CU.id,title:document.getElementById('n-title').value,sport:document.getElementById('n-sport').value,tags:document.getElementById('n-tags').value,content:document.getElementById('n-body').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Saved!','success');document.getElementById('note-modal').style.display='none';renderResearch();}
+async function deleteNote(id){await sb.from('research_notes').delete().eq('id',id);showToast('Deleted','success');renderResearch();}
+
+async function renderConsol(){const{data:c}=await getQ();const sell=(c||[]).filter(x=>x.status!=='sold');document.getElementById('consol-cards').innerHTML=sell.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">${sell.map(x=>`<div class="sell-row"><input type="checkbox" class="sell-cb" onchange="updateConsol()" data-cost="${x.cost_paid||0}"><div style="flex:1"><strong>${x.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${x.year||''} ${x.card_set||''}</span></div><span class="mono" style="color:var(--accent)">$${(x.cost_paid||0).toFixed(2)}</span></div>`).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🔄</div><div>No cards in collection yet</div></div>`;updateConsol();}
+function updateConsol(){const target=parseFloat(document.getElementById('grail-price').value)||0;const name=document.getElementById('grail-name').value;document.getElementById('grail-name-disp').textContent=name||'Set target above';document.getElementById('grail-price-disp').textContent='$'+(target||0).toFixed(0);const checked=document.querySelectorAll('.sell-cb:checked');const total=Array.from(checked).reduce((s,cb)=>s+parseFloat(cb.dataset.cost||0),0);const pct=target>0?Math.min(100,(total/target)*100):0;document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('prog-label').textContent=pct>=100?'🎉 You can afford it!':pct>0?pct.toFixed(0)+'% there':'Select cards to sell';document.getElementById('sel-total').textContent='$'+total.toFixed(2);document.getElementById('still-need').textContent='$'+Math.max(0,target-total).toFixed(2);}
+
+function loadCenterImg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{CIMG=new Image();CIMG.onload=()=>{document.getElementById('center-upload-zone').style.display='none';document.getElementById('center-workspace').style.display='block';const cv=document.getElementById('center-canvas');const mw=Math.min(480,cv.parentElement.offsetWidth-20);const sc=mw/CIMG.width;cv.width=mw;cv.height=CIMG.height*sc;cv.getContext('2d').drawImage(CIMG,0,0,cv.width,cv.height);};CIMG.src=ev.target.result;};r.readAsDataURL(f);CPT=[];document.getElementById('center-results').style.display='none';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));}
+function resetCenter(){CPT=[];document.getElementById('center-results').style.display='none';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));if(CIMG){const cv=document.getElementById('center-canvas');cv.getContext('2d').drawImage(CIMG,0,0,cv.width,cv.height);}}
+function handleCenterClick(e){if(CPT.length>=4)return;const cv=document.getElementById('center-canvas');const rect=cv.getBoundingClientRect();const x=e.clientX-rect.left,y=e.clientY-rect.top;CPT.push({x,y});const ctx=cv.getContext('2d');ctx.drawImage(CIMG,0,0,cv.width,cv.height);const cols=['#f5a623','#e8394a','#2ecc71','#8888ff'];const lbs=['L','R','T','B'];CPT.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=cols[i];ctx.fill();ctx.fillStyle='white';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbs[i],p.x,p.y);ctx.beginPath();ctx.setLineDash([4,4]);ctx.strokeStyle=cols[i];ctx.lineWidth=1;if(i<2){ctx.moveTo(p.x,0);ctx.lineTo(p.x,cv.height);}else{ctx.moveTo(0,p.y);ctx.lineTo(cv.width,p.y);}ctx.stroke();ctx.setLineDash([]);});document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===CPT.length));if(CPT.length===4)calcCenter();}
+function calcCenter(){const[l,r,t,b]=CPT;const cv=document.getElementById('center-canvas');const lS=l.x,rS=cv.width-r.x,tS=t.y,bS=cv.height-b.y;const lrP=Math.min(lS,rS)/Math.max(lS,rS)*100;const tbP=Math.min(tS,bS)/Math.max(tS,bS)*100;const w=Math.min(lrP,tbP);document.getElementById('lr-ratio').textContent=lS<=rS?Math.round(lS)+'/'+Math.round(rS):Math.round(rS)+'/'+Math.round(lS);document.getElementById('tb-ratio').textContent=tS<=bS?Math.round(tS)+'/'+Math.round(bS):Math.round(bS)+'/'+Math.round(tS);const g=w>=90?{psa:'10',bgs:'9.5',sgc:'10',note:'Excellent centering'}:w>=80?{psa:'9',bgs:'9',sgc:'9',note:'Good centering'}:w>=70?{psa:'8',bgs:'8.5',sgc:'8',note:'Decent centering'}:w>=60?{psa:'7',bgs:'8',sgc:'7',note:'Slightly off-center'}:w>=50?{psa:'6',bgs:'7',sgc:'6',note:'Off-center'}:{psa:'5 or lower',bgs:'6 or lower',sgc:'5 or lower',note:'Significantly off-center'};document.getElementById('grade-grid').innerHTML=`<div class="grade-card"><div class="co">PSA</div><div class="gr">${g.psa}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card"><div class="co">BGS</div><div class="gr">${g.bgs}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering subgrade</div></div><div class="grade-card"><div class="co">SGC</div><div class="gr">${g.sgc}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card" style="grid-column:1/-1;text-align:left"><div class="co">Assessment</div><div style="font-size:.85rem;margin-top:4px">${g.note}. Score: <span style="color:var(--accent);font-family:'DM Mono',monospace">${w.toFixed(1)}%</span>. Note: final grade also depends on corners, edges, and surface.</div></div>`;document.getElementById('center-results').style.display='block';}
+
+async function renderAdmin(){document.getElementById('members-list').innerHTML=`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.86rem"><span>${CU.email} <span style="color:var(--text2);font-size:.76rem">(you)</span></span><span style="padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;background:rgba(245,166,35,.15);color:var(--accent)">Owner</span></div><div style="color:var(--text2);font-size:.83rem;margin-top:11px;line-height:1.6">To invite your brother or son, enter their Gmail below. They go to <strong style="color:var(--text)">startingfivecollectibles.netlify.app</strong> and sign in with that Google account to automatically get access.</div>`;}
+async function inviteMember(){const email=document.getElementById('invite-email').value;if(!email){showToast('Enter an email','error');return;}showToast('Tell '+email+' to go to startingfivecollectibles.netlify.app and sign in with Google!','success');document.getElementById('invite-email').value='';}
+
+function downloadTemplate(){
+  const h='player,team,sport,year,card_set,card_number,variation,condition,status,autograph,serial_numbered,serial_number,grade,cost_paid,purchase_date,already_sold,sold_price,sold_date,notes\n';
+  const ex1='Mike Trout,Angels,Baseball,2011,Topps Update,US175,,Raw - Near Mint,in_collection,no,no,,,25.00,2024-03-15,no,,,Rookie card';
+  const ex2='LeBron James,Lakers,Basketball,2003,Topps Chrome,1,Refractor,Raw - Mint,in_collection,yes,yes,45/99,,150.00,2024-01-10,no,,,On-card auto';
+  const ex3='Patrick Mahomes,Chiefs,Football,2017,Topps,356,,Graded,sold,no,no,,PSA 10,200.00,2023-11-05,yes,350.00,2024-02-01,Already sold';
+  const notes=[
+    '','--- INSTRUCTIONS ---',
+    'sport: Baseball/Basketball/Football/Hockey/Soccer/F1/Pokemon/Other',
+    'status: in_collection/listed/being_graded/sold',
+    'autograph: yes or no',
+    'serial_numbered: yes or no  |  serial_number: e.g. 45/99',
+    'grade: Raw OR PSA 10 OR BGS 9.5 OR SGC 9 etc',
+    'purchase_date: YYYY-MM-DD  |  already_sold: yes or no',
+    'sold_price: amount sold for  |  sold_date: YYYY-MM-DD'
+  ].join('\n');
+  const blob=new Blob([h+ex1+'\n'+ex2+'\n'+ex3+'\n'+notes],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='startingfive_template.csv';a.click();
+}
+
+function parseDate(d){
+  if(!d||d.trim()==='')return null;
+  d=d.trim();
+  // Already YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d))return d;
+  // M/D/YY or M/D/YYYY
+  const parts=d.split('/');
+  if(parts.length===3){
+    let[m,day,yr]=parts;
+    if(yr.length===2)yr='20'+yr;
+    return yr+'-'+m.padStart(2,'0')+'-'+day.padStart(2,'0');
+  }
+  return null;
+}
+function parseGrade(gradeStr){
+  if(!gradeStr||gradeStr.trim()===''||gradeStr.toLowerCase()==='raw')return{company:null,number:null};
+  const s=gradeStr.trim();
+  const match=s.match(/^(PSA|BGS|SGC|CSG)\s*(.+)$/i);
+  if(match)return{company:match[1].toUpperCase(),number:match[2].trim()};
+  return{company:null,number:null};
+}
+
+let csvRows=[];
+
+async function handleCSV(event){
+  const file=event.target.files[0];if(!file)return;
+  const text=await file.text();
+  const lines=text.split('\n').filter(l=>l.trim()&&!l.startsWith('---'));
+  const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+  csvRows=lines.slice(1).map(line=>{
+    const vals=line.split(',');
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=(vals[i]||'').replace(/"/g,'').trim());
+    return obj;
+  }).filter(r=>r.player&&r.player.trim()!=='');
+  
+  let pv=`<div style="margin-top:12px">
+    <strong style="color:var(--text2)">${csvRows.length} cards found</strong>
+    <table style="margin-top:9px;width:100%;border-collapse:collapse">
+    <thead><tr>${['Player','Sport','Year','Set','Grade','Auto','Serial','Cost','Date'].map(h=>'<th style="text-align:left;padding:6px;font-size:.7rem;color:var(--text2)">'+h+'</th>').join('')}</tr></thead><tbody>`;
+  csvRows.slice(0,8).forEach(r=>{
+    const g=r.grade&&r.grade.toLowerCase()!=='raw'?r.grade:'Raw';
+    pv+=`<tr>${[r.player,r.sport||'—',r.year||'—',r.card_set||'—',g,r.autograph||'no',r.serial_number||'—','$'+(r.cost_paid||'0'),r.purchase_date||'—'].map(v=>'<td style="padding:6px;font-size:.8rem">'+v+'</td>').join('')}</tr>`;
+  });
+  if(csvRows.length>8)pv+=`<tr><td colspan="9" style="padding:6px;font-size:.78rem;color:var(--text2)">...and ${csvRows.length-8} more cards</td></tr>`;
+  pv+=`</tbody></table>
+    <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:6px;font-size:.83rem;color:var(--text2)">
+      Ready to upload <strong style="color:var(--text)">${csvRows.length} cards</strong> to your <strong style="color:var(--accent)">${CC}</strong> collection.
+    </div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="confirmCSV()">Upload All ${csvRows.length} Cards</button>
+  </div>`;
+  document.getElementById('upload-preview').innerHTML=pv;
+}
+
+async function confirmCSV(){
+  if(!csvRows.length){showToast('No cards to upload','error');return;}
+  const ins=csvRows.map(r=>{
+    // Grade can come from grade column OR condition column (e.g. "SGC 10")
+    const g=parseGrade(r.grade)||parseGrade(r.condition)||{company:null,number:null};
+    // Condition: if it contains a grading company name, set to Graded, else use as-is
+    const condRaw=r.condition||'';
+    const condIsGrade=/^(PSA|BGS|SGC|CSG)/i.test(condRaw.trim());
+    const condition=condIsGrade?'Graded':condRaw||null;
+    const isAuto=r.autograph&&r.autograph.toLowerCase()==='yes';
+    const alreadySold=r.already_sold&&r.already_sold.toLowerCase()==='yes';
+    return{
+      user_id:CU.id,collection_type:CC,
+      player:r.player,team:r.team||null,sport:r.sport||null,
+      year:parseInt(r.year)||null,card_set:r.card_set||null,
+      card_number:r.card_number||null,variation:r.variation||null,
+      condition:condition,
+      status:alreadySold?'sold':(r.status||'in_collection'),
+      serial_number:r.serial_number||null,
+      auto_type:isAuto?'on-card':null,
+      grade_company:g.company,grade_number:g.number,
+      cost_paid:parseFloat(r.cost_paid)||0,
+      purchase_date:parseDate(r.purchase_date),
+      sale_price:alreadySold?(parseFloat(r.sold_price)||null):null,
+      sale_date:alreadySold?parseDate(r.sold_date):null,
+      platform_sold:alreadySold?'eBay':null,
+      notes:r.notes||null
+    };
+  });
+  
+  // Upload in batches of 50 to avoid timeouts
+  const BATCH=50;
+  let uploaded=0;
+  document.getElementById('upload-preview').innerHTML+=`<div id="upload-progress" style="margin-top:10px;color:var(--text2);font-size:.85rem">Uploading... 0/${ins.length}</div>`;
+  
+  for(let i=0;i<ins.length;i+=BATCH){
+    const batch=ins.slice(i,i+BATCH);
+    const{error}=await sb.from('cards').insert(batch);
+    if(error){showToast('Upload error on batch: '+error.message,'error');return;}
+    uploaded+=batch.length;
+    const prog=document.getElementById('upload-progress');
+    if(prog)prog.textContent='Uploading... '+uploaded+'/'+ins.length;
+  }
+  
+  showToast('✅ '+ins.length+' cards uploaded successfully!','success');
+  document.getElementById('upload-preview').innerHTML='';
+  document.getElementById('csv-upload').value='';
+  csvRows=[];
+}
+
+
+async function renderBoxes(){
+  let bq=sb.from('boxes').select('*').eq('user_id',CU.id);
+  if(CC==='business')bq=sb.from('boxes').select('*').eq('collection_type','business');
+  else bq=bq.eq('collection_type','personal');
+  const{data:boxes}=await bq.order('purchase_date',{ascending:false});
+  const totalCost=(boxes||[]).reduce((s,b)=>s+(b.price_paid||0),0);
+  const totalSold=(boxes||[]).reduce((s,b)=>s+(b.amount_sold||0),0);
+  const net=totalSold-totalCost;
+  document.getElementById('box-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total Boxes</div><div class="stat-value">${(boxes||[]).length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Spent</div><div class="stat-value">$${totalCost.toFixed(0)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Sold For</div><div class="stat-value">$${totalSold.toFixed(0)}</div></div>
+    <div class="stat-card ${net>=0?'green':'red'}"><div class="stat-label">Net</div><div class="stat-value ${net>=0?'positive':'negative'}">${net>=0?'+':''}$${net.toFixed(0)}</div></div>`;
+  if(!boxes?.length){document.getElementById('box-table').innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>No boxes tracked yet</div></div>`;return;}
+  let html=`<table><thead><tr><th>Box</th><th>Sport</th><th>Date</th><th>Paid</th><th>Cards</th><th>Sold For</th><th>Net</th><th>Notable Pulls</th><th></th></tr></thead><tbody>`;
+  boxes.forEach(b=>{const n=(b.amount_sold||0)-(b.price_paid||0);html+=`<tr><td><strong>${b.box_name||'—'}</strong></td><td>${b.sport||'—'}</td><td>${b.purchase_date||'—'}</td><td class="mono">$${(b.price_paid||0).toFixed(2)}</td><td>${b.cards_pulled||'—'}</td><td class="mono">$${(b.amount_sold||0).toFixed(2)}</td><td><span class="${n>=0?'pp':'pn'}">${n>=0?'+':''}$${n.toFixed(2)}</span></td><td style="font-size:.8rem;color:var(--text2);max-width:200px">${b.notes||'—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteBox('${b.id}')">Del</button></td></tr>`;});
+  document.getElementById('box-table').innerHTML=html+'</tbody></table>';
+}
+function openBoxModal(){['bx-name','bx-cost','bx-cards','bx-sold','bx-notes'].forEach(f=>document.getElementById(f).value='');document.getElementById('bx-date').value='';document.getElementById('box-modal').style.display='flex';}
+async function saveBox(){const{error}=await sb.from('boxes').insert({user_id:CU.id,collection_type:CC,box_name:document.getElementById('bx-name').value,sport:document.getElementById('bx-sport').value,purchase_date:document.getElementById('bx-date').value||null,price_paid:parseFloat(document.getElementById('bx-cost').value)||0,cards_pulled:parseInt(document.getElementById('bx-cards').value)||null,amount_sold:parseFloat(document.getElementById('bx-sold').value)||null,notes:document.getElementById('bx-notes').value||null});if(error){showToast('Error: '+error.message,'error');return;}showToast('Box added!','success');document.getElementById('box-modal').style.display='none';renderBoxes();}
+async function deleteBox(id){if(!confirm('Delete this box?'))return;await sb.from('boxes').delete().eq('id',id);showToast('Deleted','success');renderBoxes();}
+
+// ─── CLIENT-SIDE CARD CACHE ──────────────────────────────────────────────
+let cardCache=[];
+async function loadCardCache(){const{data}=await getQ();cardCache=data||[];return cardCache;}
+function filterCards(search,sport,status){
+  let cards=[...cardCache];
+  if(search){const s=search.toLowerCase().trim();cards=cards.filter(c=>[c.player,c.team,c.card_set,c.year+'',c.card_number,c.grade_company,c.serial_number,c.variation].filter(Boolean).join(' ').toLowerCase().includes(s));}
+  if(sport)cards=cards.filter(c=>c.sport===sport);
+  if(status)cards=cards.filter(c=>c.status===status);
+  return cards;
+}
+
+// ─── RESET COLLECTION ────────────────────────────────────────────────────
+async function resetCollection(){
+  const label=CC.charAt(0).toUpperCase()+CC.slice(1);
+  if(!confirm('Are you sure you want to DELETE ALL cards in your '+label+' collection? This cannot be undone.'))return;
+  if(!confirm('Second confirmation: permanently delete all '+label+' cards?'))return;
+  let query=sb.from('cards').delete();
+  if(CC==='business')query=query.eq('collection_type','business');
+  else query=query.eq('user_id',CU.id).eq('collection_type','personal');
+  const{error}=await query;
+  if(error){showToast('Error: '+error.message,'error');return;}
+  cardCache=[];
+  showToast('Collection reset! All '+label+' cards deleted.','success');
+}
+
+// ─── CARD DETAIL VIEW ────────────────────────────────────────────────────
+async function openCardDetail(id){
+  const c=cardCache.find(x=>x.id===id)||((await sb.from('cards').select('*').eq('id',id).single()).data);
+  if(!c)return;
+  const frontEl=document.getElementById('detail-front');
+  const backEl=document.getElementById('detail-back');
+  frontEl.innerHTML=c.photo_url?`<img src="${c.photo_url}" style="width:90px;height:126px;object-fit:cover;border-radius:6px">`:'🃏';
+  backEl.innerHTML=c.photo_back_url?`<img src="${c.photo_back_url}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:.7rem;text-align:center">No back photo</span>';
+  document.getElementById('detail-player').textContent=(c.player||'Unknown Card');
+  document.getElementById('detail-meta').textContent=`${c.year||''} ${c.card_set||''} ${c.card_number?'#'+c.card_number:''} · ${c.team||''} · ${c.sport||''}`;
+  document.getElementById('detail-status').innerHTML=`<span class="status-badge status-${c.status}">${(c.status||'').replace('_',' ')}</span>`;
+  const gradeText=c.grade_company?`${c.grade_company} ${c.grade_number||''} ${c.cert_number?'· Cert #'+c.cert_number:''}`:'Raw / Ungraded';
+  document.getElementById('detail-grade').innerHTML=`<span style="color:var(--text2)">Grade:</span> ${gradeText}`;
+  document.getElementById('detail-cost').textContent=`Paid: $${(c.cost_paid||0).toFixed(2)}`;
+  const saleBtn=document.getElementById('detail-sale-btn');
+  const gradeBtn=document.getElementById('detail-grade-btn');
+  const editBtn=document.getElementById('detail-edit-btn');
+  saleBtn.onclick=()=>{document.getElementById('card-detail-modal').style.display='none';openSaleModal(c.id,c.cost_paid||0,`${c.player||''} ${c.year||''} ${c.card_set||''}`);};
+  gradeBtn.onclick=()=>{document.getElementById('card-detail-modal').style.display='none';openGradeModal(c.id,`${c.player||''} ${c.year||''} ${c.card_set||''}`);};
+  editBtn.onclick=()=>{document.getElementById('card-detail-modal').style.display='none';editCard(c.id);};
+  if(c.status==='sold')saleBtn.disabled=true;
+  document.getElementById('card-detail-modal').style.display='flex';
+}
+
+// ─── GRADE MODAL ─────────────────────────────────────────────────────────
+let gradeCardId=null;
+function openGradeModal(id,name){
+  gradeCardId=id;
+  document.getElementById('grade-card-name').textContent=name;
+  ['g-grade','g-cert','g-fee'].forEach(f=>document.getElementById(f).value='');
+  ['g-sent','g-returned'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('grade-modal').style.display='flex';
+}
+async function saveGrade(){
+  const fee=parseFloat(document.getElementById('g-fee').value)||0;
+  const{error}=await sb.from('cards').update({
+    grade_company:document.getElementById('g-company').value,
+    grade_number:document.getElementById('g-grade').value,
+    cert_number:document.getElementById('g-cert').value||null,
+    grading_fee:fee,
+    status:'in_collection',
+    condition:'Graded'
+  }).eq('id',gradeCardId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Grade recorded!','success');
+  document.getElementById('grade-modal').style.display='none';
+  await loadCardCache();
+  renderCol();
+}
+
+// ─── TRANSACTION MODAL ───────────────────────────────────────────────────
+let txnSelectedId=null;
+async function openTransactionModal(){
+  txnSelectedId=null;
+  document.getElementById('txn-sale-btn').disabled=true;
+  document.getElementById('txn-grade-btn').disabled=true;
+  document.getElementById('txn-search').value='';
+  await loadCardCache();
+  renderTxnCards('');
+  document.getElementById('txn-modal').style.display='flex';
+}
+function filterTxnCards(){renderTxnCards(document.getElementById('txn-search').value);}
+function renderTxnCards(search){
+  const s=search.toLowerCase().trim();
+  let cards=cardCache.filter(c=>c.status!=='sold');
+  if(s)cards=cards.filter(c=>[c.player,c.team,c.card_set,c.year+''].filter(Boolean).join(' ').toLowerCase().includes(s));
+  cards=cards.slice(0,30);
+  const list=document.getElementById('txn-card-list');
+  if(!cards.length){list.innerHTML='<div style="padding:16px;color:var(--text2);font-size:.85rem;text-align:center">No cards found</div>';return;}
+  list.innerHTML=cards.map(c=>`
+    <div class="sell-row" style="padding:9px 12px;cursor:pointer;${txnSelectedId===c.id?'background:rgba(26,111,212,.15)':''}" onclick="selectTxnCard('${c.id}')">
+      <div style="flex:1"><strong>${c.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${c.year||''} ${c.card_set||''}</span></div>
+      <span class="status-badge status-${c.status}" style="margin-right:8px">${(c.status||'').replace('_',' ')}</span>
+      ${txnSelectedId===c.id?'<span style="color:var(--accent)">✓</span>':''}
+    </div>`).join('');
+}
+function selectTxnCard(id){
+  txnSelectedId=id;
+  document.getElementById('txn-sale-btn').disabled=false;
+  document.getElementById('txn-grade-btn').disabled=false;
+  filterTxnCards();
+}
+function proceedTxn(type){
+  if(!txnSelectedId){showToast('Select a card first','error');return;}
+  const c=cardCache.find(x=>x.id===txnSelectedId);
+  if(!c)return;
+  document.getElementById('txn-modal').style.display='none';
+  if(type==='sale')openSaleModal(c.id,c.cost_paid||0,`${c.player||''} ${c.year||''} ${c.card_set||''}`);
+  else openGradeModal(c.id,`${c.player||''} ${c.year||''} ${c.card_set||''}`);
+}
+
+async function cancelSale(id, playerName){
+  if(!confirm('Cancel sale for '+playerName+'? This will move the card back to your collection and clear all sale data.'))return;
+  const{error}=await sb.from('cards').update({
+    status:'in_collection',
+    sale_price:null,platform_fees:null,shipping_cost:null,
+    ad_fee:null,sales_tax:null,net_profit:null,
+    sale_date:null,platform_sold:null
+  }).eq('id',id);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Sale cancelled — card moved back to collection','success');
+  await loadCardCache();
+  renderSales();
+}
+
+let editSaleId=null;
+function openEditSaleModal(id,price,fees,ship,date){
+  editSaleId=id;
+  document.getElementById('es-price').value=price;
+  document.getElementById('es-fees').value=fees;
+  document.getElementById('es-ship').value=ship;
+  document.getElementById('es-date').value=date;
+  document.getElementById('edit-sale-modal').style.display='flex';
+}
+async function saveEditSale(){
+  const price=parseFloat(document.getElementById('es-price').value)||0;
+  const fees=parseFloat(document.getElementById('es-fees').value)||0;
+  const ship=parseFloat(document.getElementById('es-ship').value)||0;
+  const card=cardCache.find(c=>c.id===editSaleId);
+  const net=price-(card?.cost_paid||0)-fees-ship;
+  const{error}=await sb.from('cards').update({sale_price:price,platform_fees:fees,shipping_cost:ship,net_profit:net,sale_date:document.getElementById('es-date').value||null}).eq('id',editSaleId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Sale updated!','success');
+  document.getElementById('edit-sale-modal').style.display='none';
+  await loadCardCache();renderSales();
+}
+
+let editNoteId=null;
+async function editNoteModal(id){
+  const{data:n}=await sb.from('research_notes').select('*').eq('id',id).single();
+  if(!n)return;
+  editNoteId=id;
+  document.getElementById('en-title').value=n.title||'';
+  document.getElementById('en-sport').value=n.sport||'';
+  document.getElementById('en-tags').value=n.tags||'';
+  document.getElementById('en-body').value=n.content||'';
+  document.getElementById('edit-note-modal').style.display='flex';
+}
+async function saveEditNote(){
+  const{error}=await sb.from('research_notes').update({title:document.getElementById('en-title').value,sport:document.getElementById('en-sport').value,tags:document.getElementById('en-tags').value,content:document.getElementById('en-body').value}).eq('id',editNoteId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Note updated!','success');
+  document.getElementById('edit-note-modal').style.display='none';renderResearch();
+}
+
+async function renderCosts(){
+  const{data:costs}=await sb.from('daily_costs').select('*').eq('user_id',CU.id).order('date',{ascending:false});
+  const yr=new Date().getFullYear();
+  const thisYear=(costs||[]).filter(c=>c.date&&new Date(c.date).getFullYear()===yr);
+  const total=(costs||[]).reduce((s,c)=>s+(c.amount||0),0);
+  const totalYr=thisYear.reduce((s,c)=>s+(c.amount||0),0);
+  document.getElementById('cost-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">All Time Costs</div><div class="stat-value red">$${total.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="stat-label">${yr} Costs</div><div class="stat-value red">$${totalYr.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="stat-label">Entries</div><div class="stat-value">${(costs||[]).length}</div></div>`;
+  if(!costs?.length){document.getElementById('cost-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🧾</div><div>No costs added yet</div></div>`;return;}
+  let html=`<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th></th></tr></thead><tbody>`;
+  costs.forEach(c=>{html+=`<tr><td>${c.date||'—'}</td><td>${c.description||'—'}</td><td>${c.category||'—'}</td><td class="mono" style="color:var(--accent2)">$${(c.amount||0).toFixed(2)}</td><td><button class="btn btn-danger btn-sm" onclick="deleteCost('${c.id}')">Del</button></td></tr>`;});
+  document.getElementById('cost-table').innerHTML=html+'</tbody></table>';
+}
+function openCostModal(){
+  ['co-desc','co-amount'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('co-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('cost-modal').style.display='flex';
+}
+async function saveCost(){
+  const{error}=await sb.from('daily_costs').insert({user_id:CU.id,description:document.getElementById('co-desc').value,amount:parseFloat(document.getElementById('co-amount').value)||0,date:document.getElementById('co-date').value,category:document.getElementById('co-cat').value});
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Cost added!','success');document.getElementById('cost-modal').style.display='none';renderCosts();
+}
+async function deleteCost(id){if(!confirm('Delete this entry?'))return;await sb.from('daily_costs').delete().eq('id',id);showToast('Deleted','success');renderCosts();}
+
+function toggleSelectAll(cb){
+  document.querySelectorAll('.card-select-cb').forEach(x=>x.checked=cb.checked);
+  updateMassBar();
+}
+function updateMassBar(){
+  const sel=document.querySelectorAll('.card-select-cb:checked');
+  const bar=document.getElementById('mass-update-bar');
+  const cnt=document.getElementById('mass-select-count');
+  if(bar){bar.style.display=sel.length?'flex':'none';}
+  if(cnt)cnt.textContent=sel.length+' selected';
+}
+function clearSelection(){
+  document.querySelectorAll('.card-select-cb').forEach(x=>x.checked=false);
+  const sa=document.getElementById('select-all-cards');if(sa)sa.checked=false;
+  updateMassBar();
+}
+document.addEventListener('change',e=>{
+  if(e.target.classList.contains('card-select-cb'))updateMassBar();
+  if(e.target.id==='mass-field'){
+    const v=e.target.value;
+    const loc=document.getElementById('mass-location');
+    const stat=document.getElementById('mass-status');
+    if(loc)loc.style.display=v==='location'?'block':'none';
+    if(stat)stat.style.display=v==='status'?'block':'none';
+  }
+});
+async function applyMassUpdate(){
+  const field=document.getElementById('mass-field')?.value;
+  if(!field){showToast('Choose a field to update','error');return;}
+  const ids=Array.from(document.querySelectorAll('.card-select-cb:checked')).map(x=>x.dataset.id);
+  if(!ids.length){showToast('No cards selected','error');return;}
+  let value='';
+  if(field==='location')value=document.getElementById('mass-location')?.value||'';
+  if(field==='status')value=document.getElementById('mass-status')?.value||'';
+  if(!value){showToast('Choose a value','error');return;}
+  const{error}=await sb.from('cards').update({[field]:value}).in('id',ids);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Updated '+ids.length+' cards!','success');
+  await loadCardCache();clearSelection();renderCol();
+}
+
+// ─── BUY RANKINGS ─────────────────────────────────────────────────────────
+async function renderRankings(){
+  const{data:items}=await sb.from('buy_rankings').select('*').order('created_at',{ascending:false});
+  if(!items?.length){document.getElementById('rankings-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>No cards being tracked yet. Add cards you want to buy at the right price.</div></div>`;return;}
+  let html=`<div class="table-container"><table><thead><tr><th>Card</th><th>Sport</th><th>Strike Price</th><th>Target Sell</th><th>Market Price</th><th>Margin</th><th>Signal</th><th></th></tr></thead><tbody>`;
+  items.forEach(r=>{
+    const margin=r.target_sell&&r.strike_price?((r.target_sell-r.strike_price)/r.strike_price*100):0;
+    const isBuy=r.market_price&&r.strike_price&&r.market_price<=r.strike_price;
+    const isClose=r.market_price&&r.strike_price&&r.market_price<=r.strike_price*1.1;
+    const signal=isBuy?'<span style="background:rgba(46,204,113,.2);color:var(--success);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">🟢 BUY NOW</span>':isClose?'<span style="background:rgba(245,166,35,.2);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">🟡 GETTING CLOSE</span>':'<span style="background:rgba(136,136,170,.15);color:var(--text2);padding:3px 10px;border-radius:20px;font-size:.75rem">⚪ WAIT</span>';
+    html+=`<tr><td><strong>${r.card_name||'—'}</strong><br><span style="font-size:.75rem;color:var(--text2)">${r.notes||''}</span></td><td>${r.sport||'—'}</td><td class="mono">$${(r.strike_price||0).toFixed(2)}</td><td class="mono">$${(r.target_sell||0).toFixed(2)}</td>
+    <td><input type="number" step="0.01" value="${r.market_price||''}" placeholder="0.00" style="width:85px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:.82rem" onchange="updateRankingMarket('${r.id}',this.value)"></td>
+    <td class="mono" style="color:${margin>=20?'var(--success)':'var(--text2)'}">${margin.toFixed(1)}%</td>
+    <td>${signal}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteRanking('${r.id}')">Del</button></td></tr>`;
+  });
+  document.getElementById('rankings-table').innerHTML=html+'</tbody></table></div>';
+}
+function openRankingModal(){['rk-name','rk-strike','rk-target','rk-market','rk-notes'].forEach(f=>document.getElementById(f).value='');document.getElementById('ranking-modal').style.display='flex';}
+async function saveRanking(){const{error}=await sb.from('buy_rankings').insert({card_name:document.getElementById('rk-name').value,sport:document.getElementById('rk-sport').value,strike_price:parseFloat(document.getElementById('rk-strike').value)||null,target_sell:parseFloat(document.getElementById('rk-target').value)||null,market_price:parseFloat(document.getElementById('rk-market').value)||null,notes:document.getElementById('rk-notes').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added to watch list!','success');document.getElementById('ranking-modal').style.display='none';renderRankings();}
+async function updateRankingMarket(id,val){await sb.from('buy_rankings').update({market_price:parseFloat(val)||null}).eq('id',id);renderRankings();}
+async function deleteRanking(id){if(!confirm('Remove?'))return;await sb.from('buy_rankings').delete().eq('id',id);renderRankings();}
+
+// ─── RESEARCH + LISTING TOOL ──────────────────────────────────────────────
+let researchCardId=null;
+let researchCardCost=0;
+function openResearchTool(id){
+  const c=cardCache.find(x=>x.id===id);
+  if(!c)return;
+  researchCardId=id;researchCardCost=c.cost_paid||0;
+  const name=[c.player,c.year,c.card_set,c.card_number,c.grade_company,c.grade_number].filter(Boolean).join(' ');
+  document.getElementById('research-card-name').textContent=name;
+  const q=encodeURIComponent(name);
+  document.getElementById('ebay-sold-link').href='https://www.ebay.com/sch/i.html?_nkw='+q+'&LH_Complete=1&LH_Sold=1';
+  const title=encodeURIComponent(name.slice(0,80));
+  const sc=researchCardCost<20?150:0;
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+title+'&shippingcost='+sc;
+  const hist=document.getElementById('market-price-history');
+  if(c.market_price){hist.innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');}
+  else hist.textContent='No market price recorded yet';
+  document.getElementById('market-price-input').value='';
+  document.getElementById('listing-price').value='';
+  document.getElementById('listing-calc').innerHTML='';
+  document.getElementById('research-modal').style.display='flex';
+}
+function calcListingProfit(){
+  const price=parseFloat(document.getElementById('listing-price').value)||0;
+  if(!price){document.getElementById('listing-calc').innerHTML='';return;}
+  const ebayFee=price*0.1325;
+  const shipping=researchCardCost<20?1.50:0;
+  const net=price-ebayFee-shipping-researchCardCost;
+  document.getElementById('listing-calc').innerHTML=`<div style="display:flex;flex-direction:column;gap:4px;font-size:.83rem">
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">eBay Fee (13.25%)</span><span class="mono">− $${ebayFee.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Shipping ${researchCardCost<20?'($1.50 flat)':'(buyer pays)'}</span><span class="mono">− $${shipping.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Cost Basis</span><span class="mono">− $${researchCardCost.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:2px"><span>Your Net Profit</span><span class="mono" style="color:${net>=0?'var(--success)':'var(--accent2)'}">${net>=0?'+':''}$${net.toFixed(2)}</span></div>
+  </div>`;
+  const sc=researchCardCost<20?150:0;
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2);
+}
+async function saveMarketPrice(){
+  const price=parseFloat(document.getElementById('market-price-input').value)||0;
+  if(!price||!researchCardId){showToast('Enter a price first','error');return;}
+  const today=new Date().toISOString().split('T')[0];
+  const{error}=await sb.from('cards').update({market_price:price,market_price_date:today}).eq('id',researchCardId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Market price saved!','success');
+  await loadCardCache();
+  document.getElementById('market-price-history').innerHTML='Last recorded: <strong style="color:var(--accent)">$'+price.toFixed(2)+'</strong> on '+today;
+}
+
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
 </body>
 </html>
