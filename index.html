@@ -840,16 +840,12 @@ function clearGalleryFilters(){
 // ─── PREV/NEXT CARD NAVIGATION ────────────────────────────────────────────
 let navCardIds=[];
 let navCurrentIdx=0;
-async function editCard(id){
-  navCardIds=cardCache.length?cardCache.map(c=>c.id):[id];
-  navCurrentIdx=navCardIds.indexOf(id);
-  await populateCardModal(id);
-}
+
 async function navigateCard(dir){
   const newIdx=navCurrentIdx+dir;
   if(newIdx<0||newIdx>=navCardIds.length)return;
   navCurrentIdx=newIdx;
-  await populateCardModal(navCardIds[newIdx]);
+  await editCard(navCardIds[newIdx]);
 }
 async function populateCardModal(id){
   const c=cardCache.find(x=>x.id===id)||(await sb.from('cards').select('*').eq('id',id).single()).data;
@@ -1099,18 +1095,23 @@ function openCardModal(){EID=null;document.getElementById('card-modal-title').te
 function closeCardModal(){document.getElementById('card-modal').style.display='none';}
 
 async function editCard(id){
+  // Set up prev/next nav from current filtered card list
+  navCardIds=cardCache.length?cardCache.map(c=>c.id):[id];
+  navCurrentIdx=navCardIds.indexOf(id);
+  const navBtns=document.getElementById('card-nav-btns');
+  const navPos=document.getElementById('card-nav-pos');
+  if(navBtns)navBtns.style.display=navCardIds.length>1?'flex':'none';
+  if(navPos)navPos.textContent=(navCurrentIdx+1)+' / '+navCardIds.length;
   const{data:c}=await sb.from('cards').select('*').eq('id',id).single();if(!c)return;
   EID=id;document.getElementById('card-modal-title').textContent='Edit Card';
   document.getElementById('f-player').value=c.player||'';document.getElementById('f-team').value=c.team||'';document.getElementById('f-sport').value=c.sport||'Baseball';document.getElementById('f-year').value=c.year||'';document.getElementById('f-set').value=c.card_set||'';document.getElementById('f-cardnum').value=c.card_number||'';document.getElementById('f-condition').value=c.condition||'Raw - Mint';document.getElementById('f-status').value=c.status||'in_collection';document.getElementById('f-serial').value=c.serial_number||'';document.getElementById('f-auto').value=c.auto_type||'';document.getElementById('f-relic').value=c.relic_type||'';document.getElementById('f-grade-co').value=c.grade_company||'';document.getElementById('f-grade-num').value=c.grade_number||'';document.getElementById('f-cert').value=c.cert_number||'';document.getElementById('f-cost').value=c.cost_paid||'';document.getElementById('f-buydate').value=c.purchase_date||'';document.getElementById('f-buyfrom').value=c.purchased_from||'';document.getElementById('f-variation').value=c.variation||'';document.getElementById('f-notes').value=c.notes||'';
   const locElE=document.getElementById('f-location');if(locElE)locElE.value=c.location||'';
   const askElE=document.getElementById('f-asking');if(askElE)askElE.value=c.asking_price||'';
   const listElE=document.getElementById('f-listed-date');if(listElE)listElE.value=c.listed_date||'';
-  // Clear file inputs so previous selection doesn't carry over
   document.getElementById('f-photo').value='';
   document.getElementById('f-photo-back').value='';
-  // Show only THIS card's saved photos
-  const prevFront = document.getElementById('photo-preview');
-  const prevBack = document.getElementById('photo-preview-back');
+  const prevFront=document.getElementById('photo-preview');
+  const prevBack=document.getElementById('photo-preview-back');
   if(c.photo_url){prevFront.src=c.photo_url;prevFront.style.display='block';}
   else{prevFront.src='';prevFront.style.display='none';}
   if(c.photo_back_url){prevBack.src=c.photo_back_url;prevBack.style.display='block';}
