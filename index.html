@@ -453,6 +453,14 @@ select option{background:var(--surface2);}
           <strong style="color:var(--text)">Business vs Personal:</strong> The Business / Mine toggle in the sidebar controls which collection is shown. Andrew will see the shared Business collection and his own Personal — same as you.
         </div>
       </div>
+
+      <!-- Photo Migration -->
+      <div class="admin-section">
+        <h3>Photo Migration</h3>
+        <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px;line-height:1.6">Moves all existing card photos from the database to Cloudinary. Run this once — it's safe to re-run if it gets interrupted. Cards with no photos are skipped automatically.</p>
+        <div id="migration-status" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px;font-size:.83rem;font-family:'DM Mono',monospace;max-height:200px;overflow-y:auto;line-height:1.8"></div>
+        <button class="btn btn-primary" onclick="runPhotoMigration()" id="migrate-btn">🚀 Migrate Photos to Cloudinary</button>
+      </div>
     </div>
   </div>
 </div>
@@ -922,7 +930,11 @@ function switchCollection(t){
   if(ap)showPage(ap);
 }
 function setView(v){VIEW=v;document.getElementById('vbtn-list').classList.toggle('active',v==='list');document.getElementById('vbtn-gallery').classList.toggle('active',v==='gallery');document.getElementById('col-list-wrap').style.display=v==='list'?'block':'none';document.getElementById('col-gallery-wrap').style.display=v==='gallery'?'block':'none';if(v==='gallery')renderGallery();else renderCol();}
-function getQ(){if(CC==='business')return sb.from('cards').select('*').eq('collection_type','business');return sb.from('cards').select('*').eq('user_id',CU.id).eq('collection_type','personal');}
+function getQ(includingPhotos=false){
+  const cols=includingPhotos?'*':'id,player,team,sport,year,card_set,card_number,condition,status,serial_number,auto_type,relic_type,grade_company,grade_number,cert_number,cost_paid,purchase_date,purchased_from,variation,notes,location,asking_price,listed_date,sale_price,sales_tax,platform_fees,shipping_cost,ad_fee,net_profit,sale_date,platform_sold,collection_type,user_id,market_price,market_price_date,created_at,photo_url,photo_back_url';
+  if(CC==='business')return sb.from('cards').select(cols).eq('collection_type','business');
+  return sb.from('cards').select(cols).eq('user_id',CU.id).eq('collection_type','personal');
+}
 
 async function loadDash(){
   const{data:cards}=await getQ();const{data:rel}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');const{data:intel}=await sb.from('buying_calendar').select('*').eq('user_id',CU.id);
@@ -1102,7 +1114,7 @@ async function editCard(id){
   const navPos=document.getElementById('card-nav-pos');
   if(navBtns)navBtns.style.display=navCardIds.length>1?'flex':'none';
   if(navPos)navPos.textContent=(navCurrentIdx+1)+' / '+navCardIds.length;
-  const{data:c}=await sb.from('cards').select('*').eq('id',id).single();if(!c)return;
+  const{data:c}=await sb.from('cards').select('*').eq('id',id).single();if(!c)return;// fetch full row including photos
   EID=id;document.getElementById('card-modal-title').textContent='Edit Card';
   document.getElementById('f-player').value=c.player||'';document.getElementById('f-team').value=c.team||'';document.getElementById('f-sport').value=c.sport||'Baseball';document.getElementById('f-year').value=c.year||'';document.getElementById('f-set').value=c.card_set||'';document.getElementById('f-cardnum').value=c.card_number||'';document.getElementById('f-condition').value=c.condition||'Raw - Mint';document.getElementById('f-status').value=c.status||'in_collection';document.getElementById('f-serial').value=c.serial_number||'';document.getElementById('f-auto').value=c.auto_type||'';document.getElementById('f-relic').value=c.relic_type||'';document.getElementById('f-grade-co').value=c.grade_company||'';document.getElementById('f-grade-num').value=c.grade_number||'';document.getElementById('f-cert').value=c.cert_number||'';document.getElementById('f-cost').value=c.cost_paid||'';document.getElementById('f-buydate').value=c.purchase_date||'';document.getElementById('f-buyfrom').value=c.purchased_from||'';document.getElementById('f-variation').value=c.variation||'';document.getElementById('f-notes').value=c.notes||'';
   const locElE=document.getElementById('f-location');if(locElE)locElE.value=c.location||'';
@@ -1119,41 +1131,29 @@ async function editCard(id){
   document.getElementById('card-modal').style.display='flex';
 }
 
+// ─── CLOUDINARY CONFIG ───────────────────────────────────────────────────────
+const CLD_CLOUD = 'dbcmwpscq';
+const CLD_PRESET = 'Test1223';
+
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLD_PRESET);
+  fd.append('folder', 'starting-five');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`, {method:'POST',body:fd});
+  if (!res.ok) throw new Error('Cloudinary upload failed');
+  const data = await res.json();
+  return data.secure_url;
+}
+
 async function saveCard(){
-  // Convert photos to base64 for reliable storage
   let photoUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_url || null) : null;
   let photoBackUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_back_url || null) : null;
 
-  async function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-  async function resizeAndEncode(file) {
-    const base64 = await toBase64(file);
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 600;
-        let w = img.width, h = img.height;
-        if (w > h && w > maxDim) { h = h * maxDim / w; w = maxDim; }
-        else if (h > maxDim) { w = w * maxDim / h; h = maxDim; }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.75));
-      };
-      img.src = base64;
-    });
-  }
-
   const pf = document.getElementById('f-photo').files[0];
-  if (pf) { try { photoUrl = await resizeAndEncode(pf); } catch(e) { console.error('Photo error:', e); } }
+  if (pf) { try { showToast('Uploading front photo...','success'); photoUrl = await uploadToCloudinary(pf); } catch(e) { showToast('Photo upload failed: '+e.message,'error'); return; } }
   const pb = document.getElementById('f-photo-back').files[0];
-  if (pb) { try { photoBackUrl = await resizeAndEncode(pb); } catch(e) { console.error('Back photo error:', e); } }
+  if (pb) { try { showToast('Uploading back photo...','success'); photoBackUrl = await uploadToCloudinary(pb); } catch(e) { showToast('Back photo upload failed: '+e.message,'error'); return; } }
   const p={user_id:CU.id,collection_type:CC,player:document.getElementById('f-player').value,team:document.getElementById('f-team').value,sport:document.getElementById('f-sport').value,year:parseInt(document.getElementById('f-year').value)||null,card_set:document.getElementById('f-set').value,card_number:document.getElementById('f-cardnum').value,condition:document.getElementById('f-condition').value,status:document.getElementById('f-status').value,serial_number:document.getElementById('f-serial').value||null,auto_type:document.getElementById('f-auto').value||null,relic_type:document.getElementById('f-relic').value||null,grade_company:document.getElementById('f-grade-co').value||null,grade_number:document.getElementById('f-grade-num').value||null,cert_number:document.getElementById('f-cert').value||null,cost_paid:parseFloat(document.getElementById('f-cost').value)||0,purchase_date:document.getElementById('f-buydate').value||null,purchased_from:document.getElementById('f-buyfrom').value||null,variation:document.getElementById('f-variation').value||null,location:document.getElementById('f-location')?.value||null,asking_price:parseFloat(document.getElementById('f-asking')?.value)||null,listed_date:document.getElementById('f-listed-date')?.value||null,notes:document.getElementById('f-notes').value||null};
   p.photo_url=photoUrl;
   p.photo_back_url=photoBackUrl;
@@ -1740,6 +1740,47 @@ async function saveMarketPrice(){
   showToast('Market price saved!','success');
   await loadCardCache();
   document.getElementById('market-price-history').innerHTML='Last recorded: <strong style="color:var(--accent)">$'+price.toFixed(2)+'</strong> on '+today;
+}
+
+// ─── PHOTO MIGRATION ──────────────────────────────────────────────────────────
+async function runPhotoMigration(){
+  const btn=document.getElementById('migrate-btn');
+  const status=document.getElementById('migration-status');
+  btn.disabled=true;btn.textContent='Migrating...';
+  status.style.display='block';status.innerHTML='';
+  const log=(msg)=>{status.innerHTML+=msg+'<br>';status.scrollTop=status.scrollHeight;};
+  log('Fetching all cards with base64 photos...');
+  const{data:cards,error}=await sb.from('cards').select('id,player,photo_url,photo_back_url').or('photo_url.like.data:%,photo_back_url.like.data:%');
+  if(error){log('❌ Error fetching cards: '+error.message);btn.disabled=false;btn.textContent='🚀 Migrate Photos to Cloudinary';return;}
+  if(!cards||!cards.length){log('✅ No base64 photos found — already migrated or no photos exist.');btn.disabled=false;btn.textContent='✅ Already Done';return;}
+  log(`Found ${cards.length} cards with base64 photos. Starting migration...`);
+  let done=0,failed=0;
+  for(const card of cards){
+    const updates={};
+    try{
+      if(card.photo_url&&card.photo_url.startsWith('data:')){
+        const blob=await(await fetch(card.photo_url)).blob();
+        const file=new File([blob],'front.jpg',{type:'image/jpeg'});
+        updates.photo_url=await uploadToCloudinary(file);
+      }
+      if(card.photo_back_url&&card.photo_back_url.startsWith('data:')){
+        const blob=await(await fetch(card.photo_back_url)).blob();
+        const file=new File([blob],'back.jpg',{type:'image/jpeg'});
+        updates.photo_back_url=await uploadToCloudinary(file);
+      }
+      if(Object.keys(updates).length){
+        await sb.from('cards').update(updates).eq('id',card.id);
+        done++;
+        log(`✅ ${card.player||card.id} — migrated`);
+      }
+    }catch(e){
+      failed++;
+      log(`❌ ${card.player||card.id} — failed: ${e.message}`);
+    }
+  }
+  log(`<strong>Done. ${done} migrated, ${failed} failed.</strong>`);
+  btn.textContent='✅ Migration Complete';
+  await loadCardCache();
 }
 
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500);}
