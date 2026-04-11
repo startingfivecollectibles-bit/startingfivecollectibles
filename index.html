@@ -773,6 +773,23 @@ sb.auth.onAuthStateChange(async(ev,session)=>{
   if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage(currentPage||'dashboard');}
   else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
 });
+
+// Pick up magic link token from URL hash
+(async()=>{
+  const hash=window.location.hash;
+  if(hash&&hash.includes('access_token')){
+    const params=new URLSearchParams(hash.replace('#',''));
+    const access_token=params.get('access_token');
+    const refresh_token=params.get('refresh_token');
+    if(access_token){
+      const{error}=await sb.auth.setSession({access_token,refresh_token});
+      if(!error)window.history.replaceState(null,'',window.location.pathname);
+    }
+  } else {
+    const{data:{session}}=await sb.auth.getSession();
+    if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage('dashboard');}
+  }
+})();
 async function signIn(){
   const email=document.getElementById('login-email').value.trim();
   const btn=document.getElementById('login-btn');
