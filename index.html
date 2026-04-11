@@ -202,18 +202,27 @@ select option{background:var(--surface2);}
     </div>
     <!-- Login form -->
     <div id="auth-error" style="display:none;background:rgba(232,57,74,.12);border:1px solid rgba(232,57,74,.35);border-radius:6px;padding:10px 13px;margin-bottom:14px;font-size:.83rem;color:#e8394a;text-align:left"></div>
-    <div id="auth-success" style="display:none;background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.35);border-radius:6px;padding:14px 13px;margin-bottom:14px;font-size:.86rem;color:var(--success);text-align:left;line-height:1.6"></div>
     <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
       <div>
         <label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:block;margin-bottom:6px">Email</label>
         <input id="login-email" type="email" autocomplete="email" placeholder="you@example.com"
           style="width:100%;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.9rem"
-          onkeydown="if(event.key==='Enter')signIn()">
+          onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+      </div>
+      <div>
+        <label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:block;margin-bottom:6px">Password</label>
+        <div style="position:relative">
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••"
+            style="width:100%;padding:11px 40px 11px 13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.9rem"
+            onkeydown="if(event.key==='Enter')signIn()">
+          <button type="button" onclick="togglePassword()"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 4px;line-height:1"
+            title="Show/hide password" id="pw-toggle">&#128065;</button>
+        </div>
       </div>
       <button id="login-btn" class="btn-google" onclick="signIn()" style="margin-top:4px;justify-content:center">
-        Send Magic Link
+        Sign In
       </button>
-      <p style="text-align:center;font-size:.75rem;color:var(--text2);margin-top:2px">We'll email you a link — no password needed.</p>
     </div>
   </div>
 </div>
@@ -792,21 +801,18 @@ sb.auth.onAuthStateChange(async(ev,session)=>{
 })();
 async function signIn(){
   const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
   const btn=document.getElementById('login-btn');
   const errBox=document.getElementById('auth-error');
-  const okBox=document.getElementById('auth-success');
-  if(!email){showAuthError('Please enter your email.');return;}
-  btn.disabled=true;btn.textContent='Sending…';
-  errBox.style.display='none';okBox.style.display='none';
-  const{error}=await sb.auth.signInWithOtp({
-    email,
-    options:{emailRedirectTo:window.location.href}
-  });
-  btn.disabled=false;btn.textContent='Send Magic Link';
+  if(!email||!password){showAuthError('Please enter your email and password.');return;}
+  btn.disabled=true;btn.textContent='Signing in…';
+  errBox.style.display='none';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  btn.disabled=false;btn.textContent='Sign In';
   if(error){showAuthError(error.message);}
-  else{okBox.innerHTML='✅ Check your email for a login link.<br><span style="font-size:.78rem;opacity:.8">Click the link in the email and you'll be signed in automatically.</span>';okBox.style.display='block';}
 }
 function showAuthError(msg){const e=document.getElementById('auth-error');e.textContent=msg;e.style.display='block';}
+function togglePassword(){const i=document.getElementById('login-password');const b=document.getElementById('pw-toggle');if(i.type==='password'){i.type='text';b.style.opacity='1';}else{i.type='password';b.style.opacity='.45';}}
 async function signOut(){await sb.auth.signOut();}
 
 let currentPage='dashboard';
