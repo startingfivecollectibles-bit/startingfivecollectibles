@@ -280,7 +280,7 @@ select option{background:var(--surface2);}
             <button class="view-btn active" id="vbtn-list" onclick="setView('list')">☰ List</button>
             <button class="view-btn" id="vbtn-gallery" onclick="setView('gallery')">⊞ Gallery</button>
           </div>
-          <button class="btn btn-secondary" onclick="openTransactionModal()">⚡ Record Transaction</button><button class="btn btn-primary" onclick="openCardModal()">+ Add Card</button>
+          <button class="btn btn-secondary" onclick="openTransactionModal()">⚡ Record Transaction</button><button class="btn btn-secondary" onclick="openBulkGradeModal()">🏆 Bulk Grade</button><button class="btn btn-primary" onclick="openCardModal()">+ Add Card</button>
         </div>
       </div>
       <div id="col-list-wrap">
@@ -484,13 +484,13 @@ select option{background:var(--surface2);}
       <div class="form-group"><label>Set</label><input id="f-set" placeholder="e.g. Topps Chrome"></div>
       <div class="form-group"><label>Card #</label><input id="f-cardnum" placeholder="e.g. 150"></div>
       <div class="form-group"><label>Condition</label><select id="f-condition"><option>Raw - Mint</option><option>Raw - Near Mint</option><option>Raw - Excellent</option><option>Raw - Good</option><option>Raw - Poor</option><option>Graded</option></select></div>
-      <div class="form-group"><label>Status</label><select id="f-status"><option value="in_collection">In Collection</option><option value="listed">Listed for Sale</option><option value="being_graded">Currently Being Graded</option><option value="sold">Sold</option></select></div>
+      <div class="form-group"><label>Status</label><select id="f-status"><option value="in_collection">In Collection</option><option value="listed">Listed for Sale</option><option value="being_graded">Currently Being Graded</option><option value="psa_vault">In PSA Vault</option><option value="sold">Sold</option></select></div>
       <hr class="section-divider"><div class="section-label">Serial Number &amp; Auto</div>
       <div class="form-group"><label>Serial Number (e.g. 45/99)</label><input id="f-serial" placeholder="e.g. 45/99"></div>
       <div class="form-group"><label>Autograph?</label><select id="f-auto"><option value="">No Auto</option><option value="on-card">On-Card Auto</option><option value="sticker">Sticker Auto</option><option value="inscribed">Inscribed Auto</option><option value="cut">Cut Auto</option><option value="other">Other Auto</option></select></div><div class="form-group"><label>Relic / Memorabilia?</label><select id="f-relic"><option value="">No Relic</option><option value="jersey">Jersey</option><option value="patch">Patch</option><option value="bat">Bat</option><option value="shoe">Shoe</option><option value="ball">Ball</option><option value="other">Other Relic</option></select></div>
       <hr class="section-divider"><div class="section-label">Grading</div>
-      <div class="form-group"><label>Grade Company</label><select id="f-grade-co"><option value="">None / Raw</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option><option>Other</option></select></div>
-      <div class="form-group"><label>Grade</label><input id="f-grade-num" placeholder="e.g. 9.5"></div>
+      <div class="form-group"><label>Grade Company</label><select id="f-grade-co" onchange="updateEditGradeOptions()"><option value="">None / Raw</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grade</label><select id="f-grade-num"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
       <div class="form-group full"><label>Cert #</label><input id="f-cert" placeholder="Certification number"></div>
       <hr class="section-divider"><div class="section-label">Listing Details</div><div class="form-group"><label>Asking Price ($)</label><input id="f-asking" type="number" step="0.01" placeholder="0.00"></div><div class="form-group"><label>Date Listed</label><input id="f-listed-date" type="date"></div><hr class="section-divider"><div class="section-label">What You Paid</div>
       <div class="form-group"><label>Cost Paid ($)</label><input id="f-cost" type="number" step="0.01" placeholder="0.00"></div>
@@ -523,6 +523,7 @@ select option{background:var(--surface2);}
         <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Transaction Fees</span><span class="mono" id="sn-fees">$0.00</span></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:.83rem"><span style="color:var(--text2)">Shipping</span><span class="mono" id="sn-ship">$0.00</span></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.83rem"><span style="color:var(--text2)">Ad / Promo Fee</span><span class="mono" id="sn-ad">$0.00</span></div>
+        <div id="sn-grade-fee-row" style="display:none;justify-content:space-between;margin-bottom:8px;font-size:.83rem"><span style="color:var(--text2)">Grading Fee (from card)</span><span class="mono" id="sn-grade-fee">$0.00</span></div>
         <div style="display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;border-top:1px solid var(--border);padding-top:8px"><span>Net Profit</span><span id="sn-net" class="mono">$0.00</span></div>
       </div>
     </div>
@@ -612,18 +613,83 @@ select option{background:var(--surface2);}
   </div>
 </div>
 
-<!-- TRANSACTION MODAL - Step 1: Select Card -->
+<!-- TRANSACTION MODAL - 3-step flow -->
 <div class="modal-overlay" id="txn-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" style="max-width:600px">
-    <h3 id="txn-title">Record Transaction</h3>
+    <!-- Step indicator -->
+    <div style="display:flex;gap:6px;margin-bottom:18px;align-items:center">
+      <span id="txn-step-ind-1" style="padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;background:var(--accent);color:#fff">1 CARD</span>
+      <span style="color:var(--border)">›</span>
+      <span id="txn-step-ind-2" style="padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;background:var(--surface2);color:var(--text2)">2 TYPE</span>
+      <span style="color:var(--border)">›</span>
+      <span id="txn-step-ind-3" style="padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;background:var(--surface2);color:var(--text2)">3 DETAILS</span>
+    </div>
+
+    <!-- Step 1: Pick card -->
     <div id="txn-step1">
-      <p style="color:var(--text2);font-size:.86rem;margin-bottom:14px">Search for and select the card you want to record a transaction for.</p>
+      <h3 style="margin-bottom:12px">Which card?</h3>
       <input class="search-input" style="width:100%;margin-bottom:12px" placeholder="Search player, set, year..." id="txn-search" oninput="filterTxnCards()">
-      <div id="txn-card-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
+      <div id="txn-card-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px"></div>
       <div style="margin-top:14px;display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="proceedTxn('sale')" id="txn-sale-btn" disabled>💰 Record Sale</button>
-        <button class="btn btn-secondary" onclick="proceedTxn('grade')" id="txn-grade-btn" disabled>🏆 Record Grade</button>
+        <button class="btn btn-primary" onclick="txnGoStep2()" id="txn-next-btn" disabled>Next →</button>
         <button class="btn btn-secondary" onclick="document.getElementById('txn-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Sale or Grade -->
+    <div id="txn-step2" style="display:none">
+      <h3 style="margin-bottom:6px">What happened?</h3>
+      <p style="color:var(--text2);font-size:.83rem;margin-bottom:16px" id="txn-step2-card-name"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-success" style="flex:1;padding:18px;font-size:1rem" onclick="txnGoStep3('sale')">💰 Sold</button>
+        <button class="btn btn-secondary" style="flex:1;padding:18px;font-size:1rem" id="txn-grade-choice-btn" onclick="txnGoStep3('grade')">🏆 Graded</button>
+      </div>
+      <div id="txn-already-graded-note" style="display:none;margin-top:12px;background:rgba(136,136,170,.1);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:.82rem;color:var(--text2)">
+        ℹ️ This card is already graded. To re-grade, edit the card directly.
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-secondary btn-sm" onclick="txnGoStep(1)">← Back</button></div>
+    </div>
+
+    <!-- Step 3a: Sale details (inline) -->
+    <div id="txn-step3-sale" style="display:none">
+      <h3 style="margin-bottom:6px">Sale Details</h3>
+      <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="txn-s3-card-name"></p>
+      <div class="form-grid">
+        <div class="form-group"><label>Sale Date</label><input id="ts-date" type="date"></div>
+        <div class="form-group"><label>Subtotal ($)</label><input id="ts-subtotal" type="number" step="0.01" placeholder="0.00" oninput="calcTxnNet()"></div>
+        <div class="form-group"><label>Transaction Fees ($)</label><input id="ts-fees" type="number" step="0.01" placeholder="0.00" oninput="calcTxnNet()"></div>
+        <div class="form-group"><label>Shipping ($)</label><input id="ts-ship" type="number" step="0.01" placeholder="0.00" oninput="calcTxnNet()"></div>
+        <div class="form-group"><label>Ad / Promo Fee ($)</label><input id="ts-ad" type="number" step="0.01" placeholder="0.00" oninput="calcTxnNet()"></div>
+        <div class="form-group full" style="background:var(--surface2);border-radius:6px;padding:12px;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:4px"><span style="color:var(--text2)">Cost Basis</span><span class="mono" id="ts-cost-disp">$0.00</span></div>
+          <div id="ts-grade-fee-row" style="display:none;justify-content:space-between;font-size:.83rem;margin-bottom:4px"><span style="color:var(--text2)">Grading Fee</span><span class="mono" id="ts-grade-fee-disp">$0.00</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;border-top:1px solid var(--border);padding-top:8px;margin-top:4px"><span>Net Profit</span><span id="ts-net" class="mono">$0.00</span></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-success" onclick="saveTxnSale()">✓ Record Sale</button>
+        <button class="btn btn-secondary btn-sm" onclick="txnGoStep(2)">← Back</button>
+      </div>
+    </div>
+
+    <!-- Step 3b: Grade details (inline) -->
+    <div id="txn-step3-grade" style="display:none">
+      <h3 style="margin-bottom:6px">Grade Details</h3>
+      <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="txn-g3-card-name"></p>
+      <div class="form-grid">
+        <div class="form-group"><label>Grading Company</label><select id="tg-company" onchange="updateTxnGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+        <div class="form-group"><label>Grade Received</label><select id="tg-grade"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+        <div class="form-group"><label>Cert Number</label><input id="tg-cert" placeholder="Certification #"></div>
+        <div class="form-group"><label>Grading Fee ($)</label><input id="tg-fee" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label>Date Sent</label><input id="tg-sent" type="date"></div>
+        <div class="form-group"><label>Date Returned</label><input id="tg-returned" type="date"></div>
+        <div class="form-group full"><label>Returned To</label>
+          <select id="tg-destination"><option value="in_collection">Returned to me</option><option value="psa_vault">Sent to PSA Vault</option></select>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveTxnGrade()">✓ Save Grade</button>
+        <button class="btn btn-secondary btn-sm" onclick="txnGoStep(2)">← Back</button>
       </div>
     </div>
   </div>
@@ -660,8 +726,8 @@ select option{background:var(--surface2);}
     <h3>Record Grade</h3>
     <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="grade-card-name"></p>
     <div class="form-grid">
-      <div class="form-group"><label>Grading Company</label><select id="g-company"><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option><option>Other</option></select></div>
-      <div class="form-group"><label>Grade Received</label><input id="g-grade" placeholder="e.g. 9.5"></div>
+      <div class="form-group"><label>Grading Company</label><select id="g-company" onchange="updateGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grade Received</label><select id="g-grade"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
       <div class="form-group"><label>Cert Number</label><input id="g-cert" placeholder="Certification #"></div>
       <div class="form-group"><label>Grading Fee ($)</label><input id="g-fee" type="number" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>Date Sent</label><input id="g-sent" type="date"></div>
@@ -769,14 +835,53 @@ select option{background:var(--surface2);}
     <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('research-modal').style.display='none'">Close</button></div>
   </div>
 </div>
+<!-- BULK GRADE MODAL -->
+<div class="modal-overlay" id="bulk-grade-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:680px">
+    <h3>Bulk Grading Submission</h3>
+    <p style="color:var(--text2);font-size:.83rem;margin-bottom:16px">Select cards from your collection, enter batch details, then fill in each card's result.</p>
+
+    <!-- Step 1: Select cards -->
+    <div id="bg-step1">
+      <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
+        <input class="search-input" style="flex:1" placeholder="Search cards..." id="bg-search" oninput="renderBulkGradeCards()">
+        <span id="bg-selected-count" style="font-size:.82rem;color:var(--text2)">0 selected</span>
+      </div>
+      <div id="bg-card-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:14px"></div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="section-label">Batch Details (applies to all selected cards)</div>
+        <div class="form-group"><label>Grading Company</label><select id="bg-company" onchange="updateBulkGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+        <div class="form-group"><label>Date Sent</label><input id="bg-sent" type="date"></div>
+        <div class="form-group"><label>Cost Per Card ($)</label><input id="bg-fee-per-card" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label>Returned To</label><select id="bg-destination"><option value="in_collection">Returned to me</option><option value="psa_vault">Sent to PSA Vault</option></select></div>
+        <div class="form-group"><label>Date Returned</label><input id="bg-returned" type="date"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="bgGoToResults()" id="bg-next-btn" disabled>Next: Enter Grades →</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('bulk-grade-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Enter per-card results -->
+    <div id="bg-step2" style="display:none">
+      <div id="bg-results-list" style="max-height:400px;overflow-y:auto;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveBulkGrades()">✓ Save All Grades</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('bg-step1').style.display='block';document.getElementById('bg-step2').style.display='none'">← Back</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
 const SB_URL='https://pxkbjbvcikjukwpbehdv.supabase.co';
 const SB_KEY='sb_publishable_7rOxD23Xnmzk1exmdBIA-w_ZCFmlkGp';
 const sb=supabase.createClient(SB_URL,SB_KEY);
-let CU=null,CC='business',EID=null,SID=null,SCOST=0,VIEW='list',CPT=[],CIMG=null;
+let CU=null,CC='business',EID=null,SID=null,SCOST=0,SGRADE_FEE=0,VIEW='list',CPT=[],CIMG=null;
+let filteredCardIds=[];
 const MO=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+const EMAIL_TO_NAME={'mrshaffer02@gmail.com':'Matt','ajshaffer1@gmail.com':'Andrew'};
 
 sb.auth.onAuthStateChange(async(ev,session)=>{
   if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage(currentPage||'dashboard');}
@@ -948,7 +1053,7 @@ function switchCollection(t){
 }
 function setView(v){VIEW=v;document.getElementById('vbtn-list').classList.toggle('active',v==='list');document.getElementById('vbtn-gallery').classList.toggle('active',v==='gallery');document.getElementById('col-list-wrap').style.display=v==='list'?'block':'none';document.getElementById('col-gallery-wrap').style.display=v==='gallery'?'block':'none';if(v==='gallery')renderGallery();else renderCol();}
 function getQ(includingPhotos=false){
-  const cols=includingPhotos?'*':'id,player,team,sport,year,card_set,card_number,condition,status,serial_number,auto_type,relic_type,grade_company,grade_number,cert_number,cost_paid,purchase_date,purchased_from,variation,notes,location,asking_price,listed_date,sale_price,sales_tax,platform_fees,shipping_cost,ad_fee,net_profit,sale_date,platform_sold,collection_type,user_id,market_price,market_price_date,created_at,photo_url,photo_back_url';
+  const cols=includingPhotos?'*':'id,player,team,sport,year,card_set,card_number,condition,status,serial_number,auto_type,relic_type,grade_company,grade_number,cert_number,cost_paid,purchase_date,purchased_from,variation,notes,location,asking_price,listed_date,sale_price,sales_tax,platform_fees,shipping_cost,ad_fee,net_profit,sale_date,platform_sold,collection_type,user_id,market_price,market_price_date,created_at,photo_url,photo_back_url,grading_fee';
   if(CC==='business')return sb.from('cards').select(cols).eq('collection_type','business');
   return sb.from('cards').select(cols).eq('user_id',CU.id).eq('collection_type','personal');
 }
@@ -1067,6 +1172,7 @@ function renderCol(){
   if(cardNoF)cards=cards.filter(c=>(c.card_number||'').toLowerCase().includes(cardNoF.toLowerCase()));
   const sf={newest:(a,b)=>new Date(b.created_at)-new Date(a.created_at),player:(a,b)=>(a.player||'').localeCompare(b.player||''),team:(a,b)=>(a.team||'').localeCompare(b.team||''),year:(a,b)=>(b.year||0)-(a.year||0),cost:(a,b)=>(b.cost_paid||0)-(a.cost_paid||0)};
   cards.sort(sf[sort]||sf.newest);
+  filteredCardIds=cards.map(c=>c.id);// track for prev/next nav
   if(!cards.length){document.getElementById('collection-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🃏</div><div>No cards found. Add your first card!</div></div>`;return;}
   let html=`<table><thead><tr><th><input type='checkbox' id='select-all-cards' onchange='toggleSelectAll(this)' style='accent-color:var(--accent)'></th><th></th><th>Player</th><th>Team</th><th>Year/Set</th><th>Status</th><th>Grade</th><th>Tags</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>`;
   cards.forEach(c=>{
@@ -1099,6 +1205,7 @@ function renderGallery(){
   else if(features==='serial')cards=cards.filter(c=>c.serial_number);
   if(yearF)cards=cards.filter(c=>String(c.year||'').includes(yearF));
   if(setF)cards=cards.filter(c=>(c.card_set||'').toLowerCase().includes(setF));
+  filteredCardIds=cards.map(c=>c.id);// track for prev/next nav
   if(!cards.length){document.getElementById('gallery-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">🃏</div><div>No cards found</div></div>`;return;}
   const today=new Date();
   document.getElementById('gallery-grid').innerHTML=cards.map(c=>{
@@ -1120,12 +1227,15 @@ function renderGallery(){
   }).join('');
 }
 
-function openCardModal(){EID=null;document.getElementById('card-modal-title').textContent='Add Card';['player','team','year','set','cardnum','serial','cert','cost','notes','buyfrom','variation'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});document.getElementById('f-photo').value='';document.getElementById('f-photo-back').value='';const locEl=document.getElementById('f-location');if(locEl)locEl.value='';const askEl=document.getElementById('f-asking');if(askEl)askEl.value='';const listEl=document.getElementById('f-listed-date');if(listEl)listEl.value='';document.getElementById('f-buydate').value='';['f-sport','f-condition','f-status','f-grade-co','f-grade-num','f-auto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.options?el.options[0].value:''});document.getElementById('f-status').value='in_collection';document.getElementById('photo-preview').style.display='none';document.getElementById('card-modal').style.display='flex';}
+function openCardModal(){EID=null;document.getElementById('card-modal-title').textContent='Add Card';['player','team','year','set','cardnum','serial','cert','cost','notes','buyfrom','variation'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});document.getElementById('f-photo').value='';document.getElementById('f-photo-back').value='';const locEl=document.getElementById('f-location');if(locEl){// Auto-fill location on personal collection
+if(CC==='personal'&&CU){const name=EMAIL_TO_NAME[CU.email]||'';locEl.value=name;}else{locEl.value='';}}const askEl=document.getElementById('f-asking');if(askEl)askEl.value='';const listEl=document.getElementById('f-listed-date');if(listEl)listEl.value='';document.getElementById('f-buydate').value='';['f-sport','f-condition','f-status','f-grade-co','f-grade-num','f-auto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.options?el.options[0].value:''});document.getElementById('f-status').value='in_collection';document.getElementById('photo-preview').style.display='none';document.getElementById('card-modal').style.display='flex';}
 function closeCardModal(){document.getElementById('card-modal').style.display='none';}
 
 async function editCard(id){
   // Set up prev/next nav from current filtered card list
-  navCardIds=cardCache.length?cardCache.map(c=>c.id):[id];
+  // Use currently filtered/searched list for nav, fall back to full cache
+  const filtered=filteredCardIds&&filteredCardIds.length?filteredCardIds:cardCache.map(c=>c.id);
+  navCardIds=filtered.length?filtered:[id];
   navCurrentIdx=navCardIds.indexOf(id);
   const navBtns=document.getElementById('card-nav-btns');
   const navPos=document.getElementById('card-nav-pos');
@@ -1183,14 +1293,19 @@ function previewPhoto(e,targetId){const f=e.target.files[0];if(!f)return;const r
 
 function openSaleModal(id,cost,name){
   SID=id;SCOST=cost;
-  document.getElementById('sale-card-name').textContent=name;
-  // Show location popup if card has a location
   const card=cardCache.find(c=>c.id===id);
-  if(card?.location){
-    showToast('📍 This card is at: '+card.location,'success');
-  }['s-subtotal','s-tax','s-fees','s-ship','s-ad'].forEach(f=>document.getElementById(f).value='');document.getElementById('s-date').value=new Date().toISOString().split('T')[0];calcSaleNet();document.getElementById('sale-modal').style.display='flex';}
-function calcSaleNet(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const net=sub-SCOST-fees-ship-ad;document.getElementById('sn-subtotal').textContent='$'+sub.toFixed(2);document.getElementById('sn-tax').textContent='$'+tax.toFixed(2);document.getElementById('sn-fees').textContent='$'+fees.toFixed(2);document.getElementById('sn-ship').textContent='$'+ship.toFixed(2);document.getElementById('sn-ad').textContent='$'+ad.toFixed(2);const el=document.getElementById('sn-net');el.textContent=(net>=0?'+':'')+'$'+net.toFixed(2);el.style.color=net>=0?'var(--success)':'var(--accent2)';}
-async function saveSale(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const net=sub-SCOST-fees-ship-ad;const{error}=await sb.from('cards').update({status:'sold',sale_price:sub,sales_tax:tax,platform_fees:fees,shipping_cost:ship,ad_fee:ad,net_profit:net,sale_date:document.getElementById('s-date').value,platform_sold:'eBay'}).eq('id',SID);if(error){showToast('Error: '+error.message,'error');return;}showToast('Sale recorded! Net: '+(net>=0?'+':'')+'$'+net.toFixed(2),'success');document.getElementById('sale-modal').style.display='none';await loadCardCache();renderCol();}
+  SGRADE_FEE=card?.grading_fee||0;
+  document.getElementById('sale-card-name').textContent=name;
+  if(card?.location){showToast('📍 This card is at: '+card.location,'success');}
+  ['s-subtotal','s-tax','s-fees','s-ship','s-ad'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('s-date').value=new Date().toISOString().split('T')[0];
+  // Show grading fee if present
+  const gfRow=document.getElementById('sn-grade-fee-row');
+  if(gfRow)gfRow.style.display=SGRADE_FEE>0?'flex':'none';
+  if(document.getElementById('sn-grade-fee'))document.getElementById('sn-grade-fee').textContent='$'+SGRADE_FEE.toFixed(2);
+  calcSaleNet();document.getElementById('sale-modal').style.display='flex';}
+function calcSaleNet(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const gf=SGRADE_FEE||0;const net=sub-SCOST-fees-ship-ad-gf;document.getElementById('sn-subtotal').textContent='$'+sub.toFixed(2);document.getElementById('sn-tax').textContent='$'+tax.toFixed(2);document.getElementById('sn-fees').textContent='$'+fees.toFixed(2);document.getElementById('sn-ship').textContent='$'+ship.toFixed(2);document.getElementById('sn-ad').textContent='$'+ad.toFixed(2);const el=document.getElementById('sn-net');el.textContent=(net>=0?'+':'')+'$'+net.toFixed(2);el.style.color=net>=0?'var(--success)':'var(--accent2)';}
+async function saveSale(){const sub=parseFloat(document.getElementById('s-subtotal').value)||0;const tax=parseFloat(document.getElementById('s-tax').value)||0;const fees=parseFloat(document.getElementById('s-fees').value)||0;const ship=parseFloat(document.getElementById('s-ship').value)||0;const ad=parseFloat(document.getElementById('s-ad').value)||0;const gf=SGRADE_FEE||0;const net=sub-SCOST-fees-ship-ad-gf;const{error}=await sb.from('cards').update({status:'sold',sale_price:sub,sales_tax:tax,platform_fees:fees,shipping_cost:ship,ad_fee:ad,net_profit:net,sale_date:document.getElementById('s-date').value,platform_sold:'eBay'}).eq('id',SID);if(error){showToast('Error: '+error.message,'error');return;}showToast('Sale recorded! Net: '+(net>=0?'+':'')+'$'+net.toFixed(2),'success');document.getElementById('sale-modal').style.display='none';await loadCardCache();renderCol();}
 
 async function renderPlayers(){const{data:c}=await getQ();if(!c?.length){document.getElementById('player-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">⭐</div><div>No cards yet</div></div>`;return;}const cnt={};c.forEach(x=>{if(!x.player)return;if(!cnt[x.player])cnt[x.player]={count:0,team:x.team,sport:x.sport};cnt[x.player].count++;});document.getElementById('player-grid').innerHTML=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count).map(([n,i])=>`<div class="player-card"><div class="count">${i.count}</div><h4>${n}</h4><p style="font-size:.75rem;color:var(--text2)">${i.team||''}${i.sport?' · '+i.sport:''}</p></div>`).join('');}
 
@@ -1236,14 +1351,17 @@ async function renderSales(){
   }}
 
 function initTaxYears(){const sel=document.getElementById('tax-year');if(sel.options.length>0)return;const yr=new Date().getFullYear();for(let y=yr;y>=yr-5;y--){const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);}}
-async function renderTax(){if(CC==='personal'){document.getElementById('tax-content').innerHTML=`<div class="alert-box info"><div class="alert-title" style="color:var(--text2)">ℹ️ Business collection only</div><p style="color:var(--text2);font-size:.86rem">Switch to Business to see your tax summary.</p></div>`;return;}const yr=parseInt(document.getElementById('tax-year').value);const{data:c}=await getQ();const f=(c||[]).filter(x=>x.status==='sold'&&x.sale_date&&new Date(x.sale_date).getFullYear()===yr);const rev=f.reduce((s,x)=>s+(x.sale_price||0),0);const cost=f.reduce((s,x)=>s+(x.cost_paid||0),0);const fees=f.reduce((s,x)=>s+(x.platform_fees||0),0);const ship=f.reduce((s,x)=>s+(x.shipping_cost||0),0);const net=rev-cost-fees-ship;// Also get boxes for this year
+async function renderTax(){if(CC==='personal'){document.getElementById('tax-content').innerHTML=`<div class="alert-box info"><div class="alert-title" style="color:var(--text2)">ℹ️ Business collection only</div><p style="color:var(--text2);font-size:.86rem">Switch to Business to see your tax summary.</p></div>`;return;}const yr=parseInt(document.getElementById('tax-year').value);const{data:c}=await getQ();const f=(c||[]).filter(x=>x.status==='sold'&&x.sale_date&&new Date(x.sale_date).getFullYear()===yr);const rev=f.reduce((s,x)=>s+(x.sale_price||0),0);const cost=f.reduce((s,x)=>s+(x.cost_paid||0),0);const fees=f.reduce((s,x)=>s+(x.platform_fees||0),0);const ship=f.reduce((s,x)=>s+(x.shipping_cost||0),0);// Grading fees: all cards graded this year (any status)
+  const gradedThisYr=(c||[]).filter(x=>x.grading_fee&&x.grading_fee>0&&x.purchase_date&&new Date(x.purchase_date).getFullYear()===yr);
+  const gradingFeeTotal=gradedThisYr.reduce((s,x)=>s+(x.grading_fee||0),0);
+  const net=rev-cost-fees-ship-gradingFeeTotal;// Also get boxes for this year
   const{data:allBoxes}=await sb.from('boxes').select('*').eq('collection_type','business');
   const boxesYr=(allBoxes||[]).filter(b=>b.purchase_date&&new Date(b.purchase_date).getFullYear()===yr);
   const boxCost=boxesYr.reduce((s,b)=>s+(b.price_paid||0),0);
   const boxSold=boxesYr.reduce((s,b)=>s+(b.amount_sold||0),0);
   const totalRev=rev+boxSold;
   const totalCost=cost+boxCost;
-  const totalNet=totalRev-totalCost-fees-ship;
+  const totalNet=totalRev-totalCost-fees-ship-gradingFeeTotal;
   // Get daily costs for this year
   const{data:allCosts}=await sb.from('daily_costs').select('*').eq('user_id',CU.id);
   const costsYr=(allCosts||[]).filter(c=>c.date&&new Date(c.date).getFullYear()===yr);
@@ -1255,6 +1373,7 @@ async function renderTax(){if(CC==='personal'){document.getElementById('tax-cont
     <div class="tax-row"><span>Card Cost Basis</span><span class="amount negative">− $${cost.toFixed(2)}</span></div>
     <div class="tax-row"><span>eBay Fees</span><span class="amount negative">− $${fees.toFixed(2)}</span></div>
     <div class="tax-row"><span>Shipping</span><span class="amount negative">− $${ship.toFixed(2)}</span></div>
+    ${gradingFeeTotal>0?`<div class="tax-row"><span>Grading Fees (${gradedThisYr.length} cards)</span><span class="amount negative">− $${gradingFeeTotal.toFixed(2)}</span></div>`:''}
     ${boxesYr.length?`<div class="tax-row" style="margin-top:8px"><span style="font-weight:600;color:var(--text2)">BOXES (${boxesYr.length} boxes)</span><span></span></div>
     <div class="tax-row"><span>Box Sales Revenue</span><span class="amount">$${boxSold.toFixed(2)}</span></div>
     <div class="tax-row"><span>Box Purchase Cost</span><span class="amount negative">− $${boxCost.toFixed(2)}</span></div>`:''}
@@ -1499,6 +1618,28 @@ async function openCardDetail(id){
   document.getElementById('card-detail-modal').style.display='flex';
 }
 
+// ─── DYNAMIC GRADE OPTIONS ────────────────────────────────────────────────
+const GRADE_OPTIONS={
+  PSA:['10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1'],
+  BGS:['10','9.5','9','8.5','8','7.5','7','6.5','6','5.5','5','4.5','4','3.5','3','2.5','2','1.5','1'],
+  SGC:['10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1'],
+  CGC:['Pristine 10','Perfect 10','9.8','9.6','9.4','9.2','9','8.5','8','7.5','7','6.5','6','5.5','5','4.5','4','3.5','3','2.5','2','1.8','1.5'],
+  CSG:['10','9.5','9','8.5','8','7','6','5','4','3','2','1'],
+  Other:['10','9.5','9','8','7','6','5','4','3','2','1']
+};
+function updateGradeOptions(){
+  const co=document.getElementById('g-company').value;
+  const opts=(GRADE_OPTIONS[co]||GRADE_OPTIONS.Other);
+  const sel=document.getElementById('g-grade');
+  sel.innerHTML='<option value="">Select grade...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+function updateEditGradeOptions(){
+  const co=document.getElementById('f-grade-co').value;
+  const opts=co&&GRADE_OPTIONS[co]?GRADE_OPTIONS[co]:GRADE_OPTIONS.PSA;
+  const sel=document.getElementById('f-grade-num');
+  sel.innerHTML='<option value="">Select grade...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+
 // ─── GRADE MODAL ─────────────────────────────────────────────────────────
 let gradeCardId=null;
 function openGradeModal(id,name){
@@ -1525,16 +1666,30 @@ async function saveGrade(){
   renderCol();
 }
 
-// ─── TRANSACTION MODAL ───────────────────────────────────────────────────
-let txnSelectedId=null;
+// ─── TRANSACTION MODAL — 3-step ──────────────────────────────────────────
+let txnSelectedId=null,txnCardCost=0,txnGradeFee=0;
 async function openTransactionModal(){
   txnSelectedId=null;
-  document.getElementById('txn-sale-btn').disabled=true;
-  document.getElementById('txn-grade-btn').disabled=true;
   document.getElementById('txn-search').value='';
+  document.getElementById('txn-next-btn').disabled=true;
   await loadCardCache();
   renderTxnCards('');
+  txnGoStep(1);
   document.getElementById('txn-modal').style.display='flex';
+}
+function txnGoStep(n){
+  [1,2,'3-sale','3-grade'].forEach(s=>{ const el=document.getElementById('txn-step'+s); if(el)el.style.display='none'; });
+  const target=document.getElementById('txn-step'+n);
+  if(target)target.style.display='block';
+  // Update step indicators
+  ['1','2','3'].forEach((s,i)=>{
+    const ind=document.getElementById('txn-step-ind-'+s);
+    if(!ind)return;
+    const stepNum=i+1;
+    const active=n===stepNum||(n==='3-sale'&&stepNum===3)||(n==='3-grade'&&stepNum===3);
+    ind.style.background=active?'var(--accent)':'var(--surface2)';
+    ind.style.color=active?'#fff':'var(--text2)';
+  });
 }
 function filterTxnCards(){renderTxnCards(document.getElementById('txn-search').value);}
 function renderTxnCards(search){
@@ -1547,24 +1702,100 @@ function renderTxnCards(search){
   list.innerHTML=cards.map(c=>`
     <div class="sell-row" style="padding:9px 12px;cursor:pointer;${txnSelectedId===c.id?'background:rgba(26,111,212,.15)':''}" onclick="selectTxnCard('${c.id}')">
       <div style="flex:1"><strong>${c.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${c.year||''} ${c.card_set||''}</span></div>
-      <span class="status-badge status-${c.status}" style="margin-right:8px">${(c.status||'').replace('_',' ')}</span>
+      <span class="status-badge status-${c.status}" style="margin-right:8px">${(c.status||'').replace(/_/g,' ')}</span>
       ${txnSelectedId===c.id?'<span style="color:var(--accent)">✓</span>':''}
     </div>`).join('');
 }
 function selectTxnCard(id){
   txnSelectedId=id;
-  document.getElementById('txn-sale-btn').disabled=false;
-  document.getElementById('txn-grade-btn').disabled=false;
+  document.getElementById('txn-next-btn').disabled=false;
   filterTxnCards();
 }
-function proceedTxn(type){
-  if(!txnSelectedId){showToast('Select a card first','error');return;}
+function txnGoStep2(){
+  if(!txnSelectedId)return;
   const c=cardCache.find(x=>x.id===txnSelectedId);
   if(!c)return;
-  document.getElementById('txn-modal').style.display='none';
-  if(type==='sale')openSaleModal(c.id,c.cost_paid||0,`${c.player||''} ${c.year||''} ${c.card_set||''}`);
-  else openGradeModal(c.id,`${c.player||''} ${c.year||''} ${c.card_set||''}`);
+  const name=`${c.player||''} ${c.year||''} ${c.card_set||''}`.trim();
+  document.getElementById('txn-step2-card-name').textContent=name;
+  // Disable grade if already graded
+  const alreadyGraded=!!c.grade_company;
+  const gradeBtn=document.getElementById('txn-grade-choice-btn');
+  const gradeNote=document.getElementById('txn-already-graded-note');
+  gradeBtn.disabled=alreadyGraded;
+  gradeBtn.style.opacity=alreadyGraded?'.4':'1';
+  gradeNote.style.display=alreadyGraded?'block':'none';
+  txnGoStep(2);
 }
+function txnGoStep3(type){
+  const c=cardCache.find(x=>x.id===txnSelectedId);
+  if(!c)return;
+  const name=`${c.player||''} ${c.year||''} ${c.card_set||''}`.trim();
+  txnCardCost=c.cost_paid||0;
+  txnGradeFee=c.grading_fee||0;
+  if(type==='sale'){
+    document.getElementById('txn-s3-card-name').textContent=name;
+    document.getElementById('ts-date').value=new Date().toISOString().split('T')[0];
+    ['ts-subtotal','ts-fees','ts-ship','ts-ad'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('ts-cost-disp').textContent='$'+txnCardCost.toFixed(2);
+    const gfRow=document.getElementById('ts-grade-fee-row');
+    gfRow.style.display=txnGradeFee>0?'flex':'none';
+    if(txnGradeFee>0)document.getElementById('ts-grade-fee-disp').textContent='$'+txnGradeFee.toFixed(2);
+    calcTxnNet();
+    txnGoStep('3-sale');
+  } else {
+    document.getElementById('txn-g3-card-name').textContent=name;
+    ['tg-cert','tg-fee'].forEach(f=>document.getElementById(f).value='');
+    ['tg-sent','tg-returned'].forEach(f=>document.getElementById(f).value='');
+    updateTxnGradeOptions();
+    txnGoStep('3-grade');
+  }
+}
+function calcTxnNet(){
+  const sub=parseFloat(document.getElementById('ts-subtotal').value)||0;
+  const fees=parseFloat(document.getElementById('ts-fees').value)||0;
+  const ship=parseFloat(document.getElementById('ts-ship').value)||0;
+  const ad=parseFloat(document.getElementById('ts-ad').value)||0;
+  const net=sub-txnCardCost-fees-ship-ad-txnGradeFee;
+  const el=document.getElementById('ts-net');
+  el.textContent=(net>=0?'+':'')+'$'+net.toFixed(2);
+  el.style.color=net>=0?'var(--success)':'var(--accent2)';
+}
+async function saveTxnSale(){
+  const sub=parseFloat(document.getElementById('ts-subtotal').value)||0;
+  const fees=parseFloat(document.getElementById('ts-fees').value)||0;
+  const ship=parseFloat(document.getElementById('ts-ship').value)||0;
+  const ad=parseFloat(document.getElementById('ts-ad').value)||0;
+  const net=sub-txnCardCost-fees-ship-ad-txnGradeFee;
+  const{error}=await sb.from('cards').update({status:'sold',sale_price:sub,platform_fees:fees,shipping_cost:ship,ad_fee:ad,net_profit:net,sale_date:document.getElementById('ts-date').value,platform_sold:'eBay'}).eq('id',txnSelectedId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Sale recorded! Net: '+(net>=0?'+':'')+'$'+net.toFixed(2),'success');
+  document.getElementById('txn-modal').style.display='none';
+  await loadCardCache();renderCol();
+}
+async function saveTxnGrade(){
+  const fee=parseFloat(document.getElementById('tg-fee').value)||0;
+  const dest=document.getElementById('tg-destination').value;
+  const{error}=await sb.from('cards').update({
+    grade_company:document.getElementById('tg-company').value,
+    grade_number:document.getElementById('tg-grade').value,
+    cert_number:document.getElementById('tg-cert').value||null,
+    grading_fee:fee,
+    status:dest,
+    condition:'Graded'
+  }).eq('id',txnSelectedId);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Grade recorded!','success');
+  document.getElementById('txn-modal').style.display='none';
+  await loadCardCache();renderCol();
+}
+function updateTxnGradeOptions(){
+  const co=document.getElementById('tg-company').value;
+  const opts=(GRADE_OPTIONS[co]||GRADE_OPTIONS.Other);
+  const sel=document.getElementById('tg-grade');
+  sel.innerHTML='<option value="">Select grade...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+// Keep old proceedTxn for any legacy calls
+function proceedTxn(type){txnGoStep3(type);}
 
 async function cancelSale(id, playerName){
   if(!confirm('Cancel sale for '+playerName+'? This will move the card back to your collection and clear all sale data.'))return;
@@ -1798,6 +2029,94 @@ async function runPhotoMigration(){
   log(`<strong>Done. ${done} migrated, ${failed} failed.</strong>`);
   btn.textContent='✅ Migration Complete';
   await loadCardCache();
+}
+
+// ─── BULK GRADING ─────────────────────────────────────────────────────────
+let bgSelectedIds=new Set();
+function openBulkGradeModal(){
+  bgSelectedIds=new Set();
+  document.getElementById('bg-search').value='';
+  document.getElementById('bg-step1').style.display='block';
+  document.getElementById('bg-step2').style.display='none';
+  document.getElementById('bg-next-btn').disabled=true;
+  document.getElementById('bg-selected-count').textContent='0 selected';
+  document.getElementById('bg-sent').value='';
+  document.getElementById('bg-returned').value='';
+  document.getElementById('bg-fee-per-card').value='';
+  renderBulkGradeCards();
+  document.getElementById('bulk-grade-modal').style.display='flex';
+}
+function renderBulkGradeCards(){
+  const s=(document.getElementById('bg-search')?.value||'').toLowerCase().trim();
+  let cards=cardCache.filter(c=>c.status!=='sold'&&c.status!=='psa_vault'&&!c.grade_company);
+  if(s)cards=cards.filter(c=>[c.player,c.card_set,c.year+''].filter(Boolean).join(' ').toLowerCase().includes(s));
+  cards=cards.slice(0,50);
+  document.getElementById('bg-card-list').innerHTML=cards.length?cards.map(c=>`
+    <div class="sell-row" style="padding:9px 12px;cursor:pointer;${bgSelectedIds.has(c.id)?'background:rgba(26,111,212,.12)':''}" onclick="toggleBgCard('${c.id}',this)">
+      <input type="checkbox" ${bgSelectedIds.has(c.id)?'checked':''} style="accent-color:var(--accent);margin-right:8px" onclick="event.stopPropagation();toggleBgCard('${c.id}',this.parentElement)">
+      <div style="flex:1"><strong>${c.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${c.year||''} ${c.card_set||''}</span></div>
+      <span style="font-size:.75rem;color:var(--text2)">$${(c.cost_paid||0).toFixed(2)}</span>
+    </div>`).join(''):'<div style="padding:16px;color:var(--text2);font-size:.85rem;text-align:center">No ungraded cards found</div>';
+}
+function toggleBgCard(id,row){
+  if(bgSelectedIds.has(id)){bgSelectedIds.delete(id);row.style.background='';}
+  else{bgSelectedIds.add(id);row.style.background='rgba(26,111,212,.12)';}
+  const cb=row.querySelector('input[type=checkbox]');if(cb)cb.checked=bgSelectedIds.has(id);
+  document.getElementById('bg-selected-count').textContent=bgSelectedIds.size+' selected';
+  document.getElementById('bg-next-btn').disabled=bgSelectedIds.size===0;
+}
+function updateBulkGradeOptions(){
+  const co=document.getElementById('bg-company').value;
+  const opts=(GRADE_OPTIONS[co]||GRADE_OPTIONS.Other);
+  document.querySelectorAll('.bg-grade-select').forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML='<option value="">Select...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
+    if(cur)sel.value=cur;
+  });
+}
+function bgGoToResults(){
+  if(bgSelectedIds.size===0)return;
+  const co=document.getElementById('bg-company').value;
+  const opts=(GRADE_OPTIONS[co]||GRADE_OPTIONS.Other);
+  const gradeOpts='<option value="">Select...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
+  const cards=[...bgSelectedIds].map(id=>cardCache.find(c=>c.id===id)).filter(Boolean);
+  document.getElementById('bg-results-list').innerHTML=cards.map(c=>`
+    <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px">
+      <div style="font-weight:600;margin-bottom:8px">${c.player||'—'} <span style="color:var(--text2);font-size:.8rem">${c.year||''} ${c.card_set||''}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade</label>
+          <select class="bg-grade-select filter-select" data-id="${c.id}" style="width:100%">${gradeOpts}</select></div>
+        <div><label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Cert #</label>
+          <input class="bg-cert-input search-input" data-id="${c.id}" placeholder="Optional" style="width:100%"></div>
+      </div>
+    </div>`).join('');
+  document.getElementById('bg-step1').style.display='none';
+  document.getElementById('bg-step2').style.display='block';
+}
+async function saveBulkGrades(){
+  const co=document.getElementById('bg-company').value;
+  const sent=document.getElementById('bg-sent').value||null;
+  const returned=document.getElementById('bg-returned').value||null;
+  const feePerCard=parseFloat(document.getElementById('bg-fee-per-card').value)||0;
+  const dest=document.getElementById('bg-destination').value;
+  const grades=document.querySelectorAll('.bg-grade-select');
+  const certs=document.querySelectorAll('.bg-cert-input');
+  let saved=0,failed=0;
+  for(let i=0;i<grades.length;i++){
+    const id=grades[i].dataset.id;
+    const grade=grades[i].value;
+    const cert=certs[i]?.value||null;
+    if(!grade){failed++;continue;}
+    const{error}=await sb.from('cards').update({
+      grade_company:co,grade_number:grade,cert_number:cert||null,
+      grading_fee:feePerCard,status:dest,condition:'Graded',
+      grade_sent_date:sent,grade_returned_date:returned
+    }).eq('id',id);
+    if(error)failed++;else saved++;
+  }
+  showToast(`Saved ${saved} grades${failed>0?' ('+failed+' skipped — no grade selected)':''}!`,'success');
+  document.getElementById('bulk-grade-modal').style.display='none';
+  await loadCardCache();renderCol();
 }
 
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500);}
