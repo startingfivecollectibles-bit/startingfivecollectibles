@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Starting Five Collectibles | Build: 2026-04-12 | v14 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -255,6 +256,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
+      <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-info" id="user-email">—</div>
@@ -287,7 +289,7 @@ select option{background:var(--surface2);}
         <div id="mass-update-bar" style="display:none;background:rgba(26,111,212,.1);border:1px solid rgba(26,111,212,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
           <span id="mass-select-count" style="font-size:.85rem;color:var(--text2)">0 selected</span>
           <select class="filter-select" id="mass-field"><option value="">Choose field to update...</option><option value="location">Location</option><option value="status">Status</option></select>
-          <select class="filter-select" id="mass-location" style="display:none"><option value="">Select...</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option></select>
+          <select class="filter-select" id="mass-location" style="display:none"><option value="">Select...</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option><option value="PSA Vault">PSA Vault</option></select>
           <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
           <button class="btn btn-primary btn-sm" onclick="applyMassUpdate()">Apply to Selected</button>
           <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Cancel</button>
@@ -301,7 +303,7 @@ select option{background:var(--surface2);}
           <div id="filter-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);gap:7px;background:var(--surface2);flex-wrap:wrap">
             <select class="filter-select" id="col-sport" onchange="renderCol()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
             <select class="filter-select" id="col-status" onchange="renderCol()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
-            <select class="filter-select" id="col-grade-co" onchange="renderCol()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option></select>
+            <select class="filter-select" id="col-grade-co" onchange="renderCol()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select>
             <select class="filter-select" id="col-features" onchange="renderCol()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
             <input class="search-input" style="max-width:90px" placeholder="Year" id="col-year" oninput="renderCol()">
             <input class="search-input" style="max-width:130px" placeholder="Set name" id="col-set-filter" oninput="renderCol()">
@@ -320,7 +322,7 @@ select option{background:var(--surface2);}
           <div id="gallery-filter-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--border);flex-wrap:wrap;gap:7px;background:var(--surface2)">
             <select class="filter-select" id="gal-sport" onchange="renderGallery()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
             <select class="filter-select" id="gal-status" onchange="renderGallery()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
-            <select class="filter-select" id="gal-grade-co" onchange="renderGallery()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option></select>
+            <select class="filter-select" id="gal-grade-co" onchange="renderGallery()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select>
             <select class="filter-select" id="gal-features" onchange="renderGallery()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
             <input class="search-input" style="max-width:100px" placeholder="Year" id="gal-year" oninput="renderGallery()">
             <input class="search-input" style="max-width:130px" placeholder="Set name" id="gal-set" oninput="renderGallery()">
@@ -429,6 +431,13 @@ select option{background:var(--surface2);}
       <div class="stats-grid" id="cost-stats"></div>
       <div class="table-container"><div id="cost-table"></div></div>
     </div>
+    <div class="page" id="page-todo">
+      <div class="page-header">
+        <span class="page-title">My To-Do</span>
+        <button class="btn btn-primary" onclick="openTodoModal()">+ Add Item</button>
+      </div>
+      <div id="todo-list" style="max-width:680px"></div>
+    </div>
     <div class="page" id="page-admin">
       <div class="page-header"><span class="page-title">Team Access</span></div>
 
@@ -489,13 +498,13 @@ select option{background:var(--surface2);}
       <div class="form-group"><label>Serial Number (e.g. 45/99)</label><input id="f-serial" placeholder="e.g. 45/99"></div>
       <div class="form-group"><label>Autograph?</label><select id="f-auto"><option value="">No Auto</option><option value="on-card">On-Card Auto</option><option value="sticker">Sticker Auto</option><option value="inscribed">Inscribed Auto</option><option value="cut">Cut Auto</option><option value="other">Other Auto</option></select></div><div class="form-group"><label>Relic / Memorabilia?</label><select id="f-relic"><option value="">No Relic</option><option value="jersey">Jersey</option><option value="patch">Patch</option><option value="bat">Bat</option><option value="shoe">Shoe</option><option value="ball">Ball</option><option value="other">Other Relic</option></select></div>
       <hr class="section-divider"><div class="section-label">Grading</div>
-      <div class="form-group"><label>Grade Company</label><select id="f-grade-co" onchange="updateEditGradeOptions()"><option value="">None / Raw</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grade Company</label><select id="f-grade-co" onchange="updateEditGradeOptions()"><option value="">None / Raw</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select></div>
       <div class="form-group"><label>Grade</label><select id="f-grade-num"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
       <div class="form-group full"><label>Cert #</label><input id="f-cert" placeholder="Certification number"></div>
       <hr class="section-divider"><div class="section-label">Listing Details</div><div class="form-group"><label>Asking Price ($)</label><input id="f-asking" type="number" step="0.01" placeholder="0.00"></div><div class="form-group"><label>Date Listed</label><input id="f-listed-date" type="date"></div><hr class="section-divider"><div class="section-label">What You Paid</div>
       <div class="form-group"><label>Cost Paid ($)</label><input id="f-cost" type="number" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>Purchase Date</label><input id="f-buydate" type="date"></div>
-      <div class="form-group"><label>Where Purchased</label><input id="f-buyfrom" placeholder="e.g. eBay, card show, COMC"></div><div class="form-group"><label>Card Location</label><select id="f-location"><option value="">Unknown</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option></select></div>
+      <div class="form-group"><label>Where Purchased</label><input id="f-buyfrom" placeholder="e.g. eBay, card show, COMC"></div><div class="form-group"><label>Card Location</label><select id="f-location"><option value="">Unknown</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option><option value="PSA Vault">PSA Vault</option></select></div>
       <hr class="section-divider"><div class="section-label">Photo &amp; Notes</div>
       <div class="form-group"><label>Card Photo — Front</label><input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event,'photo-preview')"><img id="photo-preview" class="photo-preview-img"></div><div class="form-group"><label>Card Photo — Back</label><input type="file" id="f-photo-back" accept="image/*" onchange="previewPhoto(event,'photo-preview-back')"><img id="photo-preview-back" class="photo-preview-img"></div>
       <div class="form-group full"><label>Variation</label><input id="f-variation" placeholder="e.g. Refractor, Holo, Gold, Short Print"></div>
@@ -677,7 +686,7 @@ select option{background:var(--surface2);}
       <h3 style="margin-bottom:6px">Grade Details</h3>
       <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="txn-g3-card-name"></p>
       <div class="form-grid">
-        <div class="form-group"><label>Grading Company</label><select id="tg-company" onchange="updateTxnGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+        <div class="form-group"><label>Grading Company</label><select id="tg-company" onchange="updateTxnGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select></div>
         <div class="form-group"><label>Grade Received</label><select id="tg-grade"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
         <div class="form-group"><label>Cert Number</label><input id="tg-cert" placeholder="Certification #"></div>
         <div class="form-group"><label>Grading Fee ($)</label><input id="tg-fee" type="number" step="0.01" placeholder="0.00"></div>
@@ -726,7 +735,7 @@ select option{background:var(--surface2);}
     <h3>Record Grade</h3>
     <p style="color:var(--text2);font-size:.83rem;margin-bottom:14px" id="grade-card-name"></p>
     <div class="form-grid">
-      <div class="form-group"><label>Grading Company</label><select id="g-company" onchange="updateGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+      <div class="form-group"><label>Grading Company</label><select id="g-company" onchange="updateGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select></div>
       <div class="form-group"><label>Grade Received</label><select id="g-grade"><option value="">Select grade...</option><option>10</option><option>9.5</option><option>9</option><option>8.5</option><option>8</option><option>7.5</option><option>7</option><option>6</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
       <div class="form-group"><label>Cert Number</label><input id="g-cert" placeholder="Certification #"></div>
       <div class="form-group"><label>Grading Fee ($)</label><input id="g-fee" type="number" step="0.01" placeholder="0.00"></div>
@@ -829,7 +838,10 @@ select option{background:var(--surface2);}
           <input id="listing-price" type="number" step="0.01" placeholder="Your asking price ($)" style="flex:1" oninput="calcListingProfit()">
         </div>
         <div id="listing-calc" style="font-size:.83rem"></div>
-        <a id="ebay-list-link" href="#" target="_blank" class="btn btn-success" style="display:block;text-align:center;text-decoration:none;margin-top:10px">📦 List on eBay</a>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <a id="ebay-list-link" href="#" target="_blank" class="btn btn-success" style="flex:1;text-align:center;text-decoration:none">📦 List on eBay</a>
+          <button class="btn btn-secondary" onclick="copyListingPrice()" title="Copy price to clipboard" id="copy-price-btn">📋 Copy Price</button>
+        </div>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="document.getElementById('research-modal').style.display='none'">Close</button></div>
@@ -850,10 +862,9 @@ select option{background:var(--surface2);}
       <div id="bg-card-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:14px"></div>
       <div class="form-grid" style="margin-bottom:14px">
         <div class="section-label">Batch Details (applies to all selected cards)</div>
-        <div class="form-group"><label>Grading Company</label><select id="bg-company" onchange="updateBulkGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option><option>CSG</option><option>Other</option></select></div>
+        <div class="form-group"><label>Grading Company</label><select id="bg-company" onchange="updateBulkGradeOptions()"><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select></div>
         <div class="form-group"><label>Date Sent</label><input id="bg-sent" type="date"></div>
         <div class="form-group"><label>Cost Per Card ($)</label><input id="bg-fee-per-card" type="number" step="0.01" placeholder="0.00"></div>
-        <div class="form-group"><label>Returned To</label><select id="bg-destination"><option value="in_collection">Returned to me</option><option value="psa_vault">Sent to PSA Vault</option></select></div>
         <div class="form-group"><label>Date Returned</label><input id="bg-returned" type="date"></div>
       </div>
       <div style="display:flex;gap:8px">
@@ -872,6 +883,20 @@ select option{background:var(--surface2);}
     </div>
   </div>
 </div>
+<!-- TODO MODAL -->
+<div class="modal-overlay" id="todo-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:440px">
+    <h3 id="todo-modal-title">Add To-Do Item</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Task</label><input id="todo-text" placeholder="e.g. Enter CGC cards (3/10 done)"></div>
+      <div class="form-group full"><label>Notes (optional)</label><textarea id="todo-notes" placeholder="Any details..." style="min-height:80px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('todo-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTodo()">Save</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -884,7 +909,8 @@ const MO=['','January','February','March','April','May','June','July','August','
 const EMAIL_TO_NAME={'mrshaffer02@gmail.com':'Matt','ajshaffer1@gmail.com':'Andrew'};
 
 sb.auth.onAuthStateChange(async(ev,session)=>{
-  if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage(currentPage||'dashboard');}
+  if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();// Hide To-Do for non-Matt users
+const todoNav=document.getElementById('nav-todo');if(todoNav)todoNav.style.display=EMAIL_TO_NAME[CU.email]==='Matt'?'flex':'none';showPage(currentPage||'dashboard');}
   else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
 });
 
@@ -1039,7 +1065,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -1621,12 +1647,10 @@ async function openCardDetail(id){
 
 // ─── DYNAMIC GRADE OPTIONS ────────────────────────────────────────────────
 const GRADE_OPTIONS={
-  PSA:['10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1'],
+  PSA:['10','9','8','7','6','5','4','3','2','1'],
   BGS:['10','9.5','9','8.5','8','7.5','7','6.5','6','5.5','5','4.5','4','3.5','3','2.5','2','1.5','1'],
   SGC:['10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1'],
-  CGC:['Pristine 10','Perfect 10','9.8','9.6','9.4','9.2','9','8.5','8','7.5','7','6.5','6','5.5','5','4.5','4','3.5','3','2.5','2','1.8','1.5'],
-  CSG:['10','9.5','9','8.5','8','7','6','5','4','3','2','1'],
-  Other:['10','9.5','9','8','7','6','5','4','3','2','1']
+  CGC:['Pristine 10','10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1']
 };
 function updateGradeOptions(){
   const co=document.getElementById('g-company').value;
@@ -1636,8 +1660,9 @@ function updateGradeOptions(){
 }
 function updateEditGradeOptions(){
   const co=document.getElementById('f-grade-co').value;
-  const opts=co&&GRADE_OPTIONS[co]?GRADE_OPTIONS[co]:GRADE_OPTIONS.PSA;
   const sel=document.getElementById('f-grade-num');
+  if(!co){sel.innerHTML='<option value="">N/A — Raw card</option>';return;}
+  const opts=GRADE_OPTIONS[co]||GRADE_OPTIONS.PSA;
   sel.innerHTML='<option value="">Select grade...</option>'+opts.map(g=>`<option value="${g}">${g}</option>`).join('');
 }
 
@@ -1956,7 +1981,7 @@ function openResearchTool(id){
   document.getElementById('ebay-sold-link').href='https://www.ebay.com/sch/i.html?_nkw='+q+'&LH_Complete=1&LH_Sold=1';
   const title=encodeURIComponent(name.slice(0,80));
   const sc=researchCardCost<20?150:0;
-  document.getElementById('ebay-list-link').href='https://www.ebay.com/sell/item?title='+title+'&shippingcost='+sc+'&listingtype=FixedPrice&mkcid=1';
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+title+'&shippingcost='+sc+'&categoryId=213';
   const hist=document.getElementById('market-price-history');
   if(c.market_price){hist.innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');}
   else hist.textContent='No market price recorded yet';
@@ -1964,6 +1989,15 @@ function openResearchTool(id){
   document.getElementById('listing-price').value='';
   document.getElementById('listing-calc').innerHTML='';
   document.getElementById('research-modal').style.display='flex';
+}
+function copyListingPrice(){
+  const price=document.getElementById('listing-price').value;
+  if(!price){showToast('Enter a price first','error');return;}
+  navigator.clipboard.writeText(price).then(()=>{
+    const btn=document.getElementById('copy-price-btn');
+    btn.textContent='✅ Copied!';
+    setTimeout(()=>btn.textContent='📋 Copy Price',2000);
+  });
 }
 function calcListingProfit(){
   const price=parseFloat(document.getElementById('listing-price').value)||0;
@@ -1978,7 +2012,7 @@ function calcListingProfit(){
     <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:2px"><span>Your Net Profit</span><span class="mono" style="color:${net>=0?'var(--success)':'var(--accent2)'}">${net>=0?'+':''}$${net.toFixed(2)}</span></div>
   </div>`;
   const sc=researchCardCost<20?150:0;
-  document.getElementById('ebay-list-link').href='https://www.ebay.com/sell/item?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2)+'&listingtype=FixedPrice&mkcid=1';
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2)+'&categoryId=213';
 }
 async function saveMarketPrice(){
   const price=parseFloat(document.getElementById('market-price-input').value)||0;
@@ -2084,11 +2118,13 @@ function bgGoToResults(){
   document.getElementById('bg-results-list').innerHTML=cards.map(c=>`
     <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px">
       <div style="font-weight:600;margin-bottom:8px">${c.player||'—'} <span style="color:var(--text2);font-size:.8rem">${c.year||''} ${c.card_set||''}</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <div><label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade</label>
           <select class="bg-grade-select filter-select" data-id="${c.id}" style="width:100%">${gradeOpts}</select></div>
         <div><label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Cert #</label>
           <input class="bg-cert-input search-input" data-id="${c.id}" placeholder="Optional" style="width:100%"></div>
+        <div><label style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Returned To</label>
+          <select class="bg-dest-select filter-select" data-id="${c.id}" style="width:100%"><option value="in_collection">To Me</option><option value="psa_vault">PSA Vault</option></select></div>
       </div>
     </div>`).join('');
   document.getElementById('bg-step1').style.display='none';
@@ -2099,18 +2135,19 @@ async function saveBulkGrades(){
   const sent=document.getElementById('bg-sent').value||null;
   const returned=document.getElementById('bg-returned').value||null;
   const feePerCard=parseFloat(document.getElementById('bg-fee-per-card').value)||0;
-  const dest=document.getElementById('bg-destination').value;
   const grades=document.querySelectorAll('.bg-grade-select');
   const certs=document.querySelectorAll('.bg-cert-input');
+  const dests=document.querySelectorAll('.bg-dest-select');
   let saved=0,failed=0;
   for(let i=0;i<grades.length;i++){
     const id=grades[i].dataset.id;
     const grade=grades[i].value;
     const cert=certs[i]?.value||null;
+    const cardDest=dests[i]?.value||'in_collection';
     if(!grade){failed++;continue;}
     const{error}=await sb.from('cards').update({
       grade_company:co,grade_number:grade,cert_number:cert||null,
-      grading_fee:feePerCard,status:dest,condition:'Graded',
+      grading_fee:feePerCard,status:cardDest,condition:'Graded',
       grade_sent_date:sent,grade_returned_date:returned
     }).eq('id',id);
     if(error)failed++;else saved++;
@@ -2118,6 +2155,68 @@ async function saveBulkGrades(){
   showToast(`Saved ${saved} grades${failed>0?' ('+failed+' skipped — no grade selected)':''}!`,'success');
   document.getElementById('bulk-grade-modal').style.display='none';
   await loadCardCache();renderCol();
+}
+
+// ─── TO-DO LIST ───────────────────────────────────────────────────────────
+let editTodoId=null;
+async function renderTodo(){
+  const{data:items}=await sb.from('todos').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});
+  const el=document.getElementById('todo-list');
+  if(!items?.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div><div>No to-do items yet. Add one to track your progress.</div></div>`;return;}
+  const done=items.filter(x=>x.completed).length;
+  el.innerHTML=`<div style="margin-bottom:14px;font-size:.83rem;color:var(--text2)">${done} of ${items.length} complete</div>
+    <div style="background:var(--surface2);border-radius:20px;height:6px;margin-bottom:20px;overflow:hidden"><div style="height:100%;background:var(--success);width:${items.length?Math.round(done/items.length*100):0}%;border-radius:20px;transition:width .4s"></div></div>`+
+  items.map(t=>`
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border:1px solid ${t.completed?'rgba(46,204,113,.2)':' var(--border)'};border-radius:var(--radius);margin-bottom:8px;opacity:${t.completed?'.6':'1'}">
+      <input type="checkbox" ${t.completed?'checked':''} style="accent-color:var(--success);width:17px;height:17px;margin-top:2px;cursor:pointer;flex-shrink:0" onchange="toggleTodo('${t.id}',this.checked)">
+      <div style="flex:1">
+        <div style="font-weight:600;${t.completed?'text-decoration:line-through;color:var(--text2)':''}">${t.text}</div>
+        ${t.notes?`<div style="font-size:.82rem;color:var(--text2);margin-top:4px;line-height:1.5">${t.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="editTodo('${t.id}','${(t.text||'').replace(/'/g,"\'")}','${(t.notes||'').replace(/'/g,"\'")}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTodo('${t.id}')">Del</button>
+      </div>
+    </div>`).join('');
+}
+function openTodoModal(){
+  editTodoId=null;
+  document.getElementById('todo-modal-title').textContent='Add To-Do Item';
+  document.getElementById('todo-text').value='';
+  document.getElementById('todo-notes').value='';
+  document.getElementById('todo-modal').style.display='flex';
+}
+function editTodo(id,text,notes){
+  editTodoId=id;
+  document.getElementById('todo-modal-title').textContent='Edit To-Do Item';
+  document.getElementById('todo-text').value=text;
+  document.getElementById('todo-notes').value=notes;
+  document.getElementById('todo-modal').style.display='flex';
+}
+async function saveTodo(){
+  const text=document.getElementById('todo-text').value.trim();
+  if(!text){showToast('Enter a task','error');return;}
+  const notes=document.getElementById('todo-notes').value.trim();
+  if(editTodoId){
+    const{error}=await sb.from('todos').update({text,notes}).eq('id',editTodoId);
+    if(error){showToast('Error: '+error.message,'error');return;}
+  } else {
+    const{error}=await sb.from('todos').insert({user_id:CU.id,text,notes,completed:false});
+    if(error){showToast('Error: '+error.message,'error');return;}
+  }
+  document.getElementById('todo-modal').style.display='none';
+  showToast('Saved!','success');
+  renderTodo();
+}
+async function toggleTodo(id,checked){
+  await sb.from('todos').update({completed:checked}).eq('id',id);
+  renderTodo();
+}
+async function deleteTodo(id){
+  if(!confirm('Delete this item?'))return;
+  await sb.from('todos').delete().eq('id',id);
+  showToast('Deleted','success');
+  renderTodo();
 }
 
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500);}
