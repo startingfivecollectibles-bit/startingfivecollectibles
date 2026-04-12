@@ -501,7 +501,7 @@ select option{background:var(--surface2);}
       <div class="form-group full"><label>Variation</label><input id="f-variation" placeholder="e.g. Refractor, Holo, Gold, Short Print"></div>
       <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Any notes..."></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeCardModal()">Cancel</button><button class="btn btn-primary" onclick="saveCard()">Save Card</button></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeCardModal()">Cancel</button><button class="btn btn-secondary" onclick="saveCard(true)">Save &amp; Stay</button><button class="btn btn-primary" onclick="saveCard()">Save &amp; Close</button></div>
   </div>
 </div>
 
@@ -1273,7 +1273,7 @@ async function uploadToCloudinary(file) {
   return data.secure_url;
 }
 
-async function saveCard(){
+async function saveCard(stayOpen=false){
   let photoUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_url || null) : null;
   let photoBackUrl = EID ? (cardCache.find(c=>c.id===EID)?.photo_back_url || null) : null;
 
@@ -1286,7 +1286,8 @@ async function saveCard(){
   p.photo_back_url=photoBackUrl;
   let err;if(EID){({error:err}=await sb.from('cards').update(p).eq('id',EID));}else{({error:err}=await sb.from('cards').insert(p));}
   if(err){showToast('Error: '+err.message,'error');return;}
-  showToast(EID?'Card updated!':'Card added!','success');closeCardModal();await loadCardCache();if(VIEW==='gallery')renderGallery();else renderCol();
+  showToast(EID?'Card updated!':'Card added!','success');await loadCardCache();if(!stayOpen){closeCardModal();if(VIEW==='gallery')renderGallery();else renderCol();}else{// refresh nav position in case new card was added
+if(EID){navCardIds=filteredCardIds.length?filteredCardIds:cardCache.map(c=>c.id);navCurrentIdx=navCardIds.indexOf(EID);const navPos=document.getElementById('card-nav-pos');if(navPos)navPos.textContent=(navCurrentIdx+1)+' / '+navCardIds.length;}if(VIEW==='gallery')renderGallery();else renderCol();}
 }
 async function deleteCard(id){if(!confirm('Delete this card?'))return;await sb.from('cards').delete().eq('id',id);showToast('Deleted','success');await loadCardCache();renderCol();}
 function previewPhoto(e,targetId){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=document.getElementById(targetId||'photo-preview');p.src=ev.target.result;p.style.display='block';};r.readAsDataURL(f);}
@@ -1955,7 +1956,7 @@ function openResearchTool(id){
   document.getElementById('ebay-sold-link').href='https://www.ebay.com/sch/i.html?_nkw='+q+'&LH_Complete=1&LH_Sold=1';
   const title=encodeURIComponent(name.slice(0,80));
   const sc=researchCardCost<20?150:0;
-  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+title+'&shippingcost='+sc;
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sell/item?title='+title+'&shippingcost='+sc+'&listingtype=FixedPrice&mkcid=1';
   const hist=document.getElementById('market-price-history');
   if(c.market_price){hist.innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');}
   else hist.textContent='No market price recorded yet';
@@ -1977,7 +1978,7 @@ function calcListingProfit(){
     <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:2px"><span>Your Net Profit</span><span class="mono" style="color:${net>=0?'var(--success)':'var(--accent2)'}">${net>=0?'+':''}$${net.toFixed(2)}</span></div>
   </div>`;
   const sc=researchCardCost<20?150:0;
-  document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2);
+  document.getElementById('ebay-list-link').href='https://www.ebay.com/sell/item?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2)+'&listingtype=FixedPrice&mkcid=1';
 }
 async function saveMarketPrice(){
   const price=parseFloat(document.getElementById('market-price-input').value)||0;
