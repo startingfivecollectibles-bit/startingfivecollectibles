@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-12 | v14 -->
+<!-- Starting Five Collectibles | Build: 2026-04-12 | v16 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -75,6 +75,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:var(--surface2);}
 .status-sold{background:rgba(136,136,170,.15);color:var(--text2);}
 .status-being_graded{background:rgba(136,136,255,.15);color:var(--purple);}
 .status-psa_vault{background:rgba(46,204,113,.15);color:var(--success);border:1px solid rgba(46,204,113,.3);}
+.status-on_hold_grade{background:rgba(136,136,255,.15);color:var(--purple);}
 .card-thumb{width:30px;height:42px;object-fit:cover;border-radius:3px;}
 .no-thumb{width:30px;height:42px;background:var(--surface2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
 .empty-state{padding:48px;text-align:center;color:var(--text2);}
@@ -259,7 +260,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-info" id="user-email">—</div>
+      <div class="user-info" id="user-email" title="Click to see your email">—</div>
       <button class="btn-signout" onclick="signOut()">Sign Out</button>
     </div>
   </div>
@@ -290,7 +291,7 @@ select option{background:var(--surface2);}
           <span id="mass-select-count" style="font-size:.85rem;color:var(--text2)">0 selected</span>
           <select class="filter-select" id="mass-field"><option value="">Choose field to update...</option><option value="location">Location</option><option value="status">Status</option></select>
           <select class="filter-select" id="mass-location" style="display:none"><option value="">Select...</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option><option value="PSA Vault">PSA Vault</option></select>
-          <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+          <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="on_hold_grade">On Hold to Grade</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
           <button class="btn btn-primary btn-sm" onclick="applyMassUpdate()">Apply to Selected</button>
           <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Cancel</button>
         </div>
@@ -302,7 +303,7 @@ select option{background:var(--surface2);}
           </div>
           <div id="filter-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);gap:7px;background:var(--surface2);flex-wrap:wrap">
             <select class="filter-select" id="col-sport" onchange="renderCol()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
-            <select class="filter-select" id="col-status" onchange="renderCol()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+            <select class="filter-select" id="col-status" onchange="renderCol()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="on_hold_grade">On Hold to Grade</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
             <select class="filter-select" id="col-grade-co" onchange="renderCol()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select>
             <select class="filter-select" id="col-features" onchange="renderCol()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
             <input class="search-input" style="max-width:90px" placeholder="Year" id="col-year" oninput="renderCol()">
@@ -321,7 +322,7 @@ select option{background:var(--surface2);}
           </div>
           <div id="gallery-filter-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--border);flex-wrap:wrap;gap:7px;background:var(--surface2)">
             <select class="filter-select" id="gal-sport" onchange="renderGallery()"><option value="">All Sports</option><option>Baseball</option><option>Basketball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select>
-            <select class="filter-select" id="gal-status" onchange="renderGallery()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+            <select class="filter-select" id="gal-status" onchange="renderGallery()"><option value="">All Status</option><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="on_hold_grade">On Hold to Grade</option><option value="sold">Sold</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
             <select class="filter-select" id="gal-grade-co" onchange="renderGallery()"><option value="">All Grades</option><option value="raw">Raw Only</option><option>PSA</option><option>BGS</option><option>SGC</option><option>CGC</option></select>
             <select class="filter-select" id="gal-features" onchange="renderGallery()"><option value="">All Features</option><option value="auto">Autos</option><option value="relic">Relics</option><option value="serial">Serial Numbered</option></select>
             <input class="search-input" style="max-width:100px" placeholder="Year" id="gal-year" oninput="renderGallery()">
@@ -493,7 +494,7 @@ select option{background:var(--surface2);}
       <div class="form-group"><label>Set</label><input id="f-set" placeholder="e.g. Topps Chrome"></div>
       <div class="form-group"><label>Card #</label><input id="f-cardnum" placeholder="e.g. 150"></div>
       <div class="form-group"><label>Condition</label><select id="f-condition"><option>Raw - Mint</option><option>Raw - Near Mint</option><option>Raw - Excellent</option><option>Raw - Good</option><option>Raw - Poor</option><option>Graded</option></select></div>
-      <div class="form-group"><label>Status</label><select id="f-status"><option value="in_collection">In Collection</option><option value="listed">Listed for Sale</option><option value="being_graded">Currently Being Graded</option><option value="psa_vault">In PSA Vault</option><option value="sold">Sold</option></select></div>
+      <div class="form-group"><label>Status</label><select id="f-status"><option value="in_collection">In Collection</option><option value="listed">Listed for Sale</option><option value="on_hold_grade">On Hold to Grade</option><option value="being_graded">Currently Being Graded</option><option value="psa_vault">In PSA Vault</option><option value="sold">Sold</option></select></div>
       <hr class="section-divider"><div class="section-label">Serial Number &amp; Auto</div>
       <div class="form-group"><label>Serial Number (e.g. 45/99)</label><input id="f-serial" placeholder="e.g. 45/99"></div>
       <div class="form-group"><label>Autograph?</label><select id="f-auto"><option value="">No Auto</option><option value="on-card">On-Card Auto</option><option value="sticker">Sticker Auto</option><option value="inscribed">Inscribed Auto</option><option value="cut">Cut Auto</option><option value="other">Other Auto</option></select></div><div class="form-group"><label>Relic / Memorabilia?</label><select id="f-relic"><option value="">No Relic</option><option value="jersey">Jersey</option><option value="patch">Patch</option><option value="bat">Bat</option><option value="shoe">Shoe</option><option value="ball">Ball</option><option value="other">Other Relic</option></select></div>
@@ -906,15 +907,24 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 let CU=null,CC='business',EID=null,SID=null,SCOST=0,SGRADE_FEE=0,VIEW='list',CPT=[],CIMG=null;
 let filteredCardIds=[];
 const MO=['','January','February','March','April','May','June','July','August','September','October','November','December'];
-const EMAIL_TO_NAME={'mrshaffer02@gmail.com':'Matt','ajshaffer1@gmail.com':'Andrew'};
+const EMAIL_TO_NAME={'mrshaffer02@gmail.com':'Matt','startingfivecollectibles@gmail.com':'Matt','ajshaffer1@gmail.com':'Andrew'};
+
+function initApp(user){
+  CU=user;
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-email').textContent=CU.email;
+  initTaxYears();
+  const todoNav=document.getElementById('nav-todo');
+  if(todoNav)todoNav.style.display=EMAIL_TO_NAME[CU.email]==='Matt'?'flex':'none';
+  showPage(currentPage||'dashboard');
+}
 
 sb.auth.onAuthStateChange(async(ev,session)=>{
-  if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();// Hide To-Do for non-Matt users
-const todoNav=document.getElementById('nav-todo');if(todoNav)todoNav.style.display=EMAIL_TO_NAME[CU.email]==='Matt'?'flex':'none';showPage(currentPage||'dashboard');}
+  if(session?.user){initApp(session.user);}
   else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';}
 });
 
-// Pick up magic link token from URL hash
 (async()=>{
   const hash=window.location.hash;
   if(hash&&hash.includes('access_token')){
@@ -927,7 +937,7 @@ const todoNav=document.getElementById('nav-todo');if(todoNav)todoNav.style.displ
     }
   } else {
     const{data:{session}}=await sb.auth.getSession();
-    if(session?.user){CU=session.user;document.getElementById('auth-screen').style.display='none';document.getElementById('app').style.display='block';document.getElementById('user-email').textContent=CU.email;initTaxYears();showPage('dashboard');}
+    if(session?.user){initApp(session.user);}
   }
 })();
 async function signIn(){
@@ -1070,6 +1080,11 @@ function showPage(n){
 }
 function switchCollection(t){
   CC=t;
+  // Update location auto-fill when switching collections
+  const locEl=document.getElementById('f-location');
+  if(locEl&&document.getElementById('card-modal').style.display==='flex'&&!EID){
+    locEl.value=CC==='personal'?(EMAIL_TO_NAME[CU?.email]||''):'';
+  }
   document.getElementById('btn-business').classList.toggle('active',t==='business');
   document.getElementById('btn-personal').classList.toggle('active',t==='personal');
   ['col-badge','col-badge2'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=t.charAt(0).toUpperCase()+t.slice(1);el.className='collection-badge badge-'+t;}});
@@ -1379,7 +1394,8 @@ async function renderSales(){
 
 function initTaxYears(){const sel=document.getElementById('tax-year');if(sel.options.length>0)return;const yr=new Date().getFullYear();for(let y=yr;y>=yr-5;y--){const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);}}
 async function renderTax(){if(CC==='personal'){document.getElementById('tax-content').innerHTML=`<div class="alert-box info"><div class="alert-title" style="color:var(--text2)">ℹ️ Business collection only</div><p style="color:var(--text2);font-size:.86rem">Switch to Business to see your tax summary.</p></div>`;return;}const yr=parseInt(document.getElementById('tax-year').value);const{data:c}=await getQ();const f=(c||[]).filter(x=>x.status==='sold'&&x.sale_date&&new Date(x.sale_date).getFullYear()===yr);const rev=f.reduce((s,x)=>s+(x.sale_price||0),0);const cost=f.reduce((s,x)=>s+(x.cost_paid||0),0);const fees=f.reduce((s,x)=>s+(x.platform_fees||0),0);const ship=f.reduce((s,x)=>s+(x.shipping_cost||0),0);// Grading fees: all cards graded this year (any status)
-  const gradedThisYr=(c||[]).filter(x=>x.grading_fee&&x.grading_fee>0&&x.purchase_date&&new Date(x.purchase_date).getFullYear()===yr);
+  // Grading fees: cards where fee was paid and returned this year (or any year if no return date)
+  const gradedThisYr=(c||[]).filter(x=>x.grading_fee&&x.grading_fee>0&&(x.grade_returned_date?new Date(x.grade_returned_date).getFullYear()===yr:x.purchase_date&&new Date(x.purchase_date).getFullYear()===yr));
   const gradingFeeTotal=gradedThisYr.reduce((s,x)=>s+(x.grading_fee||0),0);
   const net=rev-cost-fees-ship-gradingFeeTotal;// Also get boxes for this year
   const{data:allBoxes}=await sb.from('boxes').select('*').eq('collection_type','business');
