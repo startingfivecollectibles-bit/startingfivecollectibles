@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-12 | v17 -->
+<!-- Starting Five Collectibles | Build: 2026-04-17 | v18 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v17 · 2026-04-12</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v18 · 2026-04-17</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -309,6 +309,7 @@ select option{background:var(--surface2);}
             <input class="search-input" style="max-width:90px" placeholder="Year" id="col-year" oninput="renderCol()">
             <input class="search-input" style="max-width:130px" placeholder="Set name" id="col-set-filter" oninput="renderCol()">
             <input class="search-input" style="max-width:100px" placeholder="Card #" id="col-cardno" oninput="renderCol()">
+            <input class="search-input" style="max-width:120px" placeholder="Cert #" id="col-cert" oninput="renderCol()">
             <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()">✕ Clear</button>
           </div>
           <div id="collection-table"></div>
@@ -835,6 +836,11 @@ select option{background:var(--surface2);}
       </div>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">
         <div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Quick List on eBay</div>
+        <div id="listing-info-panel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px;font-size:.81rem;display:flex;gap:14px;flex-wrap:wrap">
+          <div><span style="color:var(--text2);font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Condition</span><span id="li-condition" style="color:var(--text)">—</span></div>
+          <div><span style="color:var(--text2);font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Asking Price</span><span id="li-asking" style="color:var(--accent);font-family:'DM Mono',monospace">—</span></div>
+          <div><span style="color:var(--text2);font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Location</span><span id="li-location" style="color:var(--text)">—</span></div>
+        </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
           <input id="listing-price" type="number" step="0.01" placeholder="Your asking price ($)" style="flex:1" oninput="calcListingProfit()">
         </div>
@@ -1063,7 +1069,7 @@ function clearAllFilters(){
   ['col-sport','col-status','col-grade-co','col-features'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  ['col-year','col-set-filter','col-cardno'].forEach(id=>{
+  ['col-year','col-set-filter','col-cardno','col-cert'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   renderCol();
@@ -1202,6 +1208,7 @@ function renderCol(){
   const yearF=(document.getElementById('col-year')?.value||'').trim();
   const setF=(document.getElementById('col-set-filter')?.value||'').toLowerCase().trim();
   const cardNoF=(document.getElementById('col-cardno')?.value||'').trim();
+  const certF=(document.getElementById('col-cert')?.value||'').trim();
   let cards=filterCards(search,sport,status);
   if(gradeCo==='raw')cards=cards.filter(c=>!c.grade_company);
   else if(gradeCo)cards=cards.filter(c=>c.grade_company===gradeCo);
@@ -1211,6 +1218,7 @@ function renderCol(){
   if(yearF)cards=cards.filter(c=>String(c.year||'').includes(yearF));
   if(setF)cards=cards.filter(c=>(c.card_set||'').toLowerCase().includes(setF));
   if(cardNoF)cards=cards.filter(c=>(c.card_number||'').toLowerCase().includes(cardNoF.toLowerCase()));
+  if(certF)cards=cards.filter(c=>(c.cert_number||'').toLowerCase().includes(certF.toLowerCase()));
   const sf={newest:(a,b)=>new Date(b.created_at)-new Date(a.created_at),player:(a,b)=>(a.player||'').localeCompare(b.player||''),team:(a,b)=>(a.team||'').localeCompare(b.team||''),year:(a,b)=>(b.year||0)-(a.year||0),cost:(a,b)=>(b.cost_paid||0)-(a.cost_paid||0)};
   cards.sort(sf[sort]||sf.newest);
   filteredCardIds=cards.map(c=>c.id);// track for prev/next nav
@@ -1998,6 +2006,10 @@ function openResearchTool(id){
   const title=encodeURIComponent(name.slice(0,80));
   const sc=researchCardCost<20?150:0;
   document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+title+'&shippingcost='+sc+'&categoryId=213';
+  // Populate listing info panel
+  document.getElementById('li-condition').textContent=c.condition||'—';
+  document.getElementById('li-asking').textContent=c.asking_price?'$'+Number(c.asking_price).toFixed(2):'Not set';
+  document.getElementById('li-location').textContent=c.location||'—';
   const hist=document.getElementById('market-price-history');
   if(c.market_price){hist.innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');}
   else hist.textContent='No market price recorded yet';
@@ -2190,7 +2202,7 @@ async function renderTodo(){
         ${t.notes?`<div style="font-size:.82rem;color:var(--text2);margin-top:4px;line-height:1.5">${t.notes}</div>`:''}
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0">
-        <button class="btn btn-secondary btn-sm" onclick="editTodo('${t.id}','${(t.text||'').replace(/'/g,"\'")}','${(t.notes||'').replace(/'/g,"\'")}')">Edit</button>
+        <button class="btn btn-secondary btn-sm" data-todo-id="${t.id}" data-todo-text="${(t.text||'').replace(/"/g,'&quot;')}" data-todo-notes="${(t.notes||'').replace(/"/g,'&quot;')}" onclick="editTodoFromBtn(this)">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteTodo('${t.id}')">Del</button>
       </div>
     </div>`).join('');
@@ -2201,6 +2213,12 @@ function openTodoModal(){
   document.getElementById('todo-text').value='';
   document.getElementById('todo-notes').value='';
   document.getElementById('todo-modal').style.display='flex';
+}
+function editTodoFromBtn(btn){
+  const id=btn.dataset.todoId;
+  const text=btn.dataset.todoText||'';
+  const notes=btn.dataset.todoNotes||'';
+  editTodo(id,text,notes);
 }
 function editTodo(id,text,notes){
   editTodoId=id;
