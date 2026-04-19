@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-18 | v19 -->
+<!-- Starting Five Collectibles | Build: 2026-04-18 | v20 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v19 · 2026-04-18</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v20 · 2026-04-18</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -256,6 +256,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('boxes')"><span class="icon">📦</span> Box Tracker</button>
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
+      <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
     </nav>
@@ -440,6 +441,39 @@ select option{background:var(--surface2);}
       </div>
       <div id="todo-list" style="max-width:680px"></div>
     </div>
+    <div class="page" id="page-scouting">
+      <div class="page-header">
+        <span class="page-title">Rookie Scouting Tool</span>
+      </div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:18px;line-height:1.6">Search any player to get their top rookie cards and a market summary. Results are saved permanently — search once, reference forever.</p>
+
+      <!-- Search bar -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:22px">
+        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="flex:1;min-width:180px">
+            <label>Player Name</label>
+            <input id="scout-player" placeholder="e.g. Stephen Curry" onkeydown="if(event.key==='Enter')runScout()">
+          </div>
+          <div class="form-group" style="min-width:140px">
+            <label>Sport</label>
+            <select id="scout-sport">
+              <option>Basketball</option>
+              <option>Baseball</option>
+              <option>Football</option>
+              <option>Hockey</option>
+              <option>Soccer</option>
+              <option>F1</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="runScout()" id="scout-btn" style="height:36px">🔭 Scout Player</button>
+        </div>
+        <div id="scout-status" style="margin-top:10px;font-size:.83rem;color:var(--text2);display:none"></div>
+      </div>
+
+      <!-- Results organized by sport -->
+      <div id="scouting-results"></div>
+    </div>
+
     <div class="page" id="page-admin">
       <div class="page-header"><span class="page-title">Team Access</span></div>
 
@@ -1091,7 +1125,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -2090,6 +2124,172 @@ async function saveMarketPrice(){
   showToast('Market price saved!','success');
   await loadCardCache();
   document.getElementById('market-price-history').innerHTML='Last recorded: <strong style="color:var(--accent)">$'+price.toFixed(2)+'</strong> on '+today;
+}
+
+// ─── ROOKIE SCOUTING TOOL ─────────────────────────────────────────────────
+const GEMINI_KEY='AIzaSyAT2rS8oJEYCjAE5AS7BCS2Uut2HIEmlgg';
+
+async function runScout(){
+  const player=document.getElementById('scout-player').value.trim();
+  const sport=document.getElementById('scout-sport').value;
+  if(!player){showToast('Enter a player name','error');return;}
+  const btn=document.getElementById('scout-btn');
+  const status=document.getElementById('scout-status');
+  // Check cache first
+  status.style.display='block';
+  status.textContent='Checking database...';
+  btn.disabled=true;
+  const{data:cached}=await sb.from('rookie_cache').select('*').ilike('player',player).eq('sport',sport).maybeSingle();
+  if(cached){
+    status.textContent='Loaded from saved data.';
+    btn.disabled=false;
+    renderScouting();
+    return;
+  }
+  // Not cached — call Gemini
+  status.textContent='Asking Gemini AI... this may take a few seconds.';
+  try{
+    const prompt=`You are a sports card expert. For the player "${player}" (${sport}), return ONLY a JSON object with no markdown, no explanation, just raw JSON in this exact format:
+{"player":"${player}","sport":"${sport}","market_summary":"Two sentences about this player's rookie card market and investment outlook.","cards":[{"year":2009,"set":"Topps","card_number":"321","note":"Base RC"},{"year":2009,"set":"Bowman Chrome","card_number":"195","note":"Key prospect card"}]}
+Return exactly 5 cards. Use real year, set name, and card number. If unsure of exact card number use your best knowledge.`;
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const data=await res.json();
+    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const clean=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    // Save to Supabase
+    const{error}=await sb.from('rookie_cache').insert({
+      player:parsed.player||player,
+      sport:parsed.sport||sport,
+      cards:parsed.cards||[],
+      market_summary:parsed.market_summary||''
+    });
+    if(error){showToast('Error saving: '+error.message,'error');btn.disabled=false;return;}
+    status.textContent='Saved to scouting database!';
+    showToast(player+' scouting data saved!','success');
+  }catch(e){
+    showToast('Gemini error: '+e.message,'error');
+    status.textContent='Error — try again.';
+    btn.disabled=false;
+    return;
+  }
+  btn.disabled=false;
+  document.getElementById('scout-player').value='';
+  renderScouting();
+}
+
+async function renderScouting(){
+  const{data:players}=await sb.from('rookie_cache').select('*').order('player',{ascending:true});
+  const el=document.getElementById('scouting-results');
+  if(!players?.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🔭</div><div>No players scouted yet. Search a player above to get started.</div></div>`;
+    return;
+  }
+  // Group by sport
+  const bySport={};
+  players.forEach(p=>{if(!bySport[p.sport])bySport[p.sport]=[];bySport[p.sport].push(p);});
+  const sportOrder=['Basketball','Baseball','Football','Hockey','Soccer','F1','Other'];
+  const sorted=Object.keys(bySport).sort((a,b)=>sportOrder.indexOf(a)-sportOrder.indexOf(b));
+  el.innerHTML=sorted.map(sport=>`
+    <div style="margin-bottom:28px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;color:var(--accent);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px">${sport}</div>
+      ${bySport[sport].map(p=>renderScoutCard(p)).join('')}
+    </div>`).join('');
+}
+
+function renderScoutCard(p){
+  const cards=Array.isArray(p.cards)?p.cards:[];
+  const dealLink='https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(p.player+' rookie -graded')+'&LH_Complete=1&LH_Sold=1';
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px" id="scout-card-${p.id}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">${p.player}</div>
+        ${p.market_summary?`<div style="font-size:.82rem;color:var(--text2);margin-top:4px;max-width:560px;line-height:1.5">${p.market_summary}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="${dealLink}" target="_blank" class="btn btn-success btn-sm">🔍 Find Raw Deals</a>
+        <button class="btn btn-secondary btn-sm" onclick="toggleScoutEdit('${p.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteScout('${p.id}')">Del</button>
+      </div>
+    </div>
+    <!-- Card table -->
+    <div id="scout-view-${p.id}">
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead><tr>
+          <th style="text-align:left;padding:6px 10px;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Year</th>
+          <th style="text-align:left;padding:6px 10px;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Set</th>
+          <th style="text-align:left;padding:6px 10px;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Card #</th>
+          <th style="text-align:left;padding:6px 10px;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Note</th>
+          <th style="text-align:left;padding:6px 10px;font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">eBay Sold</th>
+        </tr></thead>
+        <tbody>
+          ${cards.map(c=>`<tr>
+            <td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)">${c.year||'—'}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)">${c.set||'—'}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);font-family:'DM Mono',monospace">#${c.card_number||'—'}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2);font-size:.78rem">${c.note||''}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)">
+              <a href="https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(p.player+' '+c.year+' '+c.set+' #'+c.card_number+' rookie')}&LH_Complete=1&LH_Sold=1" target="_blank" style="color:var(--accent);font-size:.78rem;text-decoration:none">View Sold →</a>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <!-- Edit form (hidden by default) -->
+    <div id="scout-edit-${p.id}" style="display:none;margin-top:12px">
+      <div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Edit Market Summary</div>
+      <textarea id="scout-summary-${p.id}" style="width:100%;min-height:60px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.85rem">${p.market_summary||''}</textarea>
+      <div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Edit Cards</div>
+      <div id="scout-cards-edit-${p.id}">
+        ${cards.map((c,i)=>`<div style="display:grid;grid-template-columns:70px 1fr 90px 1fr;gap:7px;margin-bottom:7px">
+          <input value="${c.year||''}" placeholder="Year" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-size:.82rem" id="sc-year-${p.id}-${i}">
+          <input value="${c.set||''}" placeholder="Set" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-size:.82rem" id="sc-set-${p.id}-${i}">
+          <input value="${c.card_number||''}" placeholder="Card #" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-size:.82rem" id="sc-num-${p.id}-${i}">
+          <input value="${c.note||''}" placeholder="Note (e.g. Base RC)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-size:.82rem" id="sc-note-${p.id}-${i}">
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:7px;margin-top:10px">
+        <button class="btn btn-primary btn-sm" onclick="saveScoutEdit('${p.id}',${cards.length})">Save Changes</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleScoutEdit('${p.id}')">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleScoutEdit(id){
+  const view=document.getElementById('scout-view-'+id);
+  const edit=document.getElementById('scout-edit-'+id);
+  if(!view||!edit)return;
+  const editing=edit.style.display==='block';
+  edit.style.display=editing?'none':'block';
+  view.style.display=editing?'block':'none';
+}
+
+async function saveScoutEdit(id,cardCount){
+  const summary=document.getElementById('scout-summary-'+id)?.value||'';
+  const cards=[];
+  for(let i=0;i<cardCount;i++){
+    const year=document.getElementById(`sc-year-${id}-${i}`)?.value||'';
+    const set=document.getElementById(`sc-set-${id}-${i}`)?.value||'';
+    const card_number=document.getElementById(`sc-num-${id}-${i}`)?.value||'';
+    const note=document.getElementById(`sc-note-${id}-${i}`)?.value||'';
+    if(year||set||card_number)cards.push({year,set,card_number,note});
+  }
+  const{error}=await sb.from('rookie_cache').update({cards,market_summary:summary}).eq('id',id);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Saved!','success');
+  renderScouting();
+}
+
+async function deleteScout(id){
+  if(!confirm('Remove this player from your scouting database?'))return;
+  await sb.from('rookie_cache').delete().eq('id',id);
+  showToast('Removed','success');
+  renderScouting();
 }
 
 // ─── PHOTO MIGRATION ──────────────────────────────────────────────────────────
