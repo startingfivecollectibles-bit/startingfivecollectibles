@@ -2135,7 +2135,6 @@ async function runScout(){
   if(!player){showToast('Enter a player name','error');return;}
   const btn=document.getElementById('scout-btn');
   const status=document.getElementById('scout-status');
-  // Check cache first
   status.style.display='block';
   status.textContent='Checking database...';
   btn.disabled=true;
@@ -2146,40 +2145,54 @@ async function runScout(){
     renderScouting();
     return;
   }
-  // Not cached — call Gemini
   status.textContent='Asking Gemini AI... this may take a few seconds.';
   try{
-    const prompt=`You are a sports card expert. For the player "${player}" (${sport}), return ONLY a JSON object with no markdown, no explanation, just raw JSON in this exact format:
-{"player":"${player}","sport":"${sport}","market_summary":"Two sentences about this player's rookie card market and investment outlook.","cards":[{"year":2009,"set":"Topps","card_number":"321","note":"Base RC"},{"year":2009,"set":"Bowman Chrome","card_number":"195","note":"Key prospect card"}]}
-Return exactly 5 cards. Use real year, set name, and card number. If unsure of exact card number use your best knowledge.`;
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,{
+    const prompt=`You are a sports card expert. Respond with ONLY a valid JSON object and absolutely nothing else — no markdown, no backticks, no explanation before or after.
+
+For the ${sport} player named "${player}", return this exact JSON structure:
+{"player":"PLAYER_NAME","sport":"SPORT","market_summary":"SENTENCE_ONE. SENTENCE_TWO.","cards":[{"year":YEAR,"set":"SET_NAME","card_number":"CARD_NUM","note":"SHORT_NOTE"},{"year":YEAR,"set":"SET_NAME","card_number":"CARD_NUM","note":"SHORT_NOTE"},{"year":YEAR,"set":"SET_NAME","card_number":"CARD_NUM","note":"SHORT_NOTE"},{"year":YEAR,"set":"SET_NAME","card_number":"CARD_NUM","note":"SHORT_NOTE"},{"year":YEAR,"set":"SET_NAME","card_number":"CARD_NUM","note":"SHORT_NOTE"}]}
+
+Rules:
+- Return exactly 5 cards
+- Use real years and set names
+- market_summary is exactly 2 sentences about rookie card market value and investment outlook
+- Your entire response must be parseable by JSON.parse() with no modifications`;
+
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+      body:JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:1024}
+      })
     });
+    if(!res.ok){const err=await res.text();throw new Error('Gemini API error: '+res.status+' '+err);}
     const data=await res.json();
     const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const clean=raw.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
-    // Save to Supabase
+    if(!raw)throw new Error('Empty response from Gemini');
+    // Robust extraction — find the JSON object even if there's surrounding text
+    const jsonMatch=raw.match(/\{[\s\S]*\}/);
+    if(!jsonMatch)throw new Error('No JSON found in response');
+    const parsed=JSON.parse(jsonMatch[0]);
+    if(!parsed.cards||!Array.isArray(parsed.cards))throw new Error('Invalid card data returned');
     const{error}=await sb.from('rookie_cache').insert({
       player:parsed.player||player,
       sport:parsed.sport||sport,
-      cards:parsed.cards||[],
+      cards:parsed.cards,
       market_summary:parsed.market_summary||''
     });
     if(error){showToast('Error saving: '+error.message,'error');btn.disabled=false;return;}
     status.textContent='Saved to scouting database!';
     showToast(player+' scouting data saved!','success');
-  }catch(e){
-    showToast('Gemini error: '+e.message,'error');
-    status.textContent='Error — try again.';
     btn.disabled=false;
-    return;
+    document.getElementById('scout-player').value='';
+    renderScouting();
+  }catch(e){
+    // Show the actual raw response in status to help debug
+    showToast('Error: '+e.message,'error');
+    status.textContent='Error: '+e.message+'. Try searching again.';
+    btn.disabled=false;
   }
-  btn.disabled=false;
-  document.getElementById('scout-player').value='';
-  renderScouting();
 }
 
 async function renderScouting(){
