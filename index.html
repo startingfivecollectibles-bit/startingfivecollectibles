@@ -2158,7 +2158,7 @@ Rules:
 - market_summary is exactly 2 sentences about rookie card market value and investment outlook
 - Your entire response must be parseable by JSON.parse() with no modifications`;
 
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
