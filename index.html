@@ -2127,7 +2127,13 @@ async function saveMarketPrice(){
 }
 
 // ─── ROOKIE SCOUTING TOOL ─────────────────────────────────────────────────
-const GEMINI_KEY='AIzaSyAT2rS8oJEYCjAE5AS7BCS2Uut2HIEmlgg';
+let GEMINI_KEY=null;
+async function getGeminiKey(){
+  if(GEMINI_KEY)return GEMINI_KEY;
+  const{data}=await sb.from('app_config').select('value').eq('key','gemini_key').single();
+  if(data?.value)GEMINI_KEY=data.value;
+  return GEMINI_KEY;
+}
 
 async function runScout(){
   const player=document.getElementById('scout-player').value.trim();
@@ -2158,7 +2164,9 @@ Rules:
 - market_summary is exactly 2 sentences about rookie card market value and investment outlook
 - Your entire response must be parseable by JSON.parse() with no modifications`;
 
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,{
+    const key=await getGeminiKey();
+    if(!key){showToast('Gemini API key not configured','error');btn.disabled=false;return;}
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
