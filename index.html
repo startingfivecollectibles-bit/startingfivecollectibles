@@ -629,7 +629,7 @@ select option{background:var(--surface2);}
 <!-- RELEASE MODAL -->
 <div class="modal-overlay" id="release-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" style="max-width:480px">
-    <h3>Add Release</h3>
+    <h3 id="release-modal-title">Add Release</h3>
     <div class="form-grid">
       <div class="form-group full"><label>Product Name</label><input id="r-name" placeholder="e.g. Topps Chrome NFL"></div>
       <div class="form-group"><label>Release Date</label><input id="r-date" type="date"></div>
@@ -1487,10 +1487,105 @@ function openIntelModal(){['sport','cardtype','notes','platforms'].forEach(f=>do
 async function saveIntel(){const{error}=await sb.from('buying_calendar').insert({user_id:CU.id,sport:document.getElementById('i-sport').value,start_month:parseInt(document.getElementById('i-start').value),end_month:parseInt(document.getElementById('i-end').value),card_type:document.getElementById('i-cardtype').value,strategy_notes:document.getElementById('i-notes').value,platforms:document.getElementById('i-platforms').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('intel-modal').style.display='none';renderIntel();}
 async function deleteIntel(id){await sb.from('buying_calendar').delete().eq('id',id);showToast('Removed','success');renderIntel();}
 
-async function renderReleases(){const{data:items}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');if(!items?.length){document.getElementById('release-list').innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div>No releases added yet</div></div>`;return;}const today=new Date();today.setHours(0,0,0,0);const MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('release-list').innerHTML=items.map(r=>{const rd=new Date(r.release_date+'T12:00:00');const isT=rd.toDateString()===today.toDateString();const isU=rd>today&&(rd-today)<7*24*60*60*1000;return`<div class="release-item ${isT?'today':isU?'upcoming':''}"><div class="release-date-box"><div class="rday">${rd.getDate()}</div><div class="rmon">${MNS[rd.getMonth()]}</div></div><div class="release-info"><h4>${r.product_name}${isT?' <span style="color:var(--accent2);font-size:.7rem">● TODAY</span>':''}</h4>${r.release_time?'<div style="font-family:\'DM Mono\',monospace;font-size:.78rem;color:var(--accent)">⏰ '+r.release_time+'</div>':''}${r.notes?'<p>'+r.notes+'</p>':''}</div><button class="btn btn-danger btn-sm" onclick="deleteRelease(\''+r.id+'\')">Remove</button></div>`;}).join('');}
-function openReleaseModal(){['name','notes'].forEach(f=>document.getElementById('r-'+f).value='');document.getElementById('r-date').value='';document.getElementById('r-time').value='';document.getElementById('release-modal').style.display='flex';}
-async function saveRelease(){const{error}=await sb.from('release_calendar').insert({user_id:CU.id,product_name:document.getElementById('r-name').value,release_date:document.getElementById('r-date').value,release_time:document.getElementById('r-time').value||null,notes:document.getElementById('r-notes').value,remind_day_before:document.getElementById('r-day').checked,remind_hour_before:document.getElementById('r-hour').checked});if(error){showToast('Error: '+error.message,'error');return;}showToast('Release added!','success');document.getElementById('release-modal').style.display='none';renderReleases();}
-async function deleteRelease(id){await sb.from('release_calendar').delete().eq('id',id);showToast('Removed','success');renderReleases();}
+async function renderReleases(){
+  const{data:items}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');
+  const el=document.getElementById('release-list');
+  if(!items?.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div>No releases added yet</div></div>`;return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  const MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const upcoming=items.filter(r=>new Date(r.release_date+'T12:00:00')>=today);
+  const past=items.filter(r=>new Date(r.release_date+'T12:00:00')<today);
+  const renderItem=r=>{
+    const rd=new Date(r.release_date+'T12:00:00');
+    const isT=rd.toDateString()===today.toDateString();
+    const isU=rd>today&&(rd-today)<7*24*60*60*1000;
+    return`<div class="release-item ${isT?'today':isU?'upcoming':''}">
+      <div class="release-date-box"><div class="rday">${rd.getDate()}</div><div class="rmon">${MNS[rd.getMonth()]}</div></div>
+      <div class="release-info">
+        <h4>${r.product_name}${isT?' <span style="color:var(--accent2);font-size:.7rem">● TODAY</span>':''}</h4>
+        ${r.release_time?`<div style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--accent)">⏰ ${r.release_time.slice(0,5)}</div>`:''}
+        ${r.notes?`<p>${r.notes}</p>`:''}
+        <div style="font-size:.72rem;color:var(--text2);margin-top:4px">${r.remind_day_before?'🔔 Day before ':' '}${r.remind_hour_before?'🔔 Hour before':''}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm"
+          data-id="${r.id}"
+          data-name="${(r.product_name||'').replace(/"/g,'&quot;')}"
+          data-date="${r.release_date||''}"
+          data-time="${(r.release_time||'').slice(0,5)}"
+          data-notes="${(r.notes||'').replace(/"/g,'&quot;')}"
+          data-day="${r.remind_day_before?'1':'0'}"
+          data-hour="${r.remind_hour_before?'1':'0'}"
+          onclick="editReleaseFromBtn(this)">Edit</button>
+        <button class="btn btn-danger btn-sm" data-id="${r.id}" onclick="deleteReleaseFromBtn(this)">Remove</button>
+      </div>
+    </div>`;
+  };
+  let html='';
+  if(upcoming.length){
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent);margin-bottom:10px">Upcoming</div>`;
+    html+=upcoming.map(renderItem).join('');
+  }
+  if(past.length){
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-top:22px;margin-bottom:10px">Past</div>`;
+    html+=past.map(renderItem).join('');
+  }
+  el.innerHTML=html;
+}
+function deleteReleaseFromBtn(btn){
+  const id=btn.dataset.id;
+  deleteRelease(id);
+}
+async function deleteRelease(id){
+  if(!confirm('Remove this release?'))return;
+  await sb.from('release_calendar').delete().eq('id',id);
+  showToast('Removed','success');
+  renderReleases();
+}
+let editReleaseId=null;
+function editReleaseFromBtn(btn){
+  editReleaseId=btn.dataset.id;
+  document.getElementById('r-name').value=btn.dataset.name||'';
+  document.getElementById('r-date').value=btn.dataset.date||'';
+  document.getElementById('r-time').value=btn.dataset.time||'';
+  document.getElementById('r-notes').value=btn.dataset.notes||'';
+  document.getElementById('r-day').checked=btn.dataset.day==='1';
+  document.getElementById('r-hour').checked=btn.dataset.hour==='1';
+  document.getElementById('release-modal-title').textContent='Edit Release';
+  document.getElementById('release-modal').style.display='flex';
+}
+function openReleaseModal(){
+  editReleaseId=null;
+  ['name','notes'].forEach(f=>document.getElementById('r-'+f).value='');
+  document.getElementById('r-date').value='';
+  document.getElementById('r-time').value='';
+  document.getElementById('r-day').checked=true;
+  document.getElementById('r-hour').checked=true;
+  document.getElementById('release-modal-title').textContent='Add Release';
+  document.getElementById('release-modal').style.display='flex';
+}
+async function saveRelease(){
+  const payload={
+    user_id:CU.id,
+    product_name:document.getElementById('r-name').value,
+    release_date:document.getElementById('r-date').value,
+    release_time:document.getElementById('r-time').value||null,
+    notes:document.getElementById('r-notes').value,
+    remind_day_before:document.getElementById('r-day').checked,
+    remind_hour_before:document.getElementById('r-hour').checked
+  };
+  let error;
+  if(editReleaseId){
+    ({error}=await sb.from('release_calendar').update(payload).eq('id',editReleaseId));
+  } else {
+    ({error}=await sb.from('release_calendar').insert(payload));
+  }
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast(editReleaseId?'Updated!':'Release added!','success');
+  document.getElementById('release-modal').style.display='none';
+  editReleaseId=null;
+  renderReleases();
+}
 
 async function renderResearch(){const{data:notes}=await sb.from('research_notes').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});if(!notes?.length){document.getElementById('note-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">📝</div><div>No research notes yet</div></div>`;return;}document.getElementById('note-grid').innerHTML=notes.map(n=>{const nid=n.id;return`<div class="note-card"><h4>${n.title||'Untitled'}</h4>${n.sport?`<div style="font-size:.74rem;color:var(--accent);margin-bottom:7px">${n.sport}</div>`:''}<div class="note-body">${n.content||''}</div>${n.tags?n.tags.split(',').map(t=>'<span class="note-tag">'+t.trim()+'</span>').join(''):''}<div style="margin-top:11px;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="editNoteModal('${nid}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteNote('${nid}')">Delete</button></div></div>`;}).join('');}
 function openNoteModal(){['title','sport','tags','body'].forEach(f=>document.getElementById('n-'+f).value='');document.getElementById('note-modal').style.display='flex';}
