@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-18 | v20 -->
+<!-- Starting Five Collectibles | Build: 2026-04-26 | v21 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v20 · 2026-04-18</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v21 · 2026-04-26</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -257,6 +257,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
+      <button class="nav-item" onclick="showPage('alerts')"><span class="icon">🚨</span> Sell Alerts</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
     </nav>
@@ -441,6 +442,33 @@ select option{background:var(--surface2);}
       </div>
       <div id="todo-list" style="max-width:680px"></div>
     </div>
+    <div class="page" id="page-alerts">
+      <div class="page-header">
+        <span class="page-title">Sell Alerts</span>
+        <button class="btn btn-primary" onclick="openAlertModal()">+ Add Alert</button>
+      </div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:18px;line-height:1.6">Track sell signals for cards you own. Use the Gemini sweep to scan for recent sports events that might affect card values.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="runAlertSweep()" id="sweep-btn">🤖 Gemini News Sweep</button>
+        <span style="font-size:.83rem;color:var(--text2)">Scans recent sports events and flags cards you own worth selling</span>
+        <div id="sweep-status" style="font-size:.83rem;color:var(--accent);display:none"></div>
+      </div>
+      <div id="alerts-list"></div>
+    </div>
+
+    <!-- ALERT MODAL -->
+    <div class="modal-overlay" id="alert-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="modal" style="max-width:460px">
+        <h3 id="alert-modal-title">Add Sell Alert</h3>
+        <div class="form-group"><label>Alert</label><input id="al-text" placeholder="e.g. Cooper Flagg wins ROY — sell now"></div>
+        <div class="form-group"><label>Player (optional)</label><input id="al-player" placeholder="e.g. Cooper Flagg"></div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="saveAlert()">Save</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('alert-modal').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-scouting">
       <div class="page-header">
         <span class="page-title">Rookie Scouting Tool</span>
@@ -1125,7 +1153,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -1150,7 +1178,7 @@ function getQ(includingPhotos=false){
 }
 
 async function loadDash(){
-  const{data:cards}=await getQ();const{data:rel}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');const{data:intel}=await sb.from('buying_calendar').select('*').eq('user_id',CU.id);
+  const{data:cards}=await getQ();const{data:rel}=await sb.from('release_calendar').select('*').order('release_date');const{data:intel}=await sb.from('buying_calendar').select('*');
   if(!cards)return;
   const sold=cards.filter(c=>c.status==='sold');const rev=sold.reduce((s,c)=>s+(c.sale_price||0),0);const cost=sold.reduce((s,c)=>s+(c.cost_paid||0),0);const fees=sold.reduce((s,c)=>s+(c.platform_fees||0)+(c.shipping_cost||0),0);const net=rev-cost-fees;
   document.getElementById('dash-stats').innerHTML=`<div class="stat-card"><div class="stat-label">Total Cards</div><div class="stat-value">${cards.length}</div></div><div class="stat-card"><div class="stat-label">In Collection</div><div class="stat-value">${cards.filter(c=>c.status==='in_collection').length}</div></div><div class="stat-card"><div class="stat-label">Cards Sold</div><div class="stat-value">${sold.length}</div></div><div class="stat-card ${net>=0?'green':'red'}"><div class="stat-label">Net Profit</div><div class="stat-value ${net>=0?'positive':'negative'}">${net>=0?'+':''}$${net.toFixed(2)}</div></div><div class="stat-card purple"><div class="stat-label">Being Graded</div><div class="stat-value">${cards.filter(c=>c.status==='being_graded').length}</div></div>`;
@@ -1477,18 +1505,21 @@ async function renderTax(){if(CC==='personal'){document.getElementById('tax-cont
     <div class="tax-row total"><span>Net Taxable Profit</span><span class="amount ${grandNet>=0?'positive':'negative'}">${grandNet>=0?'+':''}$${grandNet.toFixed(2)}</span></div>
   </div><div class="turbotax-hint"><strong>📝 TurboTax:</strong> Report on <strong>Schedule C</strong>. Net profit for ${yr}: $${grandNet.toFixed(2)}. All fees, shipping, and daily costs already deducted.</div>`;}
 
-async function renderWant(){const{data:items}=await sb.from('want_list').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});if(!items?.length){document.getElementById('want-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>No cards on your want list</div></div>`;return;}document.getElementById('want-grid').innerHTML=items.map(w=>`<div class="want-card"><h4>${w.player||'—'}</h4><div style="font-size:.76rem;color:var(--text2)">${w.year||''} ${w.card_set||''} · ${w.sport||''}</div>${w.target_price?'<div class="target">Target: $'+w.target_price.toFixed(2)+'</div>':''}<p style="font-size:.8rem;color:var(--text2)">${w.notes||''}</p><div style="margin-top:9px;display:flex;gap:5px"><a href="https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent((w.player||'')+' '+(w.year||'')+' '+(w.card_set||''))}" target="_blank" class="btn btn-secondary btn-sm">🔍 eBay</a><button class="btn btn-danger btn-sm" onclick="deleteWant('${w.id}')">Remove</button></div></div>`).join('');}
+async function renderWant(){
+  let wq=sb.from('want_list').select('*').order('created_at',{ascending:false});
+  if(CC==='personal')wq=wq.eq('user_id',CU.id);
+  const{data:items}=await wq;if(!items?.length){document.getElementById('want-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>No cards on your want list</div></div>`;return;}document.getElementById('want-grid').innerHTML=items.map(w=>`<div class="want-card"><h4>${w.player||'—'}</h4><div style="font-size:.76rem;color:var(--text2)">${w.year||''} ${w.card_set||''} · ${w.sport||''}</div>${w.target_price?'<div class="target">Target: $'+w.target_price.toFixed(2)+'</div>':''}<p style="font-size:.8rem;color:var(--text2)">${w.notes||''}</p><div style="margin-top:9px;display:flex;gap:5px"><a href="https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent((w.player||'')+' '+(w.year||'')+' '+(w.card_set||''))}" target="_blank" class="btn btn-secondary btn-sm">🔍 eBay</a><button class="btn btn-danger btn-sm" onclick="deleteWant('${w.id}')">Remove</button></div></div>`).join('');}
 function openWantModal(){['player','team','year','set','notes'].forEach(f=>document.getElementById('w-'+f).value='');document.getElementById('w-price').value='';document.getElementById('want-modal').style.display='flex';}
 async function saveWant(){const{error}=await sb.from('want_list').insert({user_id:CU.id,player:document.getElementById('w-player').value,team:document.getElementById('w-team').value,sport:document.getElementById('w-sport').value,year:parseInt(document.getElementById('w-year').value)||null,card_set:document.getElementById('w-set').value,target_price:parseFloat(document.getElementById('w-price').value)||null,notes:document.getElementById('w-notes').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('want-modal').style.display='none';renderWant();}
 async function deleteWant(id){await sb.from('want_list').delete().eq('id',id);showToast('Removed','success');renderWant();}
 
-async function renderIntel(){const{data:items}=await sb.from('buying_calendar').select('*').eq('user_id',CU.id);const mo=new Date().getMonth()+1;const ac=[],so=[],of=[];(items||[]).forEach(i=>{const inW=i.start_month<=i.end_month?mo>=i.start_month&&mo<=i.end_month:mo>=i.start_month||mo<=i.end_month;const cs=!inW&&[1,2].includes(((i.start_month-mo+12)%12));if(inW)ac.push(i);else if(cs)so.push(i);else of.push(i);});const rc=(i,cl,sl,sc)=>`<div class="intel-card ${cl}"><div class="intel-status ${sc}">${sl}</div><div class="intel-sport">${i.sport}</div><div style="font-size:.78rem;color:var(--text2);margin-bottom:5px">${MO[i.start_month]} – ${MO[i.end_month]}</div>${i.card_type?'<div style="font-size:.78rem;color:var(--accent);margin-bottom:5px">🎯 '+i.card_type+'</div>':''}${i.strategy_notes?'<div style="font-size:.81rem;line-height:1.5">'+i.strategy_notes+'</div>':''}${i.platforms?'<div style="font-size:.74rem;color:var(--text2);margin-top:7px">📍 '+i.platforms+'</div>':''}<div style="margin-top:11px"><button class="btn btn-danger btn-sm" onclick="deleteIntel(\''+i.id+'\')">Remove</button></div></div>`;document.getElementById('intel-active').innerHTML=ac.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--success);margin-bottom:10px">✅ Buy Right Now</h3><div class="intel-grid">${ac.map(i=>rc(i,'active-now','● Active Now','active')).join('')}</div>`:'';document.getElementById('intel-soon').innerHTML=so.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent);margin-bottom:10px">🔜 Coming Soon</h3><div class="intel-grid">${so.map(i=>rc(i,'coming-soon','Coming Soon','soon')).join('')}</div>`:'';document.getElementById('intel-off').innerHTML=of.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-bottom:10px">💤 Off Season</h3><div class="intel-grid">${of.map(i=>rc(i,'off-season','Off Season','off')).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🧠</div><div>No buying windows yet</div></div>`;}
+async function renderIntel(){const{data:items}=await sb.from('buying_calendar').select('*');const mo=new Date().getMonth()+1;const ac=[],so=[],of=[];(items||[]).forEach(i=>{const inW=i.start_month<=i.end_month?mo>=i.start_month&&mo<=i.end_month:mo>=i.start_month||mo<=i.end_month;const cs=!inW&&[1,2].includes(((i.start_month-mo+12)%12));if(inW)ac.push(i);else if(cs)so.push(i);else of.push(i);});const rc=(i,cl,sl,sc)=>`<div class="intel-card ${cl}"><div class="intel-status ${sc}">${sl}</div><div class="intel-sport">${i.sport}</div><div style="font-size:.78rem;color:var(--text2);margin-bottom:5px">${MO[i.start_month]} – ${MO[i.end_month]}</div>${i.card_type?'<div style="font-size:.78rem;color:var(--accent);margin-bottom:5px">🎯 '+i.card_type+'</div>':''}${i.strategy_notes?'<div style="font-size:.81rem;line-height:1.5">'+i.strategy_notes+'</div>':''}${i.platforms?'<div style="font-size:.74rem;color:var(--text2);margin-top:7px">📍 '+i.platforms+'</div>':''}<div style="margin-top:11px"><button class="btn btn-danger btn-sm" onclick="deleteIntel(\''+i.id+'\')">Remove</button></div></div>`;document.getElementById('intel-active').innerHTML=ac.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--success);margin-bottom:10px">✅ Buy Right Now</h3><div class="intel-grid">${ac.map(i=>rc(i,'active-now','● Active Now','active')).join('')}</div>`:'';document.getElementById('intel-soon').innerHTML=so.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent);margin-bottom:10px">🔜 Coming Soon</h3><div class="intel-grid">${so.map(i=>rc(i,'coming-soon','Coming Soon','soon')).join('')}</div>`:'';document.getElementById('intel-off').innerHTML=of.length?`<h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-bottom:10px">💤 Off Season</h3><div class="intel-grid">${of.map(i=>rc(i,'off-season','Off Season','off')).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🧠</div><div>No buying windows yet</div></div>`;}
 function openIntelModal(){['sport','cardtype','notes','platforms'].forEach(f=>document.getElementById('i-'+f).value='');document.getElementById('intel-modal').style.display='flex';}
-async function saveIntel(){const{error}=await sb.from('buying_calendar').insert({user_id:CU.id,sport:document.getElementById('i-sport').value,start_month:parseInt(document.getElementById('i-start').value),end_month:parseInt(document.getElementById('i-end').value),card_type:document.getElementById('i-cardtype').value,strategy_notes:document.getElementById('i-notes').value,platforms:document.getElementById('i-platforms').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('intel-modal').style.display='none';renderIntel();}
+async function saveIntel(){const{error}=await sb.from('buying_calendar').insert({sport:document.getElementById('i-sport').value,start_month:parseInt(document.getElementById('i-start').value),end_month:parseInt(document.getElementById('i-end').value),card_type:document.getElementById('i-cardtype').value,strategy_notes:document.getElementById('i-notes').value,platforms:document.getElementById('i-platforms').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added!','success');document.getElementById('intel-modal').style.display='none';renderIntel();}
 async function deleteIntel(id){await sb.from('buying_calendar').delete().eq('id',id);showToast('Removed','success');renderIntel();}
 
 async function renderReleases(){
-  const{data:items}=await sb.from('release_calendar').select('*').eq('user_id',CU.id).order('release_date');
+  const{data:items}=await sb.from('release_calendar').select('*').order('release_date');
   const el=document.getElementById('release-list');
   if(!items?.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div>No releases added yet</div></div>`;return;}
   const today=new Date();today.setHours(0,0,0,0);
@@ -1566,7 +1597,6 @@ function openReleaseModal(){
 }
 async function saveRelease(){
   const payload={
-    user_id:CU.id,
     product_name:document.getElementById('r-name').value,
     release_date:document.getElementById('r-date').value,
     release_time:document.getElementById('r-time').value||null,
@@ -1587,16 +1617,16 @@ async function saveRelease(){
   renderReleases();
 }
 
-async function renderResearch(){const{data:notes}=await sb.from('research_notes').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});if(!notes?.length){document.getElementById('note-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">📝</div><div>No research notes yet</div></div>`;return;}document.getElementById('note-grid').innerHTML=notes.map(n=>{const nid=n.id;return`<div class="note-card"><h4>${n.title||'Untitled'}</h4>${n.sport?`<div style="font-size:.74rem;color:var(--accent);margin-bottom:7px">${n.sport}</div>`:''}<div class="note-body">${n.content||''}</div>${n.tags?n.tags.split(',').map(t=>'<span class="note-tag">'+t.trim()+'</span>').join(''):''}<div style="margin-top:11px;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="editNoteModal('${nid}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteNote('${nid}')">Delete</button></div></div>`;}).join('');}
+async function renderResearch(){const{data:notes}=await sb.from('research_notes').select('*').order('created_at',{ascending:false});if(!notes?.length){document.getElementById('note-grid').innerHTML=`<div class="empty-state"><div class="empty-icon">📝</div><div>No research notes yet</div></div>`;return;}document.getElementById('note-grid').innerHTML=notes.map(n=>{const nid=n.id;return`<div class="note-card"><h4>${n.title||'Untitled'}</h4>${n.sport?`<div style="font-size:.74rem;color:var(--accent);margin-bottom:7px">${n.sport}</div>`:''}<div class="note-body">${n.content||''}</div>${n.tags?n.tags.split(',').map(t=>'<span class="note-tag">'+t.trim()+'</span>').join(''):''}<div style="margin-top:11px;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="editNoteModal('${nid}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteNote('${nid}')">Delete</button></div></div>`;}).join('');}
 function openNoteModal(){['title','sport','tags','body'].forEach(f=>document.getElementById('n-'+f).value='');document.getElementById('note-modal').style.display='flex';}
-async function saveNote(){const{error}=await sb.from('research_notes').insert({user_id:CU.id,title:document.getElementById('n-title').value,sport:document.getElementById('n-sport').value,tags:document.getElementById('n-tags').value,content:document.getElementById('n-body').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Saved!','success');document.getElementById('note-modal').style.display='none';renderResearch();}
+async function saveNote(){const{error}=await sb.from('research_notes').insert({title:document.getElementById('n-title').value,sport:document.getElementById('n-sport').value,tags:document.getElementById('n-tags').value,content:document.getElementById('n-body').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Saved!','success');document.getElementById('note-modal').style.display='none';renderResearch();}
 async function deleteNote(id){await sb.from('research_notes').delete().eq('id',id);showToast('Deleted','success');renderResearch();}
 
 async function renderConsol(){const{data:c}=await getQ();const sell=(c||[]).filter(x=>x.status!=='sold');document.getElementById('consol-cards').innerHTML=sell.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">${sell.map(x=>`<div class="sell-row"><input type="checkbox" class="sell-cb" onchange="updateConsol()" data-cost="${x.cost_paid||0}"><div style="flex:1"><strong>${x.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${x.year||''} ${x.card_set||''}</span></div><span class="mono" style="color:var(--accent)">$${(x.cost_paid||0).toFixed(2)}</span></div>`).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🔄</div><div>No cards in collection yet</div></div>`;updateConsol();}
 function updateConsol(){const target=parseFloat(document.getElementById('grail-price').value)||0;const name=document.getElementById('grail-name').value;document.getElementById('grail-name-disp').textContent=name||'Set target above';document.getElementById('grail-price-disp').textContent='$'+(target||0).toFixed(0);const checked=document.querySelectorAll('.sell-cb:checked');const total=Array.from(checked).reduce((s,cb)=>s+parseFloat(cb.dataset.cost||0),0);const pct=target>0?Math.min(100,(total/target)*100):0;document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('prog-label').textContent=pct>=100?'🎉 You can afford it!':pct>0?pct.toFixed(0)+'% there':'Select cards to sell';document.getElementById('sel-total').textContent='$'+total.toFixed(2);document.getElementById('still-need').textContent='$'+Math.max(0,target-total).toFixed(2);}
 
 function loadCenterImg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{CIMG=new Image();CIMG.onload=()=>{document.getElementById('center-upload-zone').style.display='none';document.getElementById('center-workspace').style.display='block';const cv=document.getElementById('center-canvas');const mw=Math.min(480,cv.parentElement.offsetWidth-20);const sc=mw/CIMG.width;cv.width=mw;cv.height=CIMG.height*sc;cv.getContext('2d').drawImage(CIMG,0,0,cv.width,cv.height);};CIMG.src=ev.target.result;};r.readAsDataURL(f);CPT=[];document.getElementById('center-results').style.display='none';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));}
-function resetCenter(){CPT=[];document.getElementById('center-results').style.display='none';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));if(CIMG){const cv=document.getElementById('center-canvas');cv.getContext('2d').drawImage(CIMG,0,0,cv.width,cv.height);}}
+function resetCenter(){CPT=[];CIMG=null;document.getElementById('center-results').style.display='none';document.getElementById('center-workspace').style.display='none';document.getElementById('center-upload-zone').style.display='flex';document.getElementById('center-img-input').value='';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));const cv=document.getElementById('center-canvas');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);}
 function handleCenterClick(e){if(CPT.length>=4)return;const cv=document.getElementById('center-canvas');const rect=cv.getBoundingClientRect();const x=e.clientX-rect.left,y=e.clientY-rect.top;CPT.push({x,y});const ctx=cv.getContext('2d');ctx.drawImage(CIMG,0,0,cv.width,cv.height);const cols=['#f5a623','#e8394a','#2ecc71','#8888ff'];const lbs=['L','R','T','B'];CPT.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=cols[i];ctx.fill();ctx.fillStyle='white';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbs[i],p.x,p.y);ctx.beginPath();ctx.setLineDash([4,4]);ctx.strokeStyle=cols[i];ctx.lineWidth=1;if(i<2){ctx.moveTo(p.x,0);ctx.lineTo(p.x,cv.height);}else{ctx.moveTo(0,p.y);ctx.lineTo(cv.width,p.y);}ctx.stroke();ctx.setLineDash([]);});document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===CPT.length));if(CPT.length===4)calcCenter();}
 function calcCenter(){const[l,r,t,b]=CPT;const cv=document.getElementById('center-canvas');const lS=l.x,rS=cv.width-r.x,tS=t.y,bS=cv.height-b.y;const lrP=Math.min(lS,rS)/Math.max(lS,rS)*100;const tbP=Math.min(tS,bS)/Math.max(tS,bS)*100;const w=Math.min(lrP,tbP);document.getElementById('lr-ratio').textContent=lS<=rS?Math.round(lS)+'/'+Math.round(rS):Math.round(rS)+'/'+Math.round(lS);document.getElementById('tb-ratio').textContent=tS<=bS?Math.round(tS)+'/'+Math.round(bS):Math.round(bS)+'/'+Math.round(tS);const g=w>=90?{psa:'10',bgs:'9.5',sgc:'10',note:'Excellent centering'}:w>=80?{psa:'9',bgs:'9',sgc:'9',note:'Good centering'}:w>=70?{psa:'8',bgs:'8.5',sgc:'8',note:'Decent centering'}:w>=60?{psa:'7',bgs:'8',sgc:'7',note:'Slightly off-center'}:w>=50?{psa:'6',bgs:'7',sgc:'6',note:'Off-center'}:{psa:'5 or lower',bgs:'6 or lower',sgc:'5 or lower',note:'Significantly off-center'};document.getElementById('grade-grid').innerHTML=`<div class="grade-card"><div class="co">PSA</div><div class="gr">${g.psa}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card"><div class="co">BGS</div><div class="gr">${g.bgs}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering subgrade</div></div><div class="grade-card"><div class="co">SGC</div><div class="gr">${g.sgc}</div><div style="font-size:.71rem;color:var(--text2);margin-top:3px">Centering only</div></div><div class="grade-card" style="grid-column:1/-1;text-align:left"><div class="co">Assessment</div><div style="font-size:.85rem;margin-top:4px">${g.note}. Score: <span style="color:var(--accent);font-family:'DM Mono',monospace">${w.toFixed(1)}%</span>. Note: final grade also depends on corners, edges, and surface.</div></div>`;document.getElementById('center-results').style.display='block';}
 
@@ -1738,9 +1768,9 @@ async function confirmCSV(){
 
 
 async function renderBoxes(){
-  let bq=sb.from('boxes').select('*').eq('user_id',CU.id);
+  let bq;
   if(CC==='business')bq=sb.from('boxes').select('*').eq('collection_type','business');
-  else bq=bq.eq('collection_type','personal');
+  else bq=sb.from('boxes').select('*').eq('user_id',CU.id).eq('collection_type','personal');
   const{data:boxes}=await bq.order('purchase_date',{ascending:false});
   const totalCost=(boxes||[]).reduce((s,b)=>s+(b.price_paid||0),0);
   const totalSold=(boxes||[]).reduce((s,b)=>s+(b.amount_sold||0),0);
@@ -2179,9 +2209,8 @@ function _loadResearchCard(id){
   document.getElementById('li-condition').textContent=c.condition||'—';
   document.getElementById('li-asking').textContent=c.asking_price?'$'+Number(c.asking_price).toFixed(2):'Not set';
   document.getElementById('li-location').textContent=c.location||'—';
-  const hist=document.getElementById('market-price-history');
-  if(c.market_price){hist.innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');}
-  else hist.textContent='No market price recorded yet';
+  if(c.market_price){document.getElementById('market-price-history').innerHTML='Last recorded: <strong style="color:var(--accent)">$'+Number(c.market_price).toFixed(2)+'</strong>'+(c.market_price_date?' on '+c.market_price_date:'');loadPriceHistory(id);}
+  else document.getElementById('market-price-history').textContent='No market price recorded yet';
   document.getElementById('market-price-input').value='';
   document.getElementById('listing-price').value='';
   document.getElementById('listing-calc').innerHTML='';
@@ -2210,15 +2239,183 @@ function calcListingProfit(){
   const sc=researchCardCost<20?150:0;
   document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2)+'&categoryId=213';
 }
+
+// ─── SELL ALERTS ──────────────────────────────────────────────────────────
+let editAlertId=null;
+function openAlertModal(){
+  editAlertId=null;
+  document.getElementById('al-text').value='';
+  document.getElementById('al-player').value='';
+  document.getElementById('alert-modal-title').textContent='Add Sell Alert';
+  document.getElementById('alert-modal').style.display='flex';
+}
+async function saveAlert(){
+  const text=document.getElementById('al-text').value.trim();
+  if(!text){showToast('Enter alert text','error');return;}
+  const payload={alert_text:text,player:document.getElementById('al-player').value.trim()||null,created_by:CU.id};
+  let error;
+  if(editAlertId){
+    ({error}=await sb.from('sell_alerts').update(payload).eq('id',editAlertId));
+  } else {
+    ({error}=await sb.from('sell_alerts').insert(payload));
+  }
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast(editAlertId?'Updated!':'Alert added!','success');
+  document.getElementById('alert-modal').style.display='none';
+  editAlertId=null;
+  renderAlerts();
+}
+async function renderAlerts(){
+  const{data:alerts}=await sb.from('sell_alerts').select('*').is('dismissed_at',null).order('created_at',{ascending:false});
+  const{data:dismissed}=await sb.from('sell_alerts').select('*').not('dismissed_at','is',null).order('dismissed_at',{ascending:false}).limit(5);
+  const el=document.getElementById('alerts-list');
+  let html='';
+  if(!alerts?.length&&!dismissed?.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🚨</div><div>No sell alerts yet. Add one manually or run the Gemini sweep.</div></div>`;
+    return;
+  }
+  if(alerts?.length){
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent2);margin-bottom:12px">🔥 Active Alerts</div>`;
+    html+=alerts.map(a=>`
+      <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+          <div style="font-weight:600;margin-bottom:4px">${a.alert_text}</div>
+          ${a.player?`<div style="font-size:.78rem;color:var(--accent)">👤 ${a.player}</div>`:''}
+          <div style="font-size:.72rem;color:var(--text2);margin-top:4px">${new Date(a.created_at).toLocaleDateString()}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-secondary btn-sm" data-id="${a.id}" data-text="${(a.alert_text||'').replace(/"/g,'&quot;')}" data-player="${(a.player||'').replace(/"/g,'&quot;')}" onclick="editAlertFromBtn(this)">Edit</button>
+          <button class="btn btn-success btn-sm" data-id="${a.id}" onclick="dismissAlert(this.dataset.id)">✓ Done</button>
+          <button class="btn btn-danger btn-sm" data-id="${a.id}" onclick="deleteAlert(this.dataset.id)">Del</button>
+        </div>
+      </div>`).join('');
+  }
+  if(dismissed?.length){
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-top:20px;margin-bottom:12px">✓ Recently Dismissed</div>`;
+    html+=dismissed.map(a=>`
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;opacity:.6;display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div>
+          <div style="font-size:.88rem;text-decoration:line-through">${a.alert_text}</div>
+          ${a.player?`<div style="font-size:.74rem;color:var(--text2)">${a.player}</div>`:''}
+        </div>
+        <button class="btn btn-danger btn-sm" data-id="${a.id}" onclick="deleteAlert(this.dataset.id)">Del</button>
+      </div>`).join('');
+  }
+  el.innerHTML=html;
+}
+function editAlertFromBtn(btn){
+  editAlertId=btn.dataset.id;
+  document.getElementById('al-text').value=btn.dataset.text||'';
+  document.getElementById('al-player').value=btn.dataset.player||'';
+  document.getElementById('alert-modal-title').textContent='Edit Alert';
+  document.getElementById('alert-modal').style.display='flex';
+}
+async function dismissAlert(id){
+  await sb.from('sell_alerts').update({dismissed_at:new Date().toISOString()}).eq('id',id);
+  showToast('Alert dismissed','success');
+  renderAlerts();
+}
+async function deleteAlert(id){
+  if(!confirm('Delete this alert?'))return;
+  await sb.from('sell_alerts').delete().eq('id',id);
+  showToast('Deleted','success');
+  renderAlerts();
+}
+async function runAlertSweep(){
+  const btn=document.getElementById('sweep-btn');
+  const status=document.getElementById('sweep-status');
+  btn.disabled=true;
+  status.style.display='block';
+  status.textContent='Loading your cards...';
+  // Get all cards we own (not sold)
+  const{data:cards}=await sb.from('cards').select('player,sport').neq('status','sold');
+  const players=[...new Set((cards||[]).map(c=>c.player).filter(Boolean))];
+  if(!players.length){showToast('No cards found to check','error');btn.disabled=false;return;}
+  status.textContent='Asking Gemini to scan recent sports news...';
+  try{
+    const key=await getGeminiKey();
+    if(!key){showToast('Gemini key not configured','error');btn.disabled=false;return;}
+    const prompt=`You are a sports card market expert. Based on RECENT sports news and events (awards, championships, trades, injuries, records, retirements), identify any sell signals for cards from this list of players I own:
+
+${players.slice(0,80).join(', ')}
+
+Return ONLY a JSON array with no markdown. Each item should be a sell signal:
+[{"player":"Player Name","reason":"One sentence explaining the sell signal","urgency":"high|medium|low"}]
+
+Only include players from my list where there is a GENUINE recent reason to sell. If no signals exist return an empty array []. Maximum 8 results.`;
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:1024}})
+    });
+    if(!res.ok){const e=await res.text();throw new Error('Gemini error: '+res.status);}
+    const data=await res.json();
+    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
+    const jsonMatch=raw.match(/\[[\s\S]*\]/);
+    if(!jsonMatch){showToast('No signals found','success');btn.disabled=false;status.style.display='none';return;}
+    const signals=JSON.parse(jsonMatch[0]);
+    if(!signals.length){showToast('No sell signals found for your players','success');btn.disabled=false;status.style.display='none';return;}
+    // Save each as an alert
+    for(const s of signals){
+      await sb.from('sell_alerts').insert({
+        alert_text:`${s.urgency==='high'?'🔥':'📊'} ${s.reason}`,
+        player:s.player,
+        created_by:CU.id
+      });
+    }
+    showToast(`Found ${signals.length} sell signal${signals.length>1?'s':''}!`,'success');
+    status.style.display='none';
+    renderAlerts();
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+    status.textContent='Error — try again.';
+  }
+  btn.disabled=false;
+}
+
+// ─── PRICE HISTORY ────────────────────────────────────────────────────────
 async function saveMarketPrice(){
-  const price=parseFloat(document.getElementById('market-price-input').value)||0;
-  if(!price||!researchCardId){showToast('Enter a price first','error');return;}
+  const price=parseFloat(document.getElementById('market-price-input').value);
+  if(!price||!researchCardId){showToast('Enter a price','error');return;}
   const today=new Date().toISOString().split('T')[0];
+  // Update current market price on card
   const{error}=await sb.from('cards').update({market_price:price,market_price_date:today}).eq('id',researchCardId);
   if(error){showToast('Error: '+error.message,'error');return;}
-  showToast('Market price saved!','success');
-  await loadCardCache();
+  // Log to price_history table
+  await sb.from('price_history').insert({card_id:researchCardId,price,recorded_date:today,user_id:CU.id});
+  // Update cache
+  const c=cardCache.find(x=>x.id===researchCardId);
+  if(c){c.market_price=price;c.market_price_date=today;}
+  // Update listing info panel asking price display if card has one
+  document.getElementById('li-asking').textContent=c?.asking_price?'$'+Number(c.asking_price).toFixed(2):'Not set';
   document.getElementById('market-price-history').innerHTML='Last recorded: <strong style="color:var(--accent)">$'+price.toFixed(2)+'</strong> on '+today;
+  document.getElementById('market-price-input').value='';
+  showToast('Market price saved!','success');
+  // Show mini price history
+  loadPriceHistory(researchCardId);
+}
+async function loadPriceHistory(cardId){
+  const{data:history}=await sb.from('price_history').select('price,recorded_date').eq('card_id',cardId).order('recorded_date',{ascending:true});
+  const el=document.getElementById('market-price-history');
+  if(!history?.length)return;
+  const last=history[history.length-1];
+  let html=`Last recorded: <strong style="color:var(--accent)">$${Number(last.price).toFixed(2)}</strong> on ${last.recorded_date}`;
+  if(history.length>1){
+    html+=`<div style="margin-top:8px;font-size:.75rem;color:var(--text2)">Price history (${history.length} entries):</div>`;
+    html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">`;
+    history.slice(-6).forEach(h=>{
+      html+=`<span style="background:var(--surface2);padding:2px 7px;border-radius:4px;font-size:.74rem;font-family:'DM Mono',monospace">$${Number(h.price).toFixed(2)} <span style="color:var(--text2)">${h.recorded_date.slice(5)}</span></span>`;
+    });
+    html+=`</div>`;
+    // Simple trend indicator
+    const first=history[0].price;
+    const diff=last.price-first;
+    const pct=(diff/first*100).toFixed(1);
+    const arrow=diff>0?'↑':'↓';
+    const col=diff>0?'var(--success)':'var(--accent2)';
+    html+=`<div style="margin-top:6px;font-size:.78rem;color:${col}">${arrow} ${Math.abs(pct)}% since first recorded</div>`;
+  }
+  el.innerHTML=html;
 }
 
 // ─── ROOKIE SCOUTING TOOL ─────────────────────────────────────────────────
