@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-26 | v21 -->
+<!-- Starting Five Collectibles | Build: 2026-04-26 | v22 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v21 · 2026-04-26</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v22 · 2026-04-26</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -257,6 +257,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
+      <button class="nav-item" onclick="showPage('blasters')"><span class="icon">📦</span> Blaster Tracker</button>
       <button class="nav-item" onclick="showPage('alerts')"><span class="icon">🚨</span> Sell Alerts</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
@@ -442,6 +443,61 @@ select option{background:var(--surface2);}
       </div>
       <div id="todo-list" style="max-width:680px"></div>
     </div>
+    <!-- BLASTER TRACKER PAGE -->
+    <div class="page" id="page-blasters">
+      <div class="page-header">
+        <span class="page-title">Blaster Tracker</span>
+        <button class="btn btn-primary" onclick="openBlasterModal()">+ Add Blaster</button>
+      </div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:18px;line-height:1.6">Track blaster boxes you've opened, cards pulled, and whether each box has paid for itself.</p>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="setBlasterView('business')" id="blaster-biz-btn">💼 Business</button>
+        <button class="btn btn-secondary btn-sm" onclick="setBlasterView('personal')" id="blaster-personal-btn">👤 Personal</button>
+      </div>
+      <div id="blasters-list"></div>
+    </div>
+
+    <!-- BLASTER MODAL -->
+    <div class="modal-overlay" id="blaster-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="modal" style="max-width:500px">
+        <h3 id="blaster-modal-title">Add Blaster</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group" style="grid-column:1/-1"><label>Product Name</label><input id="bl-name" placeholder="e.g. 2025 Bowman Blaster Box"></div>
+          <div class="form-group"><label>Sport</label>
+            <select id="bl-sport"><option>Basketball</option><option>Baseball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>Other</option></select>
+          </div>
+          <div class="form-group"><label>Collection</label>
+            <select id="bl-collection"><option value="business">Business</option><option value="personal">Personal</option></select>
+          </div>
+          <div class="form-group"><label>Purchase Date</label><input id="bl-date" type="date"></div>
+          <div class="form-group"><label>Cost Paid ($)</label><input id="bl-cost" type="number" step="0.01" placeholder="0.00"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Store / Platform</label><input id="bl-store" placeholder="e.g. Target, eBay, LCS"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Notes</label><textarea id="bl-notes" rows="2" placeholder="Optional notes"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Receipt (photo or PDF)</label>
+            <input type="file" id="bl-receipt" accept="image/*,application/pdf" style="color:var(--text)">
+            <div id="bl-receipt-status" style="font-size:.78rem;color:var(--text2);margin-top:4px"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="saveBlaster()">Save</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('blaster-modal').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLASTER DETAIL MODAL -->
+    <div class="modal-overlay" id="blaster-detail-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="modal" style="max-width:580px">
+        <h3 id="bd-title">Blaster Detail</h3>
+        <div id="bd-roi" style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center"></div>
+        <div id="bd-cards-list" style="max-height:340px;overflow-y:auto"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('blaster-detail-modal').style.display='none'">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-alerts">
       <div class="page-header">
         <span class="page-title">Sell Alerts</span>
@@ -572,6 +628,7 @@ select option{background:var(--surface2);}
       <hr class="section-divider"><div class="section-label">Photo &amp; Notes</div>
       <div class="form-group"><label>Card Photo — Front</label><input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event,'photo-preview')"><img id="photo-preview" class="photo-preview-img"></div><div class="form-group"><label>Card Photo — Back</label><input type="file" id="f-photo-back" accept="image/*" onchange="previewPhoto(event,'photo-preview-back')"><img id="photo-preview-back" class="photo-preview-img"></div>
       <div class="form-group full"><label>Variation</label><input id="f-variation" placeholder="e.g. Refractor, Holo, Gold, Short Print"></div>
+      <div class="form-group full"><label>From Blaster (optional)</label><select id="f-break-id"><option value="">— Not from a blaster —</option></select></div>
       <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Any notes..."></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="closeCardModal()">Cancel</button><button class="btn btn-secondary" onclick="saveCard(true)">Save &amp; Stay</button><button class="btn btn-primary" onclick="saveCard()">Save &amp; Close</button></div>
@@ -1153,7 +1210,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -1172,7 +1229,7 @@ function switchCollection(t){
 }
 function setView(v){VIEW=v;document.getElementById('vbtn-list').classList.toggle('active',v==='list');document.getElementById('vbtn-gallery').classList.toggle('active',v==='gallery');document.getElementById('col-list-wrap').style.display=v==='list'?'block':'none';document.getElementById('col-gallery-wrap').style.display=v==='gallery'?'block':'none';if(v==='gallery')renderGallery();else renderCol();}
 function getQ(includingPhotos=false){
-  const cols=includingPhotos?'*':'id,player,team,sport,year,card_set,card_number,condition,status,serial_number,auto_type,relic_type,grade_company,grade_number,cert_number,cost_paid,purchase_date,purchased_from,variation,notes,location,asking_price,listed_date,sale_price,sales_tax,platform_fees,shipping_cost,ad_fee,net_profit,sale_date,platform_sold,collection_type,user_id,market_price,market_price_date,created_at,photo_url,photo_back_url,grading_fee';
+  const cols=includingPhotos?'*':'id,player,team,sport,year,card_set,card_number,condition,status,serial_number,auto_type,relic_type,grade_company,grade_number,cert_number,cost_paid,purchase_date,purchased_from,variation,notes,location,asking_price,listed_date,sale_price,sales_tax,platform_fees,shipping_cost,ad_fee,net_profit,sale_date,platform_sold,collection_type,user_id,market_price,market_price_date,created_at,photo_url,photo_back_url,grading_fee,break_id';
   if(CC==='business')return sb.from('cards').select(cols).eq('collection_type','business');
   return sb.from('cards').select(cols).eq('user_id',CU.id).eq('collection_type','personal');
 }
@@ -1348,8 +1405,10 @@ function renderGallery(){
   }).join('');
 }
 
-function openCardModal(){EID=null;document.getElementById('card-modal-title').textContent='Add Card';['player','team','year','set','cardnum','serial','cert','cost','notes','buyfrom','variation'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});document.getElementById('f-photo').value='';document.getElementById('f-photo-back').value='';const locEl=document.getElementById('f-location');if(locEl){// Auto-fill location on personal collection
-if(CC==='personal'&&CU){const name=EMAIL_TO_NAME[CU.email]||'';locEl.value=name;}else{locEl.value='';}}const askEl=document.getElementById('f-asking');if(askEl)askEl.value='';const listEl=document.getElementById('f-listed-date');if(listEl)listEl.value='';document.getElementById('f-buydate').value='';['f-sport','f-condition','f-status','f-grade-co','f-grade-num','f-auto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.options?el.options[0].value:''});document.getElementById('f-status').value='in_collection';document.getElementById('photo-preview').style.display='none';document.getElementById('card-modal').style.display='flex';}
+async function openCardModal(){EID=null;document.getElementById('card-modal-title').textContent='Add Card';['player','team','year','set','cardnum','serial','cert','cost','notes','buyfrom','variation'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});document.getElementById('f-photo').value='';document.getElementById('f-photo-back').value='';const locEl=document.getElementById('f-location');if(locEl){// Auto-fill location on personal collection
+if(CC==='personal'&&CU){const name=EMAIL_TO_NAME[CU.email]||'';locEl.value=name;}else{locEl.value='';}}const askEl=document.getElementById('f-asking');if(askEl)askEl.value='';const listEl=document.getElementById('f-listed-date');if(listEl)listEl.value='';document.getElementById('f-buydate').value='';['f-sport','f-condition','f-status','f-grade-co','f-grade-num','f-auto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.options?el.options[0].value:''});document.getElementById('f-status').value='in_collection';document.getElementById('photo-preview').style.display='none';
+  await populateBlasterDropdown(null);
+  document.getElementById('card-modal').style.display='flex';}
 function closeCardModal(){document.getElementById('card-modal').style.display='none';}
 
 async function editCard(id){
@@ -1366,6 +1425,7 @@ async function editCard(id){
   EID=id;document.getElementById('card-modal-title').textContent='Edit Card';
   document.getElementById('f-player').value=c.player||'';document.getElementById('f-team').value=c.team||'';document.getElementById('f-sport').value=c.sport||'Baseball';document.getElementById('f-year').value=c.year||'';document.getElementById('f-set').value=c.card_set||'';document.getElementById('f-cardnum').value=c.card_number||'';document.getElementById('f-condition').value=c.condition||'Raw - Mint';document.getElementById('f-status').value=c.status||'in_collection';document.getElementById('f-serial').value=c.serial_number||'';document.getElementById('f-auto').value=c.auto_type||'';document.getElementById('f-relic').value=c.relic_type||'';document.getElementById('f-grade-co').value=c.grade_company||'';document.getElementById('f-grade-num').value=c.grade_number||'';document.getElementById('f-cert').value=c.cert_number||'';document.getElementById('f-cost').value=c.cost_paid||'';document.getElementById('f-buydate').value=c.purchase_date||'';document.getElementById('f-buyfrom').value=c.purchased_from||'';document.getElementById('f-variation').value=c.variation||'';document.getElementById('f-notes').value=c.notes||'';
   const locElE=document.getElementById('f-location');if(locElE)locElE.value=c.location||'';
+  await populateBlasterDropdown(c.break_id||null);
   const askElE=document.getElementById('f-asking');if(askElE)askElE.value=c.asking_price||'';
   const listElE=document.getElementById('f-listed-date');if(listElE)listElE.value=c.listed_date||'';
   document.getElementById('f-photo').value='';
@@ -1402,7 +1462,7 @@ async function saveCard(stayOpen=false){
   if (pf) { try { showToast('Uploading front photo...','success'); photoUrl = await uploadToCloudinary(pf); } catch(e) { showToast('Photo upload failed: '+e.message,'error'); return; } }
   const pb = document.getElementById('f-photo-back').files[0];
   if (pb) { try { showToast('Uploading back photo...','success'); photoBackUrl = await uploadToCloudinary(pb); } catch(e) { showToast('Back photo upload failed: '+e.message,'error'); return; } }
-  const p={user_id:CU.id,collection_type:CC,player:document.getElementById('f-player').value,team:document.getElementById('f-team').value,sport:document.getElementById('f-sport').value,year:parseInt(document.getElementById('f-year').value)||null,card_set:document.getElementById('f-set').value,card_number:document.getElementById('f-cardnum').value,condition:document.getElementById('f-condition').value,status:document.getElementById('f-status').value,serial_number:document.getElementById('f-serial').value||null,auto_type:document.getElementById('f-auto').value||null,relic_type:document.getElementById('f-relic').value||null,grade_company:document.getElementById('f-grade-co').value||null,grade_number:document.getElementById('f-grade-num').value||null,cert_number:document.getElementById('f-cert').value||null,cost_paid:parseFloat(document.getElementById('f-cost').value)||0,purchase_date:document.getElementById('f-buydate').value||null,purchased_from:document.getElementById('f-buyfrom').value||null,variation:document.getElementById('f-variation').value||null,location:document.getElementById('f-location')?.value||null,asking_price:parseFloat(document.getElementById('f-asking')?.value)||null,listed_date:document.getElementById('f-listed-date')?.value||null,notes:document.getElementById('f-notes').value||null};
+  const p={user_id:CU.id,collection_type:CC,player:document.getElementById('f-player').value,team:document.getElementById('f-team').value,sport:document.getElementById('f-sport').value,year:parseInt(document.getElementById('f-year').value)||null,card_set:document.getElementById('f-set').value,card_number:document.getElementById('f-cardnum').value,condition:document.getElementById('f-condition').value,status:document.getElementById('f-status').value,serial_number:document.getElementById('f-serial').value||null,auto_type:document.getElementById('f-auto').value||null,relic_type:document.getElementById('f-relic').value||null,grade_company:document.getElementById('f-grade-co').value||null,grade_number:document.getElementById('f-grade-num').value||null,cert_number:document.getElementById('f-cert').value||null,cost_paid:parseFloat(document.getElementById('f-cost').value)||0,purchase_date:document.getElementById('f-buydate').value||null,purchased_from:document.getElementById('f-buyfrom').value||null,variation:document.getElementById('f-variation').value||null,location:document.getElementById('f-location')?.value||null,asking_price:parseFloat(document.getElementById('f-asking')?.value)||null,listed_date:document.getElementById('f-listed-date')?.value||null,notes:document.getElementById('f-notes').value||null,break_id:document.getElementById('f-break-id')?.value||null};
   p.photo_url=photoUrl;
   p.photo_back_url=photoBackUrl;
   let err;if(EID){({error:err}=await sb.from('cards').update(p).eq('id',EID));}else{({error:err}=await sb.from('cards').insert(p));}
@@ -2603,6 +2663,203 @@ async function deleteScout(id){
   await sb.from('rookie_cache').delete().eq('id',id);
   showToast('Removed','success');
   renderScouting();
+}
+
+// ─── BLASTER TRACKER ──────────────────────────────────────────────────────
+let blasterView='business';
+let editBlasterId=null;
+
+function setBlasterView(v){
+  blasterView=v;
+  document.getElementById('blaster-biz-btn').style.background=v==='business'?'var(--accent)':'';
+  document.getElementById('blaster-personal-btn').style.background=v==='personal'?'var(--accent)':'';
+  renderBlasters();
+}
+
+async function populateBlasterDropdown(selectedId){
+  const sel=document.getElementById('f-break-id');
+  if(!sel)return;
+  const{data:blasters}=await sb.from('breaks').select('id,name,purchase_date').order('purchase_date',{ascending:false});
+  sel.innerHTML=`<option value="">— Not from a blaster —</option>`;
+  (blasters||[]).forEach(b=>{
+    const opt=document.createElement('option');
+    opt.value=b.id;
+    opt.textContent=b.name+(b.purchase_date?' ('+b.purchase_date+')':'');
+    if(b.id===selectedId)opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
+function openBlasterModal(id){
+  editBlasterId=id||null;
+  if(!id){
+    ['bl-name','bl-store','bl-notes'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('bl-cost').value='';
+    document.getElementById('bl-date').value='';
+    document.getElementById('bl-sport').value='Basketball';
+    document.getElementById('bl-collection').value=CC==='personal'?'personal':'business';
+    document.getElementById('bl-receipt-status').textContent='';
+    document.getElementById('bl-receipt').value='';
+    document.getElementById('blaster-modal-title').textContent='Add Blaster';
+  }
+  document.getElementById('blaster-modal').style.display='flex';
+}
+
+async function saveBlaster(){
+  const name=document.getElementById('bl-name').value.trim();
+  if(!name){showToast('Enter a product name','error');return;}
+  const collection=document.getElementById('bl-collection').value;
+  let receipt_url=null;
+  const file=document.getElementById('bl-receipt').files[0];
+  if(file){
+    document.getElementById('bl-receipt-status').textContent='Uploading receipt...';
+    try{
+      const ext=file.name.split('.').pop();
+      const path=`${CU.id}/${Date.now()}.${ext}`;
+      const{error:upErr}=await sb.storage.from('reciepts').upload(path,file,{upsert:true});
+      if(upErr)throw upErr;
+      const{data:urlData}=sb.storage.from('reciepts').getPublicUrl(path);
+      receipt_url=urlData?.publicUrl||null;
+      document.getElementById('bl-receipt-status').textContent='Receipt uploaded ✓';
+    }catch(e){
+      showToast('Receipt upload failed: '+e.message,'error');
+      document.getElementById('bl-receipt-status').textContent='Upload failed';
+    }
+  }
+  const payload={
+    name,
+    product:name,
+    sport:document.getElementById('bl-sport').value,
+    collection_type:collection,
+    user_id:CU.id,
+    purchase_date:document.getElementById('bl-date').value||null,
+    store:document.getElementById('bl-store').value||null,
+    cost_paid:parseFloat(document.getElementById('bl-cost').value)||0,
+    notes:document.getElementById('bl-notes').value||null,
+    ...(receipt_url&&{receipt_url})
+  };
+  let error;
+  if(editBlasterId){
+    ({error}=await sb.from('breaks').update(payload).eq('id',editBlasterId));
+  } else {
+    ({error}=await sb.from('breaks').insert(payload));
+  }
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast(editBlasterId?'Updated!':'Blaster added!','success');
+  document.getElementById('blaster-modal').style.display='none';
+  editBlasterId=null;
+  renderBlasters();
+}
+
+async function renderBlasters(){
+  // Highlight active tab
+  document.getElementById('blaster-biz-btn').style.background=blasterView==='business'?'var(--accent)':'';
+  document.getElementById('blaster-personal-btn').style.background=blasterView==='personal'?'var(--accent)':'';
+  let q=sb.from('breaks').select('*').eq('collection_type',blasterView);
+  if(blasterView==='personal')q=q.eq('user_id',CU.id);
+  const{data:blasters}=await q.order('purchase_date',{ascending:false});
+  const el=document.getElementById('blasters-list');
+  if(!blasters?.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><div>No blasters tracked yet. Add one above.</div></div>`;
+    return;
+  }
+  // For each blaster get linked cards
+  const blasterIds=blasters.map(b=>b.id);
+  const{data:linkedCards}=await sb.from('cards').select('id,player,status,sale_price,cost_paid,grading_fee,break_id').in('break_id',blasterIds);
+  const cardsByBlaster={};
+  (linkedCards||[]).forEach(c=>{
+    if(!cardsByBlaster[c.break_id])cardsByBlaster[c.break_id]=[];
+    cardsByBlaster[c.break_id].push(c);
+  });
+  el.innerHTML=blasters.map(b=>{
+    const cards=cardsByBlaster[b.id]||[];
+    const soldCards=cards.filter(c=>c.status==='sold');
+    const totalSold=soldCards.reduce((s,c)=>s+(c.sale_price||0),0);
+    const totalGrading=cards.reduce((s,c)=>s+(c.grading_fee||0),0);
+    const totalSpent=(b.cost_paid||0)+totalGrading;
+    const net=totalSold-totalSpent;
+    const pct=totalSpent>0?((net/totalSpent)*100).toFixed(0):0;
+    const roiColor=net>=0?'var(--success)':'var(--accent2)';
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-weight:700;font-size:1rem">${b.name}</div>
+          <div style="font-size:.78rem;color:var(--text2);margin-top:2px">${b.sport||''}${b.store?' · '+b.store:''}${b.purchase_date?' · '+b.purchase_date:''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${b.receipt_url?`<a href="${b.receipt_url}" target="_blank" class="btn btn-secondary btn-sm">🧾 Receipt</a>`:''}
+          <button class="btn btn-secondary btn-sm" onclick="viewBlasterDetail('${b.id}')">📊 Detail</button>
+          <button class="btn btn-danger btn-sm" data-id="${b.id}" onclick="deleteBlaster(this.dataset.id)">Del</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        <div style="background:var(--surface2);border-radius:6px;padding:8px">
+          <div style="font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Box Cost</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.95rem;margin-top:2px">$${(b.cost_paid||0).toFixed(2)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px">
+          <div style="font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Cards Linked</div>
+          <div style="font-size:.95rem;margin-top:2px">${cards.length}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px">
+          <div style="font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Sold</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.95rem;margin-top:2px;color:var(--success)">$${totalSold.toFixed(2)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px">
+          <div style="font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Net ROI</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.95rem;margin-top:2px;color:${roiColor}">${net>=0?'+':''}$${net.toFixed(2)}</div>
+        </div>
+      </div>
+      ${totalGrading>0?`<div style="font-size:.75rem;color:var(--text2);margin-top:8px">Includes $${totalGrading.toFixed(2)} in grading fees · Total invested: $${totalSpent.toFixed(2)}</div>`:''}
+      ${b.notes?`<div style="font-size:.8rem;color:var(--text2);margin-top:8px;font-style:italic">${b.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function viewBlasterDetail(id){
+  const{data:b}=await sb.from('breaks').select('*').eq('id',id).single();
+  if(!b)return;
+  const{data:cards}=await sb.from('cards').select('id,player,year,card_set,status,sale_price,cost_paid,grading_fee,grade_company,grade_number').eq('break_id',id).order('player');
+  const soldCards=(cards||[]).filter(c=>c.status==='sold');
+  const totalSold=soldCards.reduce((s,c)=>s+(c.sale_price||0),0);
+  const totalGrading=(cards||[]).reduce((s,c)=>s+(c.grading_fee||0),0);
+  const totalSpent=(b.cost_paid||0)+totalGrading;
+  const net=totalSold-totalSpent;
+  const roiColor=net>=0?'var(--success)':'var(--accent2)';
+  document.getElementById('bd-title').textContent=b.name;
+  document.getElementById('bd-roi').innerHTML=`
+    <div><div style="font-size:.68rem;color:var(--text2);text-transform:uppercase">Box Cost</div><div style="font-family:'DM Mono',monospace;font-size:1rem;margin-top:4px">$${(b.cost_paid||0).toFixed(2)}</div></div>
+    <div><div style="font-size:.68rem;color:var(--text2);text-transform:uppercase">Grading</div><div style="font-family:'DM Mono',monospace;font-size:1rem;margin-top:4px">$${totalGrading.toFixed(2)}</div></div>
+    <div><div style="font-size:.68rem;color:var(--text2);text-transform:uppercase">Sold</div><div style="font-family:'DM Mono',monospace;font-size:1rem;margin-top:4px;color:var(--success)">$${totalSold.toFixed(2)}</div></div>
+    <div><div style="font-size:.68rem;color:var(--text2);text-transform:uppercase">Net</div><div style="font-family:'DM Mono',monospace;font-size:1rem;margin-top:4px;color:${roiColor}">${net>=0?'+':''}$${net.toFixed(2)}</div></div>`;
+  const clist=document.getElementById('bd-cards-list');
+  if(!cards?.length){clist.innerHTML=`<p style="color:var(--text2);font-size:.85rem">No cards linked to this blaster yet. Edit cards and select this blaster as the source.</p>`;
+  } else {
+    clist.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.83rem">
+      <thead><tr>
+        <th style="text-align:left;padding:6px 8px;font-size:.7rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)">Player</th>
+        <th style="text-align:left;padding:6px 8px;font-size:.7rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)">Set</th>
+        <th style="text-align:left;padding:6px 8px;font-size:.7rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)">Status</th>
+        <th style="text-align:right;padding:6px 8px;font-size:.7rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)">Sale</th>
+        <th style="text-align:right;padding:6px 8px;font-size:.7rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)">Grade Fee</th>
+      </tr></thead>
+      <tbody>${(cards||[]).map(c=>`<tr>
+        <td style="padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04)">${c.player||'—'}${c.grade_company?` <span style="font-size:.7rem;color:var(--accent)">${c.grade_company} ${c.grade_number||''}</span>`:''}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2)">${c.year||''} ${c.card_set||''}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04)"><span class="status-badge status-${c.status}">${(c.status||'').replace(/_/g,' ')}</span></td>
+        <td style="padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right;font-family:'DM Mono',monospace">${c.sale_price?'$'+Number(c.sale_price).toFixed(2):'—'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right;font-family:'DM Mono',monospace">${c.grading_fee?'$'+Number(c.grading_fee).toFixed(2):'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+  document.getElementById('blaster-detail-modal').style.display='flex';
+}
+
+async function deleteBlaster(id){
+  if(!confirm('Delete this blaster? Cards linked to it will be unlinked but not deleted.'))return;
+  await sb.from('breaks').delete().eq('id',id);
+  showToast('Blaster removed','success');
+  renderBlasters();
 }
 
 // ─── PHOTO MIGRATION ──────────────────────────────────────────────────────────
