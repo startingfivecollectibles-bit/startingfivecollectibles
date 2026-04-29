@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-26 | v22 -->
+<!-- Starting Five Collectibles | Build: 2026-04-28 | v23 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v22 · 2026-04-26</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v23 · 2026-04-28</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -292,9 +292,10 @@ select option{background:var(--surface2);}
       <div id="col-list-wrap">
         <div id="mass-update-bar" style="display:none;background:rgba(26,111,212,.1);border:1px solid rgba(26,111,212,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
           <span id="mass-select-count" style="font-size:.85rem;color:var(--text2)">0 selected</span>
-          <select class="filter-select" id="mass-field"><option value="">Choose field to update...</option><option value="location">Location</option><option value="status">Status</option></select>
+          <select class="filter-select" id="mass-field"><option value="">Choose field to update...</option><option value="location">Location</option><option value="status">Status</option><option value="blaster">Blaster</option></select>
           <select class="filter-select" id="mass-location" style="display:none"><option value="">Select...</option><option value="Matt">Matt</option><option value="Andrew">Andrew</option><option value="PSA Vault">PSA Vault</option></select>
           <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="on_hold_grade">On Hold to Grade</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
+          <select class="filter-select" id="mass-blaster" style="display:none"><option value="">— No Blaster —</option></select>
           <button class="btn btn-primary btn-sm" onclick="applyMassUpdate()">Apply to Selected</button>
           <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Cancel</button>
         </div>
@@ -904,13 +905,21 @@ select option{background:var(--surface2);}
 <!-- COST MODAL -->
 <div class="modal-overlay" id="cost-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" style="max-width:440px">
-    <h3>Add Daily Cost</h3>
+    <h3 id="cost-modal-title">Add Daily Cost</h3>
     <div class="form-grid">
       <div class="form-group full"><label>Item Description</label><input id="co-desc" placeholder="e.g. Top loaders 100pk, Bubble mailers"></div>
       <div class="form-group"><label>Amount ($)</label><input id="co-amount" type="number" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>Date</label><input id="co-date" type="date"></div>
       <div class="form-group full"><label>Category</label>
         <select id="co-cat"><option value="supplies">Supplies (envelopes, tape, bags)</option><option value="packaging">Packaging (boxes, mailers)</option><option value="shipping">Shipping Materials</option><option value="fees">Platform Fees</option><option value="other">Other</option></select>
+      </div>
+      <div class="form-group full"><label>Purchased By</label>
+        <select id="co-purchasedby"><option value="Matt">Matt</option><option value="Andrew">Andrew</option></select>
+      </div>
+      <div class="form-group full">
+        <label>Receipt (optional)</label>
+        <input type="file" id="co-receipt" accept="image/*,application/pdf" style="color:var(--text)">
+        <div id="co-receipt-status" style="font-size:.78rem;color:var(--text2);margin-top:4px"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -2130,6 +2139,7 @@ async function saveEditNote(){
   document.getElementById('edit-note-modal').style.display='none';renderResearch();
 }
 
+let editCostId=null;
 async function renderCosts(){
   const{data:costs}=await sb.from('daily_costs').select('*').eq('user_id',CU.id).order('date',{ascending:false});
   const yr=new Date().getFullYear();
@@ -2141,19 +2151,94 @@ async function renderCosts(){
     <div class="stat-card"><div class="stat-label">${yr} Costs</div><div class="stat-value red">$${totalYr.toFixed(2)}</div></div>
     <div class="stat-card"><div class="stat-label">Entries</div><div class="stat-value">${(costs||[]).length}</div></div>`;
   if(!costs?.length){document.getElementById('cost-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🧾</div><div>No costs added yet</div></div>`;return;}
-  let html=`<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th></th></tr></thead><tbody>`;
-  costs.forEach(c=>{html+=`<tr><td>${c.date||'—'}</td><td>${c.description||'—'}</td><td>${c.category||'—'}</td><td class="mono" style="color:var(--accent2)">$${(c.amount||0).toFixed(2)}</td><td><button class="btn btn-danger btn-sm" onclick="deleteCost('${c.id}')">Del</button></td></tr>`;});
+  let html=`<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>By</th><th>Amount</th><th>Receipt</th><th></th></tr></thead><tbody>`;
+  costs.forEach(c=>{
+    html+=`<tr>
+      <td>${c.date||'—'}</td>
+      <td>${c.description||'—'}</td>
+      <td>${c.category||'—'}</td>
+      <td style="font-size:.78rem;color:var(--accent)">${c.purchased_by||'—'}</td>
+      <td class="mono" style="color:var(--accent2)">$${(c.amount||0).toFixed(2)}</td>
+      <td>${c.receipt_url?`<a href="${c.receipt_url}" target="_blank" style="color:var(--accent);font-size:.78rem">🧾 View</a>`:'—'}</td>
+      <td style="display:flex;gap:4px;padding:7px 13px">
+        <button class="btn btn-secondary btn-sm"
+          data-id="${c.id}"
+          data-desc="${(c.description||'').replace(/"/g,'&quot;')}"
+          data-amount="${c.amount||0}"
+          data-date="${c.date||''}"
+          data-cat="${c.category||'supplies'}"
+          data-by="${c.purchased_by||'Matt'}"
+          onclick="editCostFromBtn(this)">Edit</button>
+        <button class="btn btn-danger btn-sm" data-id="${c.id}" onclick="deleteCost(this.dataset.id)">Del</button>
+      </td>
+    </tr>`;
+  });
   document.getElementById('cost-table').innerHTML=html+'</tbody></table>';
 }
 function openCostModal(){
-  ['co-desc','co-amount'].forEach(f=>document.getElementById(f).value='');
+  editCostId=null;
+  document.getElementById('co-desc').value='';
+  document.getElementById('co-amount').value='';
   document.getElementById('co-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('co-cat').value='supplies';
+  document.getElementById('co-purchasedby').value='Matt';
+  document.getElementById('co-receipt').value='';
+  document.getElementById('co-receipt-status').textContent='';
+  document.getElementById('cost-modal-title').textContent='Add Daily Cost';
+  document.getElementById('cost-modal').style.display='flex';
+}
+function editCostFromBtn(btn){
+  editCostId=btn.dataset.id;
+  document.getElementById('co-desc').value=btn.dataset.desc||'';
+  document.getElementById('co-amount').value=btn.dataset.amount||'';
+  document.getElementById('co-date').value=btn.dataset.date||'';
+  document.getElementById('co-cat').value=btn.dataset.cat||'supplies';
+  document.getElementById('co-purchasedby').value=btn.dataset.by||'Matt';
+  document.getElementById('co-receipt').value='';
+  document.getElementById('co-receipt-status').textContent='';
+  document.getElementById('cost-modal-title').textContent='Edit Cost';
   document.getElementById('cost-modal').style.display='flex';
 }
 async function saveCost(){
-  const{error}=await sb.from('daily_costs').insert({user_id:CU.id,description:document.getElementById('co-desc').value,amount:parseFloat(document.getElementById('co-amount').value)||0,date:document.getElementById('co-date').value,category:document.getElementById('co-cat').value});
+  const desc=document.getElementById('co-desc').value.trim();
+  if(!desc){showToast('Enter a description','error');return;}
+  let receipt_url=undefined;
+  const file=document.getElementById('co-receipt').files[0];
+  if(file){
+    document.getElementById('co-receipt-status').textContent='Uploading...';
+    try{
+      const ext=file.name.split('.').pop();
+      const path=`costs/${CU.id}/${Date.now()}.${ext}`;
+      const{error:upErr}=await sb.storage.from('reciepts').upload(path,file,{upsert:true});
+      if(upErr)throw upErr;
+      const{data:urlData}=sb.storage.from('reciepts').getPublicUrl(path);
+      receipt_url=urlData?.publicUrl||null;
+      document.getElementById('co-receipt-status').textContent='Uploaded ✓';
+    }catch(e){
+      showToast('Receipt upload failed','error');
+      document.getElementById('co-receipt-status').textContent='Upload failed';
+    }
+  }
+  const payload={
+    user_id:CU.id,
+    description:desc,
+    amount:parseFloat(document.getElementById('co-amount').value)||0,
+    date:document.getElementById('co-date').value,
+    category:document.getElementById('co-cat').value,
+    purchased_by:document.getElementById('co-purchasedby').value,
+    ...(receipt_url!==undefined&&{receipt_url})
+  };
+  let error;
+  if(editCostId){
+    ({error}=await sb.from('daily_costs').update(payload).eq('id',editCostId));
+  } else {
+    ({error}=await sb.from('daily_costs').insert(payload));
+  }
   if(error){showToast('Error: '+error.message,'error');return;}
-  showToast('Cost added!','success');document.getElementById('cost-modal').style.display='none';renderCosts();
+  showToast(editCostId?'Updated!':'Cost added!','success');
+  document.getElementById('cost-modal').style.display='none';
+  editCostId=null;
+  renderCosts();
 }
 async function deleteCost(id){if(!confirm('Delete this entry?'))return;await sb.from('daily_costs').delete().eq('id',id);showToast('Deleted','success');renderCosts();}
 
@@ -2179,20 +2264,46 @@ document.addEventListener('change',e=>{
     const v=e.target.value;
     const loc=document.getElementById('mass-location');
     const stat=document.getElementById('mass-status');
+    const blast=document.getElementById('mass-blaster');
     if(loc)loc.style.display=v==='location'?'block':'none';
     if(stat)stat.style.display=v==='status'?'block':'none';
+    if(blast){
+      blast.style.display=v==='blaster'?'block':'none';
+      if(v==='blaster')populateMassBlasterDropdown();
+    }
   }
 });
+async function populateMassBlasterDropdown(){
+  const sel=document.getElementById('mass-blaster');
+  if(!sel)return;
+  const{data:blasters}=await sb.from('breaks').select('id,name,purchase_date').order('purchase_date',{ascending:false});
+  sel.innerHTML=`<option value="">— No Blaster —</option>`;
+  (blasters||[]).forEach(b=>{
+    const opt=document.createElement('option');
+    opt.value=b.id;
+    opt.textContent=b.name+(b.purchase_date?' ('+b.purchase_date+')':'');
+    sel.appendChild(opt);
+  });
+}
 async function applyMassUpdate(){
   const field=document.getElementById('mass-field')?.value;
   if(!field){showToast('Choose a field to update','error');return;}
   const ids=Array.from(document.querySelectorAll('.card-select-cb:checked')).map(x=>x.dataset.id);
   if(!ids.length){showToast('No cards selected','error');return;}
-  let value='';
-  if(field==='location')value=document.getElementById('mass-location')?.value||'';
-  if(field==='status')value=document.getElementById('mass-status')?.value||'';
-  if(!value){showToast('Choose a value','error');return;}
-  const{error}=await sb.from('cards').update({[field]:value}).in('id',ids);
+  let updatePayload={};
+  if(field==='location'){
+    const v=document.getElementById('mass-location')?.value||'';
+    if(!v){showToast('Choose a location','error');return;}
+    updatePayload={location:v};
+  } else if(field==='status'){
+    const v=document.getElementById('mass-status')?.value||'';
+    if(!v){showToast('Choose a status','error');return;}
+    updatePayload={status:v};
+  } else if(field==='blaster'){
+    const v=document.getElementById('mass-blaster')?.value||null;
+    updatePayload={break_id:v||null};
+  }
+  const{error}=await sb.from('cards').update(updatePayload).in('id',ids);
   if(error){showToast('Error: '+error.message,'error');return;}
   showToast('Updated '+ids.length+' cards!','success');
   await loadCardCache();clearSelection();renderCol();
