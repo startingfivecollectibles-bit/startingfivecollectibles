@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-28 | v23 -->
+<!-- Starting Five Collectibles | Build: 2026-04-29 | v24 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -230,7 +230,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v23 · 2026-04-28</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v24 · 2026-04-29</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -258,6 +258,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
       <button class="nav-item" onclick="showPage('blasters')"><span class="icon">📦</span> Blaster Tracker</button>
+      <button class="nav-item" id="nav-stickers" style="display:none" onclick="showPage('stickers')"><span class="icon">⭐</span> WC Stickers</button>
       <button class="nav-item" onclick="showPage('alerts')"><span class="icon">🚨</span> Sell Alerts</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
@@ -445,6 +446,70 @@ select option{background:var(--surface2);}
       <div id="todo-list" style="max-width:680px"></div>
     </div>
     <!-- BLASTER TRACKER PAGE -->
+    <!-- STICKER TRACKER PAGE -->
+    <div class="page" id="page-stickers">
+      <div class="page-header">
+        <span class="page-title">⭐ WC 2026 Stickers</span>
+        <button class="btn btn-primary" onclick="openTradeModal()">+ New Trade</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Progress</div>
+          <div id="sticker-stats" style="font-size:.83rem;color:var(--text2)"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:20px;height:14px;overflow:hidden">
+          <div id="sticker-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .4s ease;width:0%"></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+          <span style="font-size:.78rem"><span style="color:var(--success)">●</span> Have: <strong id="count-have">0</strong></span>
+          <span style="font-size:.78rem"><span style="color:var(--accent2)">●</span> Need: <strong id="count-need">0</strong></span>
+          <span style="font-size:.78rem"><span style="color:var(--accent)">●</span> Duplicate: <strong id="count-dup">0</strong></span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" id="tab-collection" onclick="setStickerTab('collection')">📋 By Country</button>
+        <button class="btn btn-secondary btn-sm" id="tab-duplicates" onclick="setStickerTab('duplicates')">🔄 Duplicates</button>
+        <button class="btn btn-secondary btn-sm" id="tab-trades" onclick="setStickerTab('trades')">🤝 Trades</button>
+      </div>
+
+      <div id="sticker-content"></div>
+    </div>
+
+    <!-- TRADE MODAL -->
+    <div class="modal-overlay" id="trade-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="modal" style="max-width:500px">
+        <h3 id="trade-modal-title">New Trade</h3>
+        <div class="form-group"><label>Contact Name</label><input id="tr-contact" placeholder="e.g. John from Facebook group"></div>
+        <div class="form-group"><label>Contact Info (optional)</label><input id="tr-info" placeholder="Facebook profile, email, etc."></div>
+        <div class="form-group">
+          <label>Stickers I'm Sending (codes, comma separated)</label>
+          <input id="tr-sending" placeholder="e.g. ARG17, BRA14, FRA20">
+          <div style="font-size:.74rem;color:var(--text2);margin-top:3px">These will be removed from your duplicates when trade completes</div>
+        </div>
+        <div class="form-group">
+          <label>Stickers I'm Receiving (codes, comma separated)</label>
+          <input id="tr-receiving" placeholder="e.g. USA16, ENG11, ESP15">
+          <div style="font-size:.74rem;color:var(--text2);margin-top:3px">These will be marked as Have when trade completes</div>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="tr-status">
+            <option value="offered">Offered</option>
+            <option value="agreed">Agreed</option>
+            <option value="mailed">Mailed</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="saveTrade()">Save</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('trade-modal').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-blasters">
       <div class="page-header">
         <span class="page-title">Blaster Tracker</span>
@@ -1061,6 +1126,8 @@ function initApp(user){
   initTaxYears();
   const todoNav=document.getElementById('nav-todo');
   if(todoNav)todoNav.style.display=EMAIL_TO_NAME[CU.email]==='Matt'?'flex':'none';
+  const stickerNav=document.getElementById('nav-stickers');
+  if(stickerNav)stickerNav.style.display=EMAIL_TO_NAME[CU.email]==='Matt'?'flex':'none';
   showPage(currentPage||'dashboard');
 }
 
@@ -1219,7 +1286,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,stickers:renderStickers};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -2774,6 +2841,262 @@ async function deleteScout(id){
   await sb.from('rookie_cache').delete().eq('id',id);
   showToast('Removed','success');
   renderScouting();
+}
+
+// ─── WC 2026 STICKER TRACKER ──────────────────────────────────────────────
+let stickerCache=[];
+let stickerTab='collection';
+let editTradeId=null;
+
+function setStickerTab(tab){
+  stickerTab=tab;
+  ['collection','duplicates','trades'].forEach(t=>{
+    const btn=document.getElementById('tab-'+t);
+    if(btn)btn.style.background=t===tab?'var(--accent)':'';
+  });
+  renderStickerContent();
+}
+
+async function renderStickers(){
+  // Load all stickers for this user
+  const{data}=await sb.from('wc2026_stickers').select('*').eq('user_id',CU.id).order('country').order('code');
+  stickerCache=data||[];
+  updateStickerProgress();
+  setStickerTab('collection');
+}
+
+function updateStickerProgress(){
+  const total=stickerCache.length;
+  const have=stickerCache.filter(s=>s.status==='have').length;
+  const dup=stickerCache.filter(s=>s.status==='duplicate').length;
+  const need=stickerCache.filter(s=>s.status==='need').length;
+  const pct=total>0?Math.round((have/total)*100):0;
+  document.getElementById('sticker-progress-bar').style.width=pct+'%';
+  document.getElementById('sticker-stats').textContent=have+' / '+total+' ('+pct+'% complete)';
+  document.getElementById('count-have').textContent=have;
+  document.getElementById('count-need').textContent=need;
+  document.getElementById('count-dup').textContent=dup;
+}
+
+function renderStickerContent(){
+  const el=document.getElementById('sticker-content');
+  if(stickerTab==='collection')el.innerHTML=renderByCountry();
+  else if(stickerTab==='duplicates')el.innerHTML=renderDuplicates();
+  else if(stickerTab==='trades'){renderTradesTab();return;}
+}
+
+function renderByCountry(){
+  // Group by country
+  const byCountry={};
+  stickerCache.forEach(s=>{
+    if(!byCountry[s.country])byCountry[s.country]=[];
+    byCountry[s.country].push(s);
+  });
+  const countries=Object.keys(byCountry).sort();
+  return countries.map(country=>{
+    const stickers=byCountry[country];
+    const have=stickers.filter(s=>s.status==='have'||s.status==='duplicate').length;
+    const total=stickers.length;
+    const allDone=have===total;
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleCountry('${country.replace(/'/g,'\\'')}')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-weight:700;font-size:.92rem">${country}</span>
+          ${allDone?'<span style="font-size:.7rem;background:var(--success);color:#000;padding:1px 7px;border-radius:10px;font-weight:700">COMPLETE</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:.78rem;color:var(--text2)">${have}/${total}</span>
+          <div style="background:var(--surface2);border-radius:10px;width:80px;height:6px;overflow:hidden"><div style="height:100%;background:var(--accent);width:${Math.round(have/total*100)}%"></div></div>
+          <span style="color:var(--text2);font-size:.8rem">▼</span>
+        </div>
+      </div>
+      <div id="country-${country.replace(/[^a-zA-Z0-9]/g,'-')}" style="display:none;padding:8px 14px 12px;border-top:1px solid var(--border)">
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${stickers.map(s=>stickerChip(s)).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function stickerChip(s){
+  const colors={need:'var(--surface2)',have:'rgba(34,197,94,.2)',duplicate:'rgba(26,111,212,.25)'};
+  const borders={need:'var(--border)',have:'rgba(34,197,94,.5)',duplicate:'rgba(26,111,212,.5)'};
+  const bg=colors[s.status]||colors.need;
+  const border=borders[s.status]||borders.need;
+  const dupBadge=s.status==='duplicate'&&s.duplicate_count>1?`<span style="background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:.65rem;margin-left:3px">×${s.duplicate_count}</span>`:'';
+  return`<div onclick="cycleStickerStatus('${s.id}')" style="cursor:pointer;background:${bg};border:1px solid ${border};border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:4px;transition:all .15s" title="${s.player}">
+    ${s.is_foil?'✨ ':''}${s.code}${dupBadge}
+    <span style="color:var(--text2);font-size:.68rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.player}</span>
+  </div>`;
+}
+
+function toggleCountry(country){
+  const id='country-'+country.replace(/[^a-zA-Z0-9]/g,'-');
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function cycleStickerStatus(id){
+  const s=stickerCache.find(x=>x.id===id);
+  if(!s)return;
+  let newStatus,newCount=s.duplicate_count||0;
+  if(s.status==='need'){newStatus='have';newCount=0;}
+  else if(s.status==='have'){newStatus='duplicate';newCount=1;}
+  else{
+    // duplicate — increment count, or cycle back to need if only 1
+    if(newCount<=1){newStatus='need';newCount=0;}
+    else{newStatus='duplicate';newCount=newCount-1;}
+  }
+  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:newCount}).eq('id',id);
+  s.status=newStatus;s.duplicate_count=newCount;
+  updateStickerProgress();
+  // Re-render just the chip
+  const chip=document.querySelector(`[onclick="cycleStickerStatus('${id}')"]`);
+  if(chip)chip.outerHTML=stickerChip(s);
+}
+
+function renderDuplicates(){
+  const dups=stickerCache.filter(s=>s.status==='duplicate');
+  if(!dups.length)return`<div class="empty-state"><div class="empty-icon">🔄</div><div>No duplicates yet. As you collect stickers, duplicates will appear here.</div></div>`;
+  const byCountry={};
+  dups.forEach(s=>{if(!byCountry[s.country])byCountry[s.country]=[];byCountry[s.country].push(s);});
+  const countries=Object.keys(byCountry).sort();
+  return`<div style="margin-bottom:12px;font-size:.83rem;color:var(--text2)">${dups.length} duplicate sticker${dups.length>1?'s':''} available for trading</div>`+
+  countries.map(country=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${country}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${byCountry[country].map(s=>`
+          <div style="background:rgba(26,111,212,.2);border:1px solid rgba(26,111,212,.4);border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:5px">
+            ${s.is_foil?'✨ ':''}${s.code} <span style="color:var(--text2)">${s.player}</span>
+            <span style="background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:.65rem">×${s.duplicate_count||1}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function renderTradesTab(){
+  const{data:trades}=await sb.from('wc2026_trades').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});
+  const el=document.getElementById('sticker-content');
+  const statusColors={offered:'var(--accent2)',agreed:'var(--accent)',mailed:'#f59e0b',completed:'var(--success)'};
+  if(!trades?.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🤝</div><div>No trades yet. Use the + New Trade button to start one.</div></div>`;
+    return;
+  }
+  el.innerHTML=trades.map(t=>{
+    const sending=Array.isArray(t.sending)?t.sending:[];
+    const receiving=Array.isArray(t.receiving)?t.receiving:[];
+    const col=statusColors[t.status]||'var(--text2)';
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--radius);padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-weight:700">${t.contact}</div>
+          ${t.contact_info?`<div style="font-size:.76rem;color:var(--text2)">${t.contact_info}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="background:${col};color:#fff;padding:2px 10px;border-radius:10px;font-size:.72rem;font-weight:700;text-transform:uppercase">${t.status}</span>
+          <button class="btn btn-secondary btn-sm" data-id="${t.id}" data-contact="${(t.contact||'').replace(/"/g,'&quot;')}" data-info="${(t.contact_info||'').replace(/"/g,'&quot;')}" data-sending="${sending.join(',')}" data-receiving="${receiving.join(',')}" data-status="${t.status}" onclick="editTradeFromBtn(this)">Edit</button>
+          ${t.status!=='completed'?`<button class="btn btn-success btn-sm" data-id="${t.id}" onclick="completeTrade(this.dataset.id)">✓ Complete</button>`:''}
+          <button class="btn btn-danger btn-sm" data-id="${t.id}" onclick="deleteTrade(this.dataset.id)">Del</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.8rem">
+        <div>
+          <div style="color:var(--text2);margin-bottom:4px;font-size:.7rem;text-transform:uppercase">Sending (${sending.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${sending.map(c=>`<span style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:2px 6px">${c}</span>`).join('')||'—'}</div>
+        </div>
+        <div>
+          <div style="color:var(--text2);margin-bottom:4px;font-size:.7rem;text-transform:uppercase">Receiving (${receiving.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${receiving.map(c=>`<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 6px">${c}</span>`).join('')||'—'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openTradeModal(){
+  editTradeId=null;
+  ['tr-contact','tr-info','tr-sending','tr-receiving'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('tr-status').value='offered';
+  document.getElementById('trade-modal-title').textContent='New Trade';
+  document.getElementById('trade-modal').style.display='flex';
+}
+
+function editTradeFromBtn(btn){
+  editTradeId=btn.dataset.id;
+  document.getElementById('tr-contact').value=btn.dataset.contact||'';
+  document.getElementById('tr-info').value=btn.dataset.info||'';
+  document.getElementById('tr-sending').value=btn.dataset.sending||'';
+  document.getElementById('tr-receiving').value=btn.dataset.receiving||'';
+  document.getElementById('tr-status').value=btn.dataset.status||'offered';
+  document.getElementById('trade-modal-title').textContent='Edit Trade';
+  document.getElementById('trade-modal').style.display='flex';
+}
+
+async function saveTrade(){
+  const contact=document.getElementById('tr-contact').value.trim();
+  if(!contact){showToast('Enter a contact name','error');return;}
+  const sending=document.getElementById('tr-sending').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const receiving=document.getElementById('tr-receiving').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const status=document.getElementById('tr-status').value;
+  const payload={
+    contact,
+    contact_info:document.getElementById('tr-info').value||null,
+    sending,receiving,status,
+    user_id:CU.id,
+    updated_at:new Date().toISOString()
+  };
+  let error;
+  if(editTradeId){
+    ({error}=await sb.from('wc2026_trades').update(payload).eq('id',editTradeId));
+    if(status==='completed')await completeTrade(editTradeId,sending,receiving);
+  } else {
+    ({error}=await sb.from('wc2026_trades').insert(payload));
+  }
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast(editTradeId?'Trade updated!':'Trade added!','success');
+  document.getElementById('trade-modal').style.display='none';
+  editTradeId=null;
+  if(stickerTab==='trades')renderTradesTab();
+}
+
+async function completeTrade(id, sending, receiving){
+  // If called from button (not from save), fetch the trade data
+  if(!sending){
+    const{data:t}=await sb.from('wc2026_trades').select('*').eq('id',id).single();
+    if(!t)return;
+    sending=t.sending||[];receiving=t.receiving||[];
+    await sb.from('wc2026_trades').update({status:'completed',updated_at:new Date().toISOString()}).eq('id',id);
+  }
+  // Decrease duplicate count for sent stickers
+  for(const code of sending){
+    const s=stickerCache.find(x=>x.code===code&&x.status==='duplicate');
+    if(s){
+      const newCount=(s.duplicate_count||1)-1;
+      const newStatus=newCount<=0?'have':'duplicate';
+      await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:Math.max(0,newCount)}).eq('id',s.id);
+      s.status=newStatus;s.duplicate_count=Math.max(0,newCount);
+    }
+  }
+  // Mark received stickers as have
+  for(const code of receiving){
+    const s=stickerCache.find(x=>x.code===code&&x.status==='need');
+    if(s){
+      await sb.from('wc2026_stickers').update({status:'have',duplicate_count:0}).eq('id',s.id);
+      s.status='have';s.duplicate_count=0;
+    }
+  }
+  showToast('Trade completed! Sticker counts updated.','success');
+  updateStickerProgress();
+  renderTradesTab();
+}
+
+async function deleteTrade(id){
+  if(!confirm('Delete this trade?'))return;
+  await sb.from('wc2026_trades').delete().eq('id',id);
+  showToast('Deleted','success');
+  renderTradesTab();
 }
 
 // ─── BLASTER TRACKER ──────────────────────────────────────────────────────
