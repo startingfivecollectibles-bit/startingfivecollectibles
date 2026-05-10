@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-04-29 | v24 -->
+<!-- Starting Five Collectibles | Build: 2026-05-10 | v25 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v24 · 2026-04-29</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-10</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -1882,7 +1882,7 @@ async function confirmCSV(){
       year:parseInt(r.year)||null,card_set:r.card_set||null,
       card_number:r.card_number||null,variation:r.variation||null,
       condition:condition,
-      status:alreadySold?'sold':(r.status||'in_collection'),
+      status:alreadySold?'sold':(['in_collection','listed','being_graded','sold','psa_vault','on_hold_grade'].includes(r.status)?r.status:'in_collection'),
       serial_number:r.serial_number||null,
       auto_type:isAuto?'on-card':null,
       grade_company:g.company,grade_number:g.number,
