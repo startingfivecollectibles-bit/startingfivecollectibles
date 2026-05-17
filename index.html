@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-05-10 | v25 -->
+<!-- Starting Five Collectibles | Build: 2026-05-16 | v25 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-10</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-16</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -1882,7 +1882,7 @@ async function confirmCSV(){
       year:parseInt(r.year)||null,card_set:r.card_set||null,
       card_number:r.card_number||null,variation:r.variation||null,
       condition:condition,
-      status:alreadySold?'sold':(['in_collection','listed','being_graded','sold','psa_vault','on_hold_grade'].includes(r.status)?r.status:'in_collection'),
+      status:alreadySold?'sold':(r.status||'in_collection'),
       serial_number:r.serial_number||null,
       auto_type:isAuto?'on-card':null,
       grade_company:g.company,grade_number:g.number,
@@ -2870,8 +2870,53 @@ function setStickerTab(tab){
   renderStickerContent();
 }
 
+// Fix 3: country abbreviation → display name map
+const COUNTRY_NAMES={
+  AFG:'Afghanistan',ALB:'Albania',ALG:'Algeria',AND:'Andorra',ANG:'Angola',ARG:'Argentina',ARM:'Armenia',
+  AUS:'Australia',AUT:'Austria',AZE:'Azerbaijan',BAN:'Bangladesh',BEL:'Belgium',BEN:'Benin',BHU:'Bhutan',
+  BIH:'Bosnia & Herzegovina',BLR:'Belarus',BOL:'Bolivia',BOT:'Botswana',BRA:'Brazil',BRU:'Brunei',
+  BUL:'Bulgaria',BUR:'Burkina Faso',CAM:'Cambodia',CAN:'Canada',CAP:'Cape Verde',CGO:'Congo',
+  CHI:'Chile',CHN:'China',CIV:"Côte d'Ivoire",CMR:'Cameroon',COD:'DR Congo',COL:'Colombia',
+  COM:'Comoros',CPV:'Cape Verde',CRC:'Costa Rica',CRO:'Croatia',CUB:'Cuba',CYP:'Cyprus',
+  CZE:'Czech Republic',DEN:'Denmark',DJI:'Djibouti',DOM:'Dominican Republic',ECU:'Ecuador',
+  EGY:'Egypt',ENG:'England',ERI:'Eritrea',ESP:'Spain',EST:'Estonia',ETH:'Ethiopia',
+  FIJ:'Fiji',FIN:'Finland',FRA:'France',GAB:'Gabon',GAM:'Gambia',GEO:'Georgia',
+  GER:'Germany',GHA:'Ghana',GRE:'Greece',GUA:'Guatemala',GUI:'Guinea',GUY:'Guyana',
+  HAI:'Haiti',HON:'Honduras',HUN:'Hungary',IDN:'Indonesia',IND:'India',IRL:'Republic of Ireland',
+  IRN:'Iran',IRQ:'Iraq',ISL:'Iceland',ISR:'Israel',ITA:'Italy',JAM:'Jamaica',
+  JOR:'Jordan',JPN:'Japan',KAZ:'Kazakhstan',KEN:'Kenya',KGZ:'Kyrgyzstan',KOR:'South Korea',
+  KSA:'Saudi Arabia',KUW:'Kuwait',LAO:'Laos',LBN:'Lebanon',LBR:'Liberia',LBA:'Libya',
+  LIE:'Liechtenstein',LTU:'Lithuania',LUX:'Luxembourg',MAC:'Macau',MAD:'Madagascar',
+  MAR:'Morocco',MAS:'Malaysia',MDA:'Moldova',MDV:'Maldives',MEX:'Mexico',MGL:'Mongolia',
+  MKD:'North Macedonia',MLI:'Mali',MLT:'Malta',MNE:'Montenegro',MOZ:'Mozambique',
+  MRI:'Mauritius',MTN:'Mauritania',MYA:'Myanmar',NAM:'Namibia',NCA:'Nicaragua',
+  NED:'Netherlands',NEP:'Nepal',NGA:'Nigeria',NOR:'Norway',NZL:'New Zealand',
+  OMA:'Oman',PAK:'Pakistan',PAN:'Panama',PAR:'Paraguay',PER:'Peru',PHI:'Philippines',
+  PNG:'Papua New Guinea',POL:'Poland',POR:'Portugal',PRK:'North Korea',PUR:'Puerto Rico',
+  QAT:'Qatar',ROU:'Romania',RSA:'South Africa',RUS:'Russia',RWA:'Rwanda',
+  SCO:'Scotland',SEN:'Senegal',SIN:'Singapore',SKN:'St. Kitts & Nevis',SLE:'Sierra Leone',
+  SLV:'El Salvador',SMR:'San Marino',SOM:'Somalia',SRB:'Serbia',SRI:'Sri Lanka',
+  SSD:'South Sudan',STP:'São Tomé & Príncipe',SUD:'Sudan',SUI:'Switzerland',
+  SUR:'Suriname',SVK:'Slovakia',SVN:'Slovenia',SWE:'Sweden',SWZ:'Eswatini',
+  SYR:'Syria',TAN:'Tanzania',TGA:'Tonga',THA:'Thailand',TJK:'Tajikistan',
+  TKM:'Turkmenistan',TOG:'Togo',TRI:'Trinidad & Tobago',TUN:'Tunisia',TUR:'Turkey',
+  UAE:'United Arab Emirates',UGA:'Uganda',UKR:'Ukraine',URU:'Uruguay',USA:'USA',
+  UZB:'Uzbekistan',VEN:'Venezuela',VIE:'Vietnam',WAL:'Wales',YEM:'Yemen',
+  ZAM:'Zambia',ZIM:'Zimbabwe'
+};
+
+function countryDisplayName(code){
+  return COUNTRY_NAMES[code]||code;
+}
+
+// Fix 1: numeric sort for sticker codes within a country
+function stickerNumericSort(a,b){
+  const numA=parseInt((a.code||'').replace(/[^0-9]/g,''),10)||0;
+  const numB=parseInt((b.code||'').replace(/[^0-9]/g,''),10)||0;
+  return numA-numB;
+}
+
 async function renderStickers(){
-  // Load all stickers for this user
   const{data}=await sb.from('wc2026_stickers').select('*').eq('user_id',CU.id).order('country').order('code');
   stickerCache=data||[];
   updateStickerProgress();
@@ -2899,22 +2944,25 @@ function renderStickerContent(){
 }
 
 function renderByCountry(){
-  // Group by country
   const byCountry={};
   stickerCache.forEach(s=>{
     if(!byCountry[s.country])byCountry[s.country]=[];
     byCountry[s.country].push(s);
   });
-  const countries=Object.keys(byCountry).sort();
+  // Fix 3: sort countries by display name, not abbreviation
+  const countries=Object.keys(byCountry).sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b)));
   return countries.map(country=>{
-    const stickers=byCountry[country];
+    // Fix 1: sort stickers numerically within country
+    const stickers=byCountry[country].sort(stickerNumericSort);
     const have=stickers.filter(s=>s.status==='have'||s.status==='duplicate').length;
     const total=stickers.length;
     const allDone=have===total;
+    const displayName=countryDisplayName(country);
     return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
       <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" data-country="${country.replace(/"/g,'&quot;')}" onclick="toggleCountry(this.dataset.country)">
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-weight:700;font-size:.92rem">${country}</span>
+          <span style="font-weight:700;font-size:.92rem">${displayName}</span>
+          <span style="font-size:.68rem;color:var(--text2)">${country}</span>
           ${allDone?'<span style="font-size:.7rem;background:var(--success);color:#000;padding:1px 7px;border-radius:10px;font-weight:700">COMPLETE</span>':''}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -2938,8 +2986,11 @@ function stickerChip(s){
   const bg=colors[s.status]||colors.need;
   const border=borders[s.status]||borders.need;
   const dupBadge=s.status==='duplicate'&&s.duplicate_count>1?`<span style="background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:.65rem;margin-left:3px">×${s.duplicate_count}</span>`:'';
-  return`<div onclick="cycleStickerStatus('${s.id}')" style="cursor:pointer;background:${bg};border:1px solid ${border};border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:4px;transition:all .15s" title="${s.player}">
-    ${s.is_foil?'✨ ':''}${s.code}${dupBadge}
+  // Fix 2: show parallel label on chip
+  const parallelBadge=s.parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:0 5px;font-size:.62rem;margin-left:2px">${s.parallel}</span>`:'';
+  // Fix 4: use id attribute for reliable re-render targeting
+  return`<div id="chip-${s.id}" data-sid="${s.id}" onclick="cycleStickerStatus('${s.id}')" style="cursor:pointer;background:${bg};border:1px solid ${border};border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:4px;transition:all .15s" title="${s.player}">
+    ${s.is_foil?'✨ ':''}${s.code}${dupBadge}${parallelBadge}
     <span style="color:var(--text2);font-size:.68rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.player}</span>
   </div>`;
 }
@@ -2957,15 +3008,21 @@ async function cycleStickerStatus(id){
   if(s.status==='need'){newStatus='have';newCount=0;}
   else if(s.status==='have'){newStatus='duplicate';newCount=1;}
   else{
-    // duplicate — increment count, or cycle back to need if only 1
     if(newCount<=1){newStatus='need';newCount=0;}
     else{newStatus='duplicate';newCount=newCount-1;}
   }
-  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:newCount}).eq('id',id);
-  s.status=newStatus;s.duplicate_count=newCount;
+  // Fix 2: if becoming duplicate, prompt for parallel label
+  let parallel=s.parallel||null;
+  if(newStatus==='duplicate'&&newCount===1){
+    const p=prompt('Parallel label? (e.g. Blue, Gold) — leave blank if base copy');
+    parallel=p&&p.trim()?p.trim():null;
+  }
+  if(newStatus==='need')parallel=null;
+  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:newCount,parallel}).eq('id',id);
+  s.status=newStatus;s.duplicate_count=newCount;s.parallel=parallel;
   updateStickerProgress();
-  // Re-render just the chip
-  const chip=document.querySelector(`[onclick="cycleStickerStatus('${id}')"]`);
+  // Fix 4: re-render chip by id — reliable regardless of prior re-renders
+  const chip=document.getElementById('chip-'+id);
   if(chip)chip.outerHTML=stickerChip(s);
 }
 
@@ -2974,19 +3031,22 @@ function renderDuplicates(){
   if(!dups.length)return`<div class="empty-state"><div class="empty-icon">🔄</div><div>No duplicates yet. As you collect stickers, duplicates will appear here.</div></div>`;
   const byCountry={};
   dups.forEach(s=>{if(!byCountry[s.country])byCountry[s.country]=[];byCountry[s.country].push(s);});
-  const countries=Object.keys(byCountry).sort();
+  const countries=Object.keys(byCountry).sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b)));
   return`<div style="margin-bottom:12px;font-size:.83rem;color:var(--text2)">${dups.length} duplicate sticker${dups.length>1?'s':''} available for trading</div>`+
-  countries.map(country=>`
-    <div style="margin-bottom:14px">
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${country}</div>
+  countries.map(country=>{
+    const sorted=byCountry[country].sort(stickerNumericSort);
+    return`<div style="margin-bottom:14px">
+      <div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${countryDisplayName(country)} <span style="font-weight:400;color:var(--text2)">${country}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${byCountry[country].map(s=>`
+        ${sorted.map(s=>`
           <div style="background:rgba(26,111,212,.2);border:1px solid rgba(26,111,212,.4);border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:5px">
             ${s.is_foil?'✨ ':''}${s.code} <span style="color:var(--text2)">${s.player}</span>
+            ${s.parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:0 5px;font-size:.62rem">${s.parallel}</span>`:''}
             <span style="background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:.65rem">×${s.duplicate_count||1}</span>
           </div>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function renderTradesTab(){
