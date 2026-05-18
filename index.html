@@ -438,7 +438,7 @@ select option{background:var(--surface2);}
       <div class="table-container"><div id="box-table"></div></div>
     </div>
     <div class="page" id="page-payouts">
-      <div class="page-header"><span class="page-title">eBay Payouts</span><button class="btn btn-primary" onclick="openPayoutModal()">+ Add Payout</button></div>
+      <div class="page-header"><span class="page-title">eBay Payouts</span><div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="openSentModal()">💸 Pay Andrew</button><button class="btn btn-primary" onclick="openPayoutModal()">+ Add Payout</button></div></div>
       <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Track eBay payouts, calculate Andrew's cut, and record when you've sent payment.</p>
       <div class="stats-grid" id="payout-stats"></div>
       <div id="payout-list"></div>
@@ -1010,14 +1010,16 @@ select option{background:var(--surface2);}
 </div>
 
 <div class="modal-overlay" id="payout-sent-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header"><span class="modal-title">Mark as Sent</span><button class="modal-close" onclick="document.getElementById('payout-sent-modal').style.display='none'">✕</button></div>
-    <input type="hidden" id="psm-id">
-    <div style="margin-bottom:12px"><label class="form-label">Amount Sent ($)</label><input type="number" id="psm-amount" class="form-input" step="0.01"></div>
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><span class="modal-title">Send Payment to Andrew</span><button class="modal-close" onclick="document.getElementById('payout-sent-modal').style.display='none'">✕</button></div>
+    <p style="font-size:.83rem;color:var(--text2);margin-bottom:12px">Select the payouts you're covering with this payment.</p>
+    <div id="psm-payout-list" style="max-height:220px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:6px"></div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px;font-size:.85rem" id="psm-total-preview">Select payouts above.</div>
+    <div style="margin-bottom:12px"><label class="form-label">Amount Sending ($)</label><input type="number" id="psm-amount" class="form-input" step="0.01" oninput="updateSentPreview()"></div>
     <div style="margin-bottom:14px"><label class="form-label">Date Sent</label><input type="date" id="psm-date" class="form-input"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="document.getElementById('payout-sent-modal').style.display='none'">Cancel</button>
-      <button class="btn btn-primary" onclick="savePayoutSent()">Save</button>
+      <button class="btn btn-primary" onclick="savePayoutSent()">Record Payment</button>
     </div>
   </div>
 </div>
@@ -2318,7 +2320,7 @@ async function renderPayouts(){
           ${isSent
             ?`<span style="font-size:.8rem;background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.4);padding:3px 9px;border-radius:10px;color:var(--success)">✓ Sent $${sent.toFixed(2)} on ${p.sent_date||''}</span>`
             :`<span style="font-size:.8rem;background:rgba(239,68,68,.15);padding:3px 9px;border-radius:10px;color:var(--danger)">Owed: $${remaining.toFixed(2)}</span>
-             <button class="btn btn-secondary btn-sm" data-id="${p.id}" data-owed="${remaining.toFixed(2)}" onclick="openSentModal(this.dataset.id,this.dataset.owed)">Mark Sent</button>`
+             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.8rem"><input type="checkbox" class="payout-select-cb" data-id="${p.id}" data-owed="${remaining.toFixed(2)}" onchange="updateSentPreview()"> Include in payment</label>`
           }
           <button class="btn btn-danger btn-sm" data-id="${p.id}" onclick="deletePayout(this.dataset.id)">Del</button>
         </div>
@@ -2429,18 +2431,52 @@ async function savePayout(){
   renderPayouts();
 }
 
-function openSentModal(id,owed){
-  document.getElementById('psm-id').value=id;
-  document.getElementById('psm-amount').value=owed;
+function openSentModal(){
+  // Build list of unsent payouts
+  const unsent=payoutCache.filter(p=>{
+    const owed=p.andrew_cut||0;
+    const sent=p.sent_amount||0;
+    return owed>sent;
+  });
+  if(!unsent.length){showToast('No outstanding payouts','error');return;}
+  const listEl=document.getElementById('psm-payout-list');
+  listEl.innerHTML=unsent.map(p=>`
+    <label style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:8px 10px;cursor:pointer">
+      <input type="checkbox" class="psm-cb" data-id="${p.id}" data-owed="${((p.andrew_cut||0)-(p.sent_amount||0)).toFixed(2)}" onchange="updateSentPreview()">
+      <span style="flex:1;font-size:.83rem">${p.payout_number||p.payout_date} <span style="color:var(--text2)">${p.payout_date}</span></span>
+      <span style="font-size:.83rem;color:var(--accent);font-weight:700">$${((p.andrew_cut||0)-(p.sent_amount||0)).toFixed(2)} owed</span>
+    </label>`).join('');
+  document.getElementById('psm-amount').value='';
   document.getElementById('psm-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('psm-total-preview').innerHTML='Select payouts above.';
   document.getElementById('payout-sent-modal').style.display='flex';
 }
 
+function updateSentPreview(){
+  const checked=[...document.querySelectorAll('.psm-cb:checked')];
+  const total=checked.reduce((s,cb)=>s+parseFloat(cb.dataset.owed),0);
+  const sending=parseFloat(document.getElementById('psm-amount').value)||total;
+  document.getElementById('psm-amount').value=sending||'';
+  document.getElementById('psm-total-preview').innerHTML=checked.length
+    ?`Selected ${checked.length} payout${checked.length>1?'s':''} — Total owed: <b>$${total.toFixed(2)}</b> — Sending: <b>$${sending.toFixed(2)}</b>`
+    :'Select payouts above.';
+}
+
 async function savePayoutSent(){
-  const id=document.getElementById('psm-id').value;
-  const amount=parseFloat(document.getElementById('psm-amount').value)||0;
+  const checked=[...document.querySelectorAll('.psm-cb:checked')];
+  if(!checked.length){showToast('Select at least one payout','error');return;}
   const date=document.getElementById('psm-date').value;
-  await sb.from('payouts').update({sent_amount:amount,sent_date:date}).eq('id',id);
+  const totalOwed=checked.reduce((s,cb)=>s+parseFloat(cb.dataset.owed),0);
+  const sending=parseFloat(document.getElementById('psm-amount').value)||totalOwed;
+  // Distribute sending amount proportionally across selected payouts
+  for(const cb of checked){
+    const owed=parseFloat(cb.dataset.owed);
+    const proportion=totalOwed>0?owed/totalOwed:1/checked.length;
+    const sentForThis=parseFloat((sending*proportion).toFixed(2));
+    const p=payoutCache.find(x=>x.id===cb.dataset.id);
+    const newSent=((p&&p.sent_amount)||0)+sentForThis;
+    await sb.from('payouts').update({sent_amount:newSent,sent_date:date}).eq('id',cb.dataset.id);
+  }
   document.getElementById('payout-sent-modal').style.display='none';
   showToast('Payment recorded');
   renderPayouts();
