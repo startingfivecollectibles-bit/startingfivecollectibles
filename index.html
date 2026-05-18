@@ -2449,14 +2449,20 @@ function openSentModal(){
   document.getElementById('psm-amount').value='';
   document.getElementById('psm-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('psm-total-preview').innerHTML='Select payouts above.';
+  // Ensure all checkboxes start unchecked
+  setTimeout(()=>[...document.querySelectorAll('.psm-cb')].forEach(cb=>cb.checked=false),0);
   document.getElementById('payout-sent-modal').style.display='flex';
 }
 
 function updateSentPreview(){
   const checked=[...document.querySelectorAll('.psm-cb:checked')];
-  const total=checked.reduce((s,cb)=>s+parseFloat(cb.dataset.owed),0);
-  const sending=parseFloat(document.getElementById('psm-amount').value)||total;
-  document.getElementById('psm-amount').value=sending||'';
+  const total=Math.round(checked.reduce((s,cb)=>s+parseFloat(cb.dataset.owed),0)*100)/100;
+  // Only auto-fill amount when checkboxes change, not when user edits amount field
+  const amtEl=document.getElementById('psm-amount');
+  if(document.activeElement!==amtEl){
+    amtEl.value=checked.length?total.toFixed(2):'';
+  }
+  const sending=parseFloat(amtEl.value)||0;
   document.getElementById('psm-total-preview').innerHTML=checked.length
     ?`Selected ${checked.length} payout${checked.length>1?'s':''} — Total owed: <b>$${total.toFixed(2)}</b> — Sending: <b>$${sending.toFixed(2)}</b>`
     :'Select payouts above.';
