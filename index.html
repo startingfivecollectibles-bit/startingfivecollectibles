@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-05-16 | v25 -->
+<!-- Starting Five Collectibles | Build: 2026-05-17 | v25 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-16</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-17</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -264,6 +264,7 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('upload')"><span class="icon">📤</span> Bulk Upload</button>
       <button class="nav-item" onclick="showPage('boxes')"><span class="icon">📦</span> Box Tracker</button>
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
+      <button class="nav-item" onclick="showPage('payouts')"><span class="icon">💰</span> eBay Payouts</button>
       <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
       <button class="nav-item" onclick="showPage('blasters')"><span class="icon">📦</span> Blaster Tracker</button>
@@ -436,6 +437,13 @@ select option{background:var(--surface2);}
       <div class="stats-grid" id="box-stats"></div>
       <div class="table-container"><div id="box-table"></div></div>
     </div>
+    <div class="page" id="page-payouts">
+      <div class="page-header"><span class="page-title">eBay Payouts</span><button class="btn btn-primary" onclick="openPayoutModal()">+ Add Payout</button></div>
+      <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Track eBay payouts, calculate Andrew's cut, and record when you've sent payment.</p>
+      <div class="stats-grid" id="payout-stats"></div>
+      <div id="payout-list"></div>
+    </div>
+
     <div class="page" id="page-rankings">
       <div class="page-header"><span class="page-title">Buy Rankings</span><button class="btn btn-primary" onclick="openRankingModal()">+ Add Card to Watch</button></div>
       <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Set strike prices and target margins. The site flags cards as a good buy when market price hits your target.</p>
@@ -977,6 +985,43 @@ select option{background:var(--surface2);}
   </div>
 </div>
 <!-- COST MODAL -->
+<div class="modal-overlay" id="payout-modal" style="display:none" onclick="if(event.target===this)closePayoutModal()">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><span class="modal-title" id="payout-modal-title">Add Payout</span><button class="modal-close" onclick="closePayoutModal()">✕</button></div>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1"><label class="form-label">Payout Date</label><input type="date" id="pm-date" class="form-input"></div>
+      <div style="flex:1"><label class="form-label">eBay Payout #</label><input type="text" id="pm-number" class="form-input" placeholder="e.g. PAY-12345"></div>
+    </div>
+    <div style="margin-bottom:12px"><label class="form-label">Total Received ($)</label><input type="number" id="pm-total" class="form-input" step="0.01" placeholder="0.00"></div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label class="form-label" style="margin:0">Line Items</label>
+        <button class="btn btn-secondary btn-sm" onclick="addPayoutItem()">+ Add Card</button>
+      </div>
+      <div id="pm-items" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="pm-split-preview"></div>
+    <div style="margin-bottom:12px"><label class="form-label">Notes</label><input type="text" id="pm-notes" class="form-input" placeholder="Optional"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closePayoutModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayout()">Save Payout</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="payout-sent-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><span class="modal-title">Mark as Sent</span><button class="modal-close" onclick="document.getElementById('payout-sent-modal').style.display='none'">✕</button></div>
+    <input type="hidden" id="psm-id">
+    <div style="margin-bottom:12px"><label class="form-label">Amount Sent ($)</label><input type="number" id="psm-amount" class="form-input" step="0.01"></div>
+    <div style="margin-bottom:14px"><label class="form-label">Date Sent</label><input type="date" id="psm-date" class="form-input"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="document.getElementById('payout-sent-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayoutSent()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="cost-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" style="max-width:440px">
     <h3 id="cost-modal-title">Add Daily Cost</h3>
@@ -1299,7 +1344,7 @@ function showPage(n){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,stickers:renderStickers};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,stickers:renderStickers,costs:renderCosts,payouts:renderPayouts};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -2220,6 +2265,196 @@ async function saveEditNote(){
 }
 
 let editCostId=null;
+
+// ─── PAYOUT TRACKER ───────────────────────────────────────────────
+let payoutCache=[];
+let editPayoutId=null;
+let pmItemCount=0;
+
+async function renderPayouts(){
+  const{data:payouts}=await sb.from('payouts').select('*').eq('user_id',CU.id).order('payout_date',{ascending:false});
+  payoutCache=payouts||[];
+
+  // Stats
+  const totalReceived=payoutCache.reduce((s,p)=>s+(p.total_received||0),0);
+  const totalAndrewCut=payoutCache.reduce((s,p)=>s+(p.andrew_cut||0),0);
+  const totalMattCut=payoutCache.reduce((s,p)=>s+(p.matt_cut||0),0);
+  const totalSent=payoutCache.reduce((s,p)=>s+(p.sent_amount||0),0);
+  const totalOwed=Math.max(0,totalAndrewCut-totalSent);
+  document.getElementById('payout-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-value">$${totalReceived.toFixed(2)}</div><div class="stat-label">Total Received</div></div>
+    <div class="stat-card"><div class="stat-value">$${totalAndrewCut.toFixed(2)}</div><div class="stat-label">Andrew's Total Cut</div></div>
+    <div class="stat-card"><div class="stat-value">$${totalMattCut.toFixed(2)}</div><div class="stat-label">Your Total Cut</div></div>
+    <div class="stat-card" style="border-color:${totalOwed>0?'var(--danger)':'var(--success)'}"><div class="stat-value" style="color:${totalOwed>0?'var(--danger)':'var(--success)'}">$${totalOwed.toFixed(2)}</div><div class="stat-label">Still Owed to Andrew</div></div>
+  `;
+
+  if(!payoutCache.length){
+    document.getElementById('payout-list').innerHTML='<div class="empty-state"><div class="empty-icon">💰</div><div>No payouts yet.</div></div>';
+    return;
+  }
+
+  // Fetch all items for these payouts
+  const ids=payoutCache.map(p=>p.id);
+  const{data:allItems}=await sb.from('payout_items').select('*').in('payout_id',ids);
+  const itemsByPayout={};
+  (allItems||[]).forEach(i=>{if(!itemsByPayout[i.payout_id])itemsByPayout[i.payout_id]=[];itemsByPayout[i.payout_id].push(i);});
+
+  document.getElementById('payout-list').innerHTML=payoutCache.map(p=>{
+    const items=itemsByPayout[p.id]||[];
+    const owed=p.andrew_cut||0;
+    const sent=p.sent_amount||0;
+    const remaining=Math.max(0,owed-sent);
+    const isSent=sent>=owed&&owed>0;
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:.95rem">${p.payout_number||'Payout'} <span style="font-size:.78rem;color:var(--text2);font-weight:400">${p.payout_date}</span></div>
+          <div style="font-size:.82rem;color:var(--text2);margin-top:2px">${p.notes||''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:.8rem;background:var(--surface2);padding:3px 9px;border-radius:10px">Total: <b>$${(p.total_received||0).toFixed(2)}</b></span>
+          <span style="font-size:.8rem;background:rgba(26,111,212,.15);padding:3px 9px;border-radius:10px">Andrew: <b>$${owed.toFixed(2)}</b></span>
+          <span style="font-size:.8rem;background:rgba(34,197,94,.15);padding:3px 9px;border-radius:10px">You: <b>$${(p.matt_cut||0).toFixed(2)}</b></span>
+          ${isSent
+            ?`<span style="font-size:.8rem;background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.4);padding:3px 9px;border-radius:10px;color:var(--success)">✓ Sent $${sent.toFixed(2)} on ${p.sent_date||''}</span>`
+            :`<span style="font-size:.8rem;background:rgba(239,68,68,.15);padding:3px 9px;border-radius:10px;color:var(--danger)">Owed: $${remaining.toFixed(2)}</span>
+             <button class="btn btn-secondary btn-sm" data-id="${p.id}" data-owed="${remaining.toFixed(2)}" onclick="openSentModal(this.dataset.id,this.dataset.owed)">Mark Sent</button>`
+          }
+          <button class="btn btn-danger btn-sm" data-id="${p.id}" onclick="deletePayout(this.dataset.id)">Del</button>
+        </div>
+      </div>
+      ${items.length?`<div style="border-top:1px solid var(--border);padding:8px 16px">
+        <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+          <thead><tr style="color:var(--text2)"><th style="text-align:left;padding:3px 6px">Card</th><th style="text-align:right;padding:3px 6px">Amount</th><th style="text-align:center;padding:3px 6px">Type</th></tr></thead>
+          <tbody>${items.map(i=>`<tr style="border-top:1px solid var(--border)">
+            <td style="padding:4px 6px">${i.card_description}</td>
+            <td style="padding:4px 6px;text-align:right">$${(i.amount||0).toFixed(2)}</td>
+            <td style="padding:4px 6px;text-align:center">${i.is_andrew_personal?'<span style="background:rgba(26,111,212,.2);color:var(--accent);border-radius:8px;padding:1px 7px;font-size:.72rem">Andrew Personal</span>':'<span style="background:var(--surface2);border-radius:8px;padding:1px 7px;font-size:.72rem">Business 50/50</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openPayoutModal(){
+  editPayoutId=null;
+  pmItemCount=0;
+  document.getElementById('payout-modal-title').textContent='Add Payout';
+  document.getElementById('pm-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pm-number').value='';
+  document.getElementById('pm-total').value='';
+  document.getElementById('pm-notes').value='';
+  document.getElementById('pm-items').innerHTML='';
+  document.getElementById('pm-split-preview').innerHTML='<span style="color:var(--text2)">Add line items to see split preview.</span>';
+  addPayoutItem();
+  document.getElementById('payout-modal').style.display='flex';
+}
+
+function closePayoutModal(){
+  document.getElementById('payout-modal').style.display='none';
+}
+
+function addPayoutItem(){
+  pmItemCount++;
+  const id='pmi-'+pmItemCount;
+  const el=document.createElement('div');
+  el.id=id;
+  el.style.cssText='display:flex;gap:6px;align-items:center';
+  el.innerHTML=`
+    <input type="text" placeholder="Card description" class="form-input" style="flex:2" data-field="desc" onchange="recalcPayoutSplit()">
+    <input type="number" placeholder="$0.00" step="0.01" class="form-input" style="flex:1" data-field="amount" oninput="recalcPayoutSplit()">
+    <select class="form-input" style="flex:1" data-field="type" onchange="recalcPayoutSplit()">
+      <option value="business">Business 50/50</option>
+      <option value="andrew">Andrew Personal</option>
+    </select>
+    <button class="btn btn-danger btn-sm" onclick="document.getElementById('${id}').remove();recalcPayoutSplit()">✕</button>
+  `;
+  document.getElementById('pm-items').appendChild(el);
+}
+
+function recalcPayoutSplit(){
+  const rows=[...document.getElementById('pm-items').children];
+  let andrewTotal=0,businessTotal=0;
+  rows.forEach(row=>{
+    const amt=parseFloat(row.querySelector('[data-field=amount]').value)||0;
+    const type=row.querySelector('[data-field=type]').value;
+    if(type==='andrew')andrewTotal+=amt;
+    else businessTotal+=amt;
+  });
+  const andrewCut=andrewTotal+(businessTotal*0.5);
+  const mattCut=businessTotal*0.5;
+  document.getElementById('pm-split-preview').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <span>Business total: <b>$${businessTotal.toFixed(2)}</b></span>
+      <span>Andrew personal: <b>$${andrewTotal.toFixed(2)}</b></span>
+      <span style="color:var(--accent)">Andrew's cut: <b>$${andrewCut.toFixed(2)}</b></span>
+      <span style="color:var(--success)">Your cut: <b>$${mattCut.toFixed(2)}</b></span>
+    </div>
+  `;
+}
+
+async function savePayout(){
+  const payoutDate=document.getElementById('pm-date').value;
+  const payoutNumber=document.getElementById('pm-number').value.trim();
+  const totalReceived=parseFloat(document.getElementById('pm-total').value)||0;
+  const notes=document.getElementById('pm-notes').value.trim();
+  if(!payoutDate||!totalReceived){showToast('Date and total are required','error');return;}
+
+  const rows=[...document.getElementById('pm-items').children];
+  const items=rows.map(row=>({
+    desc:row.querySelector('[data-field=desc]').value.trim(),
+    amount:parseFloat(row.querySelector('[data-field=amount]').value)||0,
+    type:row.querySelector('[data-field=type]').value
+  })).filter(i=>i.desc&&i.amount>0);
+
+  let andrewTotal=0,businessTotal=0;
+  items.forEach(i=>{if(i.type==='andrew')andrewTotal+=i.amount;else businessTotal+=i.amount;});
+  const andrewCut=andrewTotal+(businessTotal*0.5);
+  const mattCut=businessTotal*0.5;
+
+  const{data:payout,error}=await sb.from('payouts').insert({
+    user_id:CU.id,payout_date:payoutDate,payout_number:payoutNumber||null,
+    total_received:totalReceived,andrew_cut:andrewCut,matt_cut:mattCut,notes:notes||null
+  }).select().single();
+  if(error){showToast('Error saving payout','error');return;}
+
+  if(items.length){
+    await sb.from('payout_items').insert(items.map(i=>({
+      payout_id:payout.id,card_description:i.desc,amount:i.amount,is_andrew_personal:i.type==='andrew'
+    })));
+  }
+  closePayoutModal();
+  showToast('Payout saved');
+  renderPayouts();
+}
+
+function openSentModal(id,owed){
+  document.getElementById('psm-id').value=id;
+  document.getElementById('psm-amount').value=owed;
+  document.getElementById('psm-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('payout-sent-modal').style.display='flex';
+}
+
+async function savePayoutSent(){
+  const id=document.getElementById('psm-id').value;
+  const amount=parseFloat(document.getElementById('psm-amount').value)||0;
+  const date=document.getElementById('psm-date').value;
+  await sb.from('payouts').update({sent_amount:amount,sent_date:date}).eq('id',id);
+  document.getElementById('payout-sent-modal').style.display='none';
+  showToast('Payment recorded');
+  renderPayouts();
+}
+
+async function deletePayout(id){
+  if(!confirm('Delete this payout and all its line items?'))return;
+  await sb.from('payout_items').delete().eq('payout_id',id);
+  await sb.from('payouts').delete().eq('id',id);
+  showToast('Payout deleted');
+  renderPayouts();
+}
+// ─────────────────────────────────────────────────────────────────
+
 async function renderCosts(){
   const{data:costs}=await sb.from('daily_costs').select('*').eq('user_id',CU.id).order('date',{ascending:false});
   const yr=new Date().getFullYear();
