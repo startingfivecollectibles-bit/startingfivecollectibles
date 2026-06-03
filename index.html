@@ -3236,25 +3236,25 @@ function updateStickerProgress(){
   document.getElementById('count-dup').textContent=dup;
 }
 
-// WC 2026 Groups (official draw, December 2025 + March 2026 playoffs)
+// WC 2026 Groups — keyed by full country name as stored in DB
 const WC2026_GROUPS={
-  'A':['MEX','RSA','KOR','CZE'],
-  'B':['CAN','SUI','QAT','BIH'],
-  'C':['BRA','MAR','HAI','SCO'],
-  'D':['USA','PAR','AUS','TUR'],
-  'E':['GER','CUW','CIV','ECU'],
-  'F':['NED','JPN','SWE','TUN'],
-  'G':['BEL','EGY','IRN','NZL'],
-  'H':['ESP','CPV','KSA','URU'],
-  'I':['FRA','SEN','NOR','IRQ'],
-  'J':['ARG','ALG','AUT','JOR'],
-  'K':['POR','COD','UZB','COL'],
-  'L':['ENG','CRO','GHA','PAN']
+  'A':['Mexico','South Africa','South Korea','Czechia'],
+  'B':['Canada','Switzerland','Qatar','Bosnia and Herzegovina'],
+  'C':['Brazil','Morocco','Haiti','Scotland'],
+  'D':['USA','Paraguay','Australia','Türkiye'],
+  'E':['Germany','Curaçao','Ivory Coast','Ecuador'],
+  'F':['Netherlands','Japan','Sweden','Tunisia'],
+  'G':['Belgium','Egypt','Iran','New Zealand'],
+  'H':['Spain','Cape Verde','Saudi Arabia','Uruguay'],
+  'I':['France','Senegal','Norway','Iraq'],
+  'J':['Argentina','Algeria','Austria','Jordan'],
+  'K':['Portugal','DR Congo','Uzbekistan','Colombia'],
+  'L':['England','Croatia','Ghana','Panama']
 };
-// Build reverse lookup: country code → group
+// Build reverse lookup: full country name → group
 const COUNTRY_GROUP={};
 Object.entries(WC2026_GROUPS).forEach(([g,teams])=>teams.forEach(t=>COUNTRY_GROUP[t]=g));
-function getCountryGroup(code){return COUNTRY_GROUP[code]||'—';}
+function getCountryGroup(countryName){return COUNTRY_GROUP[countryName]||'Other';}
 
 function renderStickerContent(){
   const el=document.getElementById('sticker-content');
@@ -3276,7 +3276,7 @@ function renderStickerContent(){
 function renderByGroup(){
   const byGroup={};
   stickerCache.forEach(s=>{
-    const g=getCountryGroup(s.country)||'Other';
+    const g=getCountryGroup(s.country);
     if(!byGroup[g])byGroup[g]=[];
     byGroup[g].push(s);
   });
