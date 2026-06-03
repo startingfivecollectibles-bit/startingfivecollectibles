@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-05-17 | v25 -->
+<!-- Starting Five Collectibles | Build: 2026-06-02 | v26 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v25 · 2026-05-17</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v26 · 2026-06-02</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -487,10 +487,18 @@ select option{background:var(--surface2);}
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-secondary btn-sm" id="tab-collection" onclick="setStickerTab('collection')">📋 By Country</button>
         <button class="btn btn-secondary btn-sm" id="tab-duplicates" onclick="setStickerTab('duplicates')">🔄 Duplicates</button>
         <button class="btn btn-secondary btn-sm" id="tab-trades" onclick="setStickerTab('trades')">🤝 Trades</button>
+        <button class="btn btn-secondary btn-sm" id="tab-report" onclick="setStickerTab('report')">📄 Report</button>
+        <div id="sticker-sort-wrap" style="margin-left:auto;display:flex;align-items:center;gap:7px">
+          <label style="font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Sort:</label>
+          <select class="filter-select" id="sticker-sort" style="font-size:.78rem;padding:5px 8px" onchange="renderStickerContent()">
+            <option value="country">By Country</option>
+            <option value="group">By Group</option>
+          </select>
+        </div>
       </div>
 
       <div id="sticker-content"></div>
@@ -3140,7 +3148,7 @@ let editTradeId=null;
 
 function setStickerTab(tab){
   stickerTab=tab;
-  ['collection','duplicates','trades'].forEach(t=>{
+  ['collection','duplicates','trades','report'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
     if(btn)btn.style.background=t===tab?'var(--accent)':'';
   });
@@ -3226,12 +3234,176 @@ function updateStickerProgress(){
   document.getElementById('count-dup').textContent=dup;
 }
 
+// WC 2026 Groups (48 teams, 12 groups of 4)
+const WC2026_GROUPS={
+  'A':['USA','CAN','MEX','NZL'],
+  'B':['ARG','PER','CHI','ALB'],
+  'C':['BRA','PAR','COL','ECU'],
+  'D':['ENG','FRA','URU','HAI'],
+  'E':['ESP','MAR','TUN','SEN'],
+  'F':['GER','NED','BEL','LBA'],  // placeholder — adjust if needed
+  'G':['POR','TUR','IRN','IRQ'],
+  'H':['ITA','CRO','SUI','ALG'],
+  'I':['JPN','KOR','AUS','NOR'],
+  'J':['QAT','KSA','EGY','RSA'],
+  'K':['NGA','CIV','GHA','CMR'],
+  'L':['SRB','UKR','POL','SVK']
+};
+// Build reverse lookup: country code → group
+const COUNTRY_GROUP={};
+Object.entries(WC2026_GROUPS).forEach(([g,teams])=>teams.forEach(t=>COUNTRY_GROUP[t]=g));
+function getCountryGroup(code){return COUNTRY_GROUP[code]||'—';}
+
 function renderStickerContent(){
   const el=document.getElementById('sticker-content');
-  if(stickerTab==='collection')el.innerHTML=renderByCountry();
-  else if(stickerTab==='duplicates')el.innerHTML=renderDuplicates();
-  else if(stickerTab==='trades'){renderTradesTab();return;}
+  const sort=document.getElementById('sticker-sort')?.value||'country';
+  // Hide sort control on non-collection tabs
+  const sortWrap=document.getElementById('sticker-sort-wrap');
+  if(sortWrap)sortWrap.style.display=(stickerTab==='collection')?'flex':'none';
+  if(stickerTab==='collection'){
+    el.innerHTML=sort==='group'?renderByGroup():renderByCountry();
+  } else if(stickerTab==='duplicates'){
+    el.innerHTML=renderDuplicates();
+  } else if(stickerTab==='report'){
+    el.innerHTML=renderStickerReport();
+  } else if(stickerTab==='trades'){
+    renderTradesTab();return;
+  }
 }
+
+function renderByGroup(){
+  const byGroup={};
+  stickerCache.forEach(s=>{
+    const g=getCountryGroup(s.country)||'Other';
+    if(!byGroup[g])byGroup[g]=[];
+    byGroup[g].push(s);
+  });
+  const groups=Object.keys(byGroup).sort((a,b)=>{
+    if(a==='Other')return 1;if(b==='Other')return -1;
+    return a.localeCompare(b);
+  });
+  return`<div style="margin-bottom:12px;font-size:.82rem;color:var(--text2)">Sorted by World Cup 2026 group. Click a country section to expand.</div>`+
+  groups.map(g=>{
+    const groupStickers=byGroup[g];
+    const byCountry={};
+    groupStickers.forEach(s=>{
+      if(!byCountry[s.country])byCountry[s.country]=[];
+      byCountry[s.country].push(s);
+    });
+    const countries=Object.keys(byCountry).sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b)));
+    const groupHave=groupStickers.filter(s=>s.status==='have'||s.status==='duplicate').length;
+    const groupTotal=groupStickers.length;
+    return`<div style="background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);margin-bottom:14px;overflow:hidden">
+      <div style="padding:10px 14px;background:rgba(26,111,212,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent)">GROUP ${g}</div>
+        <div style="font-size:.78rem;color:var(--text2)">${groupHave}/${groupTotal} stickers</div>
+      </div>
+      ${countries.map(country=>{
+        const stickers=byCountry[country].sort(stickerNumericSort);
+        const have=stickers.filter(s=>s.status==='have'||s.status==='duplicate').length;
+        const total=stickers.length;
+        const allDone=have===total;
+        const displayName=countryDisplayName(country);
+        return`<div style="background:var(--surface);border-top:1px solid var(--border)">
+          <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" data-country="${country.replace(/"/g,'&quot;')}" onclick="toggleCountry(this.dataset.country)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-weight:700;font-size:.92rem">${displayName}</span>
+              <span style="font-size:.68rem;color:var(--text2)">${country}</span>
+              ${allDone?'<span style="font-size:.7rem;background:var(--success);color:#000;padding:1px 7px;border-radius:10px;font-weight:700">COMPLETE</span>':''}
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:.78rem;color:var(--text2)">${have}/${total}</span>
+              <div style="background:var(--surface2);border-radius:10px;width:80px;height:6px;overflow:hidden"><div style="height:100%;background:var(--accent);width:${Math.round(have/total*100)}%"></div></div>
+              <span style="color:var(--text2);font-size:.8rem">▼</span>
+            </div>
+          </div>
+          <div id="country-${country.replace(/[^a-zA-Z0-9]/g,'-')}" style="display:none;padding:8px 14px 12px;border-top:1px solid var(--border)">
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${stickers.map(s=>stickerChip(s)).join('')}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderStickerReport(){
+  const have=stickerCache.filter(s=>s.status==='have');
+  const dups=stickerCache.filter(s=>s.status==='duplicate');
+  const total=stickerCache.length;
+  const pct=total>0?Math.round((have.length/total)*100):0;
+
+  // Group by country
+  const haveByCountry={};
+  have.forEach(s=>{if(!haveByCountry[s.country])haveByCountry[s.country]=[];haveByCountry[s.country].push(s);});
+  const dupByCountry={};
+  dups.forEach(s=>{if(!dupByCountry[s.country])dupByCountry[s.country]=[];dupByCountry[s.country].push(s);});
+  const allCountries=[...new Set([...Object.keys(haveByCountry),...Object.keys(dupByCountry)])].sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b)));
+
+  let haveSections='';
+  allCountries.forEach(c=>{
+    const hs=haveByCountry[c]||[];
+    const ds=dupByCountry[c]||[];
+    if(!hs.length&&!ds.length)return;
+    haveSections+=`<div style="margin-bottom:12px">
+      <div style="font-weight:700;font-size:.82rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">${countryDisplayName(c)} <span style="color:var(--text2);font-weight:400">${c}</span></div>`;
+    if(hs.length){
+      haveSections+=`<div style="font-size:.75rem;color:var(--text2);margin-bottom:3px">Have (${hs.length}):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
+        ${hs.sort(stickerNumericSort).map(s=>`<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 6px;font-size:.72rem">${s.code}</span>`).join('')}
+      </div>`;
+    }
+    if(ds.length){
+      haveSections+=`<div style="font-size:.75rem;color:var(--text2);margin-bottom:3px">Duplicates (${ds.length}):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${ds.sort(stickerNumericSort).map(s=>`<span style="background:rgba(26,111,212,.2);border:1px solid rgba(26,111,212,.4);border-radius:4px;padding:2px 6px;font-size:.72rem">${s.code}${s.duplicate_count>1?` ×${s.duplicate_count}`:''}</span>`).join('')}
+      </div>`;
+    }
+    haveSections+=`</div>`;
+  });
+
+  // Plain text version for copying
+  let textReport=`WC 2026 STICKER REPORT\n${'='.repeat(30)}\n`;
+  textReport+=`${have.length} / ${total} collected (${pct}%)\n`;
+  textReport+=`${dups.length} duplicates available for trade\n\n`;
+  textReport+=`HAVE:\n`;
+  allCountries.forEach(c=>{
+    const hs=haveByCountry[c]||[];
+    if(hs.length)textReport+=`${countryDisplayName(c)}: ${hs.sort(stickerNumericSort).map(s=>s.code).join(', ')}\n`;
+  });
+  textReport+=`\nDUPLICATES:\n`;
+  allCountries.forEach(c=>{
+    const ds=dupByCountry[c]||[];
+    if(ds.length)textReport+=`${countryDisplayName(c)}: ${ds.sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:'')).join(', ')}\n`;
+  });
+
+  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length} / ${total} collected (${pct}%) · ${dups.length} duplicates for trading</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-primary btn-sm" onclick="copyStickerReport()">📋 Copy as Text</button>
+    </div>
+  </div>
+  <textarea id="report-text-data" style="display:none">${textReport.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+  <div style="columns:2;column-gap:20px">${haveSections||'<div class="empty-state">Nothing collected yet.</div>'}</div>`;
+}
+
+function copyStickerReport(){
+  const ta=document.getElementById('report-text-data');
+  if(!ta)return;
+  const text=ta.value;
+  navigator.clipboard.writeText(text).then(()=>showToast('Report copied to clipboard!','success')).catch(()=>{
+    // fallback
+    ta.style.display='block';ta.select();document.execCommand('copy');ta.style.display='none';
+    showToast('Copied!','success');
+  });
+}
+
+
 
 function renderByCountry(){
   const byCountry={};
@@ -3280,8 +3452,9 @@ function stickerChip(s){
   const parallelBadge=s.parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:0 5px;font-size:.62rem;margin-left:2px">${s.parallel}</span>`:'';
   // Fix 4: use id attribute for reliable re-render targeting
   const minusBtn=s.status==='duplicate'?`<span onclick="event.stopPropagation();decrementSticker('${s.id}')" style="cursor:pointer;background:rgba(239,68,68,.3);color:#fff;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;line-height:1;margin-left:2px">−</span>`:'';
-  return`<div id="chip-${s.id}" data-sid="${s.id}" onclick="cycleStickerStatus('${s.id}')" style="cursor:pointer;background:${bg};border:1px solid ${border};border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:4px;transition:all .15s" title="${s.player}">
-    ${s.is_foil?'✨ ':''}${s.code}${dupBadge}${parallelBadge}${minusBtn}
+  const undoBtn=s.status!=='need'?`<span onclick="event.stopPropagation();undoStickerStatus('${s.id}')" style="cursor:pointer;background:rgba(136,136,170,.25);color:var(--text2);border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;line-height:1;margin-left:2px" title="Undo / correct mistake">↩</span>`:'';
+  return`<div id="chip-${s.id}" data-sid="${s.id}" onclick="cycleStickerStatus('${s.id}')" style="cursor:pointer;background:${bg};border:1px solid ${border};border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:4px;transition:all .15s" title="${s.player} — click to advance status, ↩ to undo">
+    ${s.is_foil?'✨ ':''}${s.code}${dupBadge}${parallelBadge}${minusBtn}${undoBtn}
     <span style="color:var(--text2);font-size:.68rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.player}</span>
   </div>`;
 }
@@ -3325,6 +3498,18 @@ async function decrementSticker(id){
   const newParallel=newStatus==='have'?null:s.parallel;
   await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:Math.max(0,newCount),parallel:newParallel}).eq('id',id);
   s.status=newStatus;s.duplicate_count=Math.max(0,newCount);s.parallel=newParallel;
+  updateStickerProgress();
+  const chip=document.getElementById('chip-'+id);
+  if(chip)chip.outerHTML=stickerChip(s);
+}
+
+async function undoStickerStatus(id){
+  const s=stickerCache.find(x=>x.id===id);
+  if(!s||s.status==='need')return;
+  // Cycle backwards: duplicate → have → need
+  const newStatus=s.status==='duplicate'?'have':'need';
+  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:0,parallel:null}).eq('id',id);
+  s.status=newStatus;s.duplicate_count=0;s.parallel=null;
   updateStickerProgress();
   const chip=document.getElementById('chip-'+id);
   if(chip)chip.outerHTML=stickerChip(s);
