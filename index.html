@@ -3187,7 +3187,9 @@ const COUNTRY_NAMES={
   TKM:'Turkmenistan',TOG:'Togo',TRI:'Trinidad & Tobago',TUN:'Tunisia',TUR:'Turkey',
   UAE:'United Arab Emirates',UGA:'Uganda',UKR:'Ukraine',URU:'Uruguay',USA:'USA',
   UZB:'Uzbekistan',VEN:'Venezuela',VIE:'Vietnam',WAL:'Wales',YEM:'Yemen',
-  ZAM:'Zambia',ZIM:'Zimbabwe'
+  ZAM:'Zambia',ZIM:'Zimbabwe',
+  CUW:'Curaçao',SCO:'Scotland',AUT:'Austria',PAN:'Panama',UZB:'Uzbekistan',
+  HAI:'Haiti',ECU:'Ecuador'
 };
 
 function countryDisplayName(code){
@@ -3234,20 +3236,20 @@ function updateStickerProgress(){
   document.getElementById('count-dup').textContent=dup;
 }
 
-// WC 2026 Groups (48 teams, 12 groups of 4)
+// WC 2026 Groups (official draw, December 2025 + March 2026 playoffs)
 const WC2026_GROUPS={
-  'A':['USA','CAN','MEX','NZL'],
-  'B':['ARG','PER','CHI','ALB'],
-  'C':['BRA','PAR','COL','ECU'],
-  'D':['ENG','FRA','URU','HAI'],
-  'E':['ESP','MAR','TUN','SEN'],
-  'F':['GER','NED','BEL','LBA'],  // placeholder — adjust if needed
-  'G':['POR','TUR','IRN','IRQ'],
-  'H':['ITA','CRO','SUI','ALG'],
-  'I':['JPN','KOR','AUS','NOR'],
-  'J':['QAT','KSA','EGY','RSA'],
-  'K':['NGA','CIV','GHA','CMR'],
-  'L':['SRB','UKR','POL','SVK']
+  'A':['MEX','RSA','KOR','CZE'],
+  'B':['CAN','SUI','QAT','BIH'],
+  'C':['BRA','MAR','HAI','SCO'],
+  'D':['USA','PAR','AUS','TUR'],
+  'E':['GER','CUW','CIV','ECU'],
+  'F':['NED','JPN','SWE','TUN'],
+  'G':['BEL','EGY','IRN','NZL'],
+  'H':['ESP','CPV','KSA','URU'],
+  'I':['FRA','SEN','NOR','IRQ'],
+  'J':['ARG','ALG','AUT','JOR'],
+  'K':['POR','COD','UZB','COL'],
+  'L':['ENG','CRO','GHA','PAN']
 };
 // Build reverse lookup: country code → group
 const COUNTRY_GROUP={};
