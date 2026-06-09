@@ -3248,7 +3248,7 @@ const WC2026_GROUPS={
   'H':['Spain','Cape Verde','Saudi Arabia','Uruguay'],
   'I':['France','Senegal','Norway','Iraq'],
   'J':['Argentina','Algeria','Austria','Jordan'],
-  'K':['Portugal','DR Congo','Uzbekistan','Colombia'],
+  'K':['Portugal','DR Congo','Congo DR','Congo','Uzbekistan','Colombia'],
   'L':['England','Croatia','Ghana','Panama']
 };
 // Build reverse lookup: full country name → group
@@ -3333,65 +3333,70 @@ function renderByGroup(){
 function renderStickerReport(){
   const have=stickerCache.filter(s=>s.status==='have');
   const dups=stickerCache.filter(s=>s.status==='duplicate');
+  const need=stickerCache.filter(s=>s.status==='need');
   const total=stickerCache.length;
-  const pct=total>0?Math.round((have.length/total)*100):0;
+  const pct=total>0?Math.round(((have.length+dups.length)/total)*100):0;
 
-  // Group by country
-  const haveByCountry={};
-  have.forEach(s=>{if(!haveByCountry[s.country])haveByCountry[s.country]=[];haveByCountry[s.country].push(s);});
+  const needByCountry={};
+  need.forEach(s=>{if(!needByCountry[s.country])needByCountry[s.country]=[];needByCountry[s.country].push(s);});
   const dupByCountry={};
   dups.forEach(s=>{if(!dupByCountry[s.country])dupByCountry[s.country]=[];dupByCountry[s.country].push(s);});
-  const allCountries=[...new Set([...Object.keys(haveByCountry),...Object.keys(dupByCountry)])].sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b)));
+  const allCountries=[...new Set([...Object.keys(needByCountry),...Object.keys(dupByCountry)])].sort((a,b)=>a.localeCompare(b));
 
-  let haveSections='';
+  const chip=(code,type)=>{
+    const bg=type==='need'?'rgba(239,68,68,.12)':'rgba(26,111,212,.15)';
+    const border=type==='need'?'rgba(239,68,68,.35)':'rgba(26,111,212,.4)';
+    return`<span style="background:${bg};border:1px solid ${border};border-radius:4px;padding:2px 6px;font-size:.71rem;white-space:nowrap">${code}</span>`;
+  };
+
+  const rows=allCountries.map(c=>{
+    const ns=(needByCountry[c]||[]).sort(stickerNumericSort);
+    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort);
+    if(!ns.length&&!ds.length)return'';
+    return`<tr>
+      <td style="padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-weight:700;font-size:.78rem;white-space:nowrap;color:var(--text1)">${c}</td>
+      <td style="padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border);border-right:1px solid var(--border)">
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${ns.length?ns.map(s=>chip(s.code,'need')).join(''):'<span style="color:var(--text2);font-size:.72rem">—</span>'}</div>
+      </td>
+      <td style="padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border)">
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${ds.length?ds.map(s=>chip(s.code+(s.duplicate_count>1?` ×${s.duplicate_count}`:''),'dup')).join(''):'<span style="color:var(--text2);font-size:.72rem">—</span>'}</div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  let textReport=`WC 2026 STICKER REPORT\n${'='.repeat(35)}\n`;
+  textReport+=`${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed\n\n`;
+  textReport+=`${'COUNTRY'.padEnd(22)}${'NEED'.padEnd(40)}DUPLICATES\n${'-'.repeat(90)}\n`;
   allCountries.forEach(c=>{
-    const hs=haveByCountry[c]||[];
-    const ds=dupByCountry[c]||[];
-    if(!hs.length&&!ds.length)return;
-    haveSections+=`<div style="margin-bottom:12px">
-      <div style="font-weight:700;font-size:.82rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">${countryDisplayName(c)} <span style="color:var(--text2);font-weight:400">${c}</span></div>`;
-    if(hs.length){
-      haveSections+=`<div style="font-size:.75rem;color:var(--text2);margin-bottom:3px">Have (${hs.length}):</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">
-        ${hs.sort(stickerNumericSort).map(s=>`<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 6px;font-size:.72rem">${s.code}</span>`).join('')}
-      </div>`;
-    }
-    if(ds.length){
-      haveSections+=`<div style="font-size:.75rem;color:var(--text2);margin-bottom:3px">Duplicates (${ds.length}):</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${ds.sort(stickerNumericSort).map(s=>`<span style="background:rgba(26,111,212,.2);border:1px solid rgba(26,111,212,.4);border-radius:4px;padding:2px 6px;font-size:.72rem">${s.code}${s.duplicate_count>1?` ×${s.duplicate_count}`:''}</span>`).join('')}
-      </div>`;
-    }
-    haveSections+=`</div>`;
+    const ns=(needByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code).join(', ')||'—';
+    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:'')).join(', ')||'—';
+    if((needByCountry[c]||[]).length||(dupByCountry[c]||[]).length)
+      textReport+=`${c.padEnd(22)}${ns.padEnd(40)}${ds}\n`;
   });
 
-  // Plain text version for copying
-  let textReport=`WC 2026 STICKER REPORT\n${'='.repeat(30)}\n`;
-  textReport+=`${have.length} / ${total} collected (${pct}%)\n`;
-  textReport+=`${dups.length} duplicates available for trade\n\n`;
-  textReport+=`HAVE:\n`;
-  allCountries.forEach(c=>{
-    const hs=haveByCountry[c]||[];
-    if(hs.length)textReport+=`${countryDisplayName(c)}: ${hs.sort(stickerNumericSort).map(s=>s.code).join(', ')}\n`;
-  });
-  textReport+=`\nDUPLICATES:\n`;
-  allCountries.forEach(c=>{
-    const ds=dupByCountry[c]||[];
-    if(ds.length)textReport+=`${countryDisplayName(c)}: ${ds.sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:'')).join(', ')}\n`;
-  });
-
-  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
-      <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length} / ${total} collected (${pct}%) · ${dups.length} duplicates for trading</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed</div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print</button>
       <button class="btn btn-primary btn-sm" onclick="copyStickerReport()">📋 Copy as Text</button>
     </div>
   </div>
-  <textarea id="report-text-data" style="display:none">${textReport.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-  <div style="columns:2;column-gap:20px">${haveSections||'<div class="empty-state">Nothing collected yet.</div>'}</div>`;
+  <textarea id="report-text-data" style="display:none">${textReport}</textarea>
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+      <thead>
+        <tr style="background:var(--surface2)">
+          <th style="padding:10px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);border-right:1px solid var(--border);width:160px">Country</th>
+          <th style="padding:10px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);border-right:1px solid var(--border);color:#ef4444">Need</th>
+          <th style="padding:10px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);color:var(--accent)">Duplicates</th>
+        </tr>
+      </thead>
+      <tbody>${rows||'<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text2)">Nothing to report yet.</td></tr>'}</tbody>
+    </table>
+  </div>`;
 }
 
 function copyStickerReport(){
