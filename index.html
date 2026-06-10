@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-02 | v26 -->
+<!-- Starting Five Collectibles | Build: 2026-06-10 | v27 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v26 · 2026-06-02</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v27 · 2026-06-10</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -994,21 +994,61 @@ select option{background:var(--surface2);}
 </div>
 <!-- COST MODAL -->
 <div class="modal-overlay" id="payout-modal" style="display:none" onclick="if(event.target===this)closePayoutModal()">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:680px">
     <div class="modal-header"><span class="modal-title" id="payout-modal-title">Add Payout</span><button class="modal-close" onclick="closePayoutModal()">✕</button></div>
+
+    <!-- Row 1: Date + Payout ID -->
     <div style="display:flex;gap:12px;margin-bottom:12px">
-      <div style="flex:1"><label class="form-label">Payout Date</label><input type="date" id="pm-date" class="form-input"></div>
-      <div style="flex:1"><label class="form-label">eBay Payout #</label><input type="text" id="pm-number" class="form-input" placeholder="e.g. PAY-12345"></div>
+      <div style="flex:1"><label class="form-label">Payout Date</label><input type="date" id="pm-date" class="form-input" onchange="loadSoldCardsForPayout()"></div>
+      <div style="flex:1"><label class="form-label">eBay Payout ID</label><input type="text" id="pm-number" class="form-input" placeholder="e.g. 7519546047"></div>
     </div>
-    <div style="margin-bottom:12px"><label class="form-label">Total Received ($)</label><input type="number" id="pm-total" class="form-input" step="0.01" placeholder="0.00"></div>
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <label class="form-label" style="margin:0">Line Items</label>
-        <button class="btn btn-secondary btn-sm" onclick="addPayoutItem()">+ Add Card</button>
+
+    <!-- Row 2: eBay total received -->
+    <div style="margin-bottom:16px">
+      <label class="form-label">eBay Total Received ($) <span style="color:var(--text2);font-weight:400;font-size:.78rem">— the amount deposited to your bank</span></label>
+      <input type="number" id="pm-total" class="form-input" step="0.01" placeholder="0.00" oninput="recalcPayoutSplit()">
+    </div>
+
+    <!-- Row 3: Fees -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:16px">
+      <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:10px;font-weight:600">eBay Fees (deducted from gross)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px">
+          <label class="form-label">Selling Fees ($)</label>
+          <input type="number" id="pm-selling-fees" class="form-input" step="0.01" placeholder="0.00" oninput="recalcPayoutSplit()">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label class="form-label">Shipping Fees ($)</label>
+          <input type="number" id="pm-shipping-fees" class="form-input" step="0.01" placeholder="0.00" oninput="recalcPayoutSplit()">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label class="form-label">Promoted Listings ($)</label>
+          <input type="number" id="pm-promo-fees" class="form-input" step="0.01" placeholder="0.00" oninput="recalcPayoutSplit()">
+        </div>
       </div>
+    </div>
+
+    <!-- Row 4: Cards sold in this payout -->
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label class="form-label" style="margin:0">Cards Sold in This Payout</label>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="loadSoldCardsForPayout()">🔄 Load Sold Cards</button>
+          <button class="btn btn-secondary btn-sm" onclick="addPayoutItemManual()">+ Add Manually</button>
+        </div>
+      </div>
+      <!-- Card picker -->
+      <div id="pm-card-picker" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;max-height:220px;overflow-y:auto">
+        <div style="font-size:.75rem;color:var(--text2);margin-bottom:8px">Select the cards included in this payout:</div>
+        <div id="pm-card-list" style="display:flex;flex-direction:column;gap:5px"></div>
+      </div>
+      <!-- Manual + selected items -->
       <div id="pm-items" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="pm-split-preview"></div>
+
+    <!-- Split preview -->
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="pm-split-preview"><span style="color:var(--text2)">Fill in details to see split preview.</span></div>
+
     <div style="margin-bottom:12px"><label class="form-label">Notes</label><input type="text" id="pm-notes" class="form-input" placeholder="Optional"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closePayoutModal()">Cancel</button>
@@ -2280,12 +2320,12 @@ let editCostId=null;
 let payoutCache=[];
 let editPayoutId=null;
 let pmItemCount=0;
+let pmSoldCards=[];// cards fetched for picker
 
 async function renderPayouts(){
   const{data:payouts}=await sb.from('payouts').select('*').eq('user_id',CU.id).order('payout_date',{ascending:false});
   payoutCache=payouts||[];
 
-  // Stats
   const totalReceived=payoutCache.reduce((s,p)=>s+(p.total_received||0),0);
   const totalAndrewCut=payoutCache.reduce((s,p)=>s+(p.andrew_cut||0),0);
   const totalMattCut=payoutCache.reduce((s,p)=>s+(p.matt_cut||0),0);
@@ -2303,11 +2343,17 @@ async function renderPayouts(){
     return;
   }
 
-  // Fetch all items for these payouts
   const ids=payoutCache.map(p=>p.id);
   const{data:allItems}=await sb.from('payout_items').select('*').in('payout_id',ids);
   const itemsByPayout={};
   (allItems||[]).forEach(i=>{if(!itemsByPayout[i.payout_id])itemsByPayout[i.payout_id]=[];itemsByPayout[i.payout_id].push(i);});
+
+  const typeLabel=(item)=>{
+    if(item.is_andrew_personal)return'<span style="background:rgba(26,111,212,.2);color:var(--accent);border-radius:8px;padding:1px 7px;font-size:.72rem">Andrew Personal</span>';
+    if(item.is_matt_personal)return'<span style="background:rgba(136,136,255,.2);color:var(--purple);border-radius:8px;padding:1px 7px;font-size:.72rem">Matt Personal</span>';
+    if(item.is_fee)return'<span style="background:rgba(239,68,68,.15);color:#ef4444;border-radius:8px;padding:1px 7px;font-size:.72rem">Fee</span>';
+    return'<span style="background:var(--surface2);border-radius:8px;padding:1px 7px;font-size:.72rem">Business 50/50</span>';
+  };
 
   document.getElementById('payout-list').innerHTML=payoutCache.map(p=>{
     const items=itemsByPayout[p.id]||[];
@@ -2315,16 +2361,18 @@ async function renderPayouts(){
     const sent=p.sent_amount||0;
     const remaining=Math.max(0,owed-sent);
     const isSent=sent>=owed&&owed>0;
+    const fees=(p.selling_fees||0)+(p.shipping_fees||0)+(p.promo_fees||0);
     return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-weight:700;font-size:.95rem">${p.payout_number||'Payout'} <span style="font-size:.78rem;color:var(--text2);font-weight:400">${p.payout_date}</span></div>
           <div style="font-size:.82rem;color:var(--text2);margin-top:2px">${p.notes||''}</div>
+          ${fees>0?`<div style="font-size:.77rem;color:#ef4444;margin-top:2px">Fees: −$${fees.toFixed(2)} (selling: $${(p.selling_fees||0).toFixed(2)} · shipping: $${(p.shipping_fees||0).toFixed(2)} · promo: $${(p.promo_fees||0).toFixed(2)})</div>`:''}
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:.8rem;background:var(--surface2);padding:3px 9px;border-radius:10px">Total: <b>$${(p.total_received||0).toFixed(2)}</b></span>
+          <span style="font-size:.8rem;background:var(--surface2);padding:3px 9px;border-radius:10px">Net: <b>$${(p.total_received||0).toFixed(2)}</b></span>
           <span style="font-size:.8rem;background:rgba(26,111,212,.15);padding:3px 9px;border-radius:10px">Andrew: <b>$${owed.toFixed(2)}</b></span>
-          <span style="font-size:.8rem;background:rgba(34,197,94,.15);padding:3px 9px;border-radius:10px">You: <b>$${(p.matt_cut||0).toFixed(2)}</b></span>
+          <span style="font-size:.8rem;background:rgba(34,197,94,.15);padding:3px 9px;border-radius:10px">Matt: <b>$${(p.matt_cut||0).toFixed(2)}</b></span>
           ${isSent
             ?`<span style="font-size:.8rem;background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.4);padding:3px 9px;border-radius:10px;color:var(--success)">✓ Sent $${sent.toFixed(2)} on ${p.sent_date||''}</span>`
             :`<span style="font-size:.8rem;background:rgba(239,68,68,.15);padding:3px 9px;border-radius:10px;color:var(--danger)">Owed: $${remaining.toFixed(2)}</span>
@@ -2335,11 +2383,11 @@ async function renderPayouts(){
       </div>
       ${items.length?`<div style="border-top:1px solid var(--border);padding:8px 16px">
         <table style="width:100%;font-size:.8rem;border-collapse:collapse">
-          <thead><tr style="color:var(--text2)"><th style="text-align:left;padding:3px 6px">Card</th><th style="text-align:right;padding:3px 6px">Amount</th><th style="text-align:center;padding:3px 6px">Type</th></tr></thead>
+          <thead><tr style="color:var(--text2)"><th style="text-align:left;padding:3px 6px">Card / Description</th><th style="text-align:right;padding:3px 6px">Amount</th><th style="text-align:center;padding:3px 6px">Type</th></tr></thead>
           <tbody>${items.map(i=>`<tr style="border-top:1px solid var(--border)">
             <td style="padding:4px 6px">${i.card_description}</td>
-            <td style="padding:4px 6px;text-align:right">$${(i.amount||0).toFixed(2)}</td>
-            <td style="padding:4px 6px;text-align:center">${i.is_andrew_personal?'<span style="background:rgba(26,111,212,.2);color:var(--accent);border-radius:8px;padding:1px 7px;font-size:.72rem">Andrew Personal</span>':'<span style="background:var(--surface2);border-radius:8px;padding:1px 7px;font-size:.72rem">Business 50/50</span>'}</td>
+            <td style="padding:4px 6px;text-align:right">${i.is_fee?'<span style="color:#ef4444">−</span>':''}$${(i.amount||0).toFixed(2)}</td>
+            <td style="padding:4px 6px;text-align:center">${typeLabel(i)}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`:''}
@@ -2350,14 +2398,19 @@ async function renderPayouts(){
 function openPayoutModal(){
   editPayoutId=null;
   pmItemCount=0;
+  pmSoldCards=[];
   document.getElementById('payout-modal-title').textContent='Add Payout';
   document.getElementById('pm-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('pm-number').value='';
   document.getElementById('pm-total').value='';
+  document.getElementById('pm-selling-fees').value='';
+  document.getElementById('pm-shipping-fees').value='';
+  document.getElementById('pm-promo-fees').value='';
   document.getElementById('pm-notes').value='';
   document.getElementById('pm-items').innerHTML='';
-  document.getElementById('pm-split-preview').innerHTML='<span style="color:var(--text2)">Add line items to see split preview.</span>';
-  addPayoutItem();
+  document.getElementById('pm-card-picker').style.display='none';
+  document.getElementById('pm-card-list').innerHTML='';
+  document.getElementById('pm-split-preview').innerHTML='<span style="color:var(--text2)">Fill in details to see split preview.</span>';
   document.getElementById('payout-modal').style.display='flex';
 }
 
@@ -2365,7 +2418,85 @@ function closePayoutModal(){
   document.getElementById('payout-modal').style.display='none';
 }
 
-function addPayoutItem(){
+async function loadSoldCardsForPayout(){
+  const picker=document.getElementById('pm-card-picker');
+  const listEl=document.getElementById('pm-card-list');
+  listEl.innerHTML='<div style="color:var(--text2);font-size:.8rem">Loading sold cards…</div>';
+  picker.style.display='block';
+
+  // Load recently sold cards (last 60 days, or all sold)
+  const{data:cards}=await sb.from('cards').select('id,player,year,brand,card_number,sale_price,sold_date,collection_type,owner')
+    .eq('status','sold').order('sold_date',{ascending:false}).limit(80);
+
+  pmSoldCards=cards||[];
+  if(!pmSoldCards.length){
+    listEl.innerHTML='<div style="color:var(--text2);font-size:.8rem">No sold cards found.</div>';
+    return;
+  }
+
+  // Check which are already added
+  const already=new Set([...document.getElementById('pm-items').querySelectorAll('[data-card-id]')].map(el=>el.dataset.cardId));
+
+  listEl.innerHTML=pmSoldCards.map(c=>{
+    const label=`${c.year||''} ${c.brand||''} ${c.player||''}${c.card_number?' #'+c.card_number:''}`.trim();
+    const owner=c.owner||c.collection_type||'';
+    const ownerBadge=owner==='andrew'||owner==='Andrew'
+      ?'<span style="font-size:.68rem;background:rgba(26,111,212,.2);color:var(--accent);border-radius:4px;padding:1px 5px">Andrew</span>'
+      :owner==='matt'||owner==='Matt'||owner==='personal'
+      ?'<span style="font-size:.68rem;background:rgba(136,136,255,.2);color:var(--purple);border-radius:4px;padding:1px 5px">Matt</span>'
+      :'<span style="font-size:.68rem;background:var(--surface);border-radius:4px;padding:1px 5px;color:var(--text2)">Business</span>';
+    const checked=already.has(String(c.id))?'checked':'';
+    // Auto-detect default type
+    const defaultType=owner==='andrew'||owner==='Andrew'?'andrew':owner==='matt'||owner==='Matt'||owner==='personal'?'matt':'business';
+    return`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface);font-size:.8rem" data-card-id="${c.id}">
+      <input type="checkbox" ${checked} data-card-id="${c.id}" data-label="${label.replace(/"/g,'&quot;')}" data-amount="${c.sale_price||0}" data-type="${defaultType}" onchange="toggleCardFromPicker(this)">
+      <span style="flex:1">${label}</span>
+      ${ownerBadge}
+      <span style="font-family:'DM Mono',monospace;color:var(--success);font-size:.8rem">$${(c.sale_price||0).toFixed(2)}</span>
+      <span style="color:var(--text2);font-size:.72rem">${c.sold_date||''}</span>
+    </label>`;
+  }).join('');
+}
+
+function toggleCardFromPicker(cb){
+  const cardId=cb.dataset.cardId;
+  const existingRow=document.getElementById('pm-items').querySelector(`[data-card-id="${cardId}"]`);
+  if(!cb.checked){
+    if(existingRow)existingRow.remove();
+    recalcPayoutSplit();
+    return;
+  }
+  // Add row to pm-items
+  pmItemCount++;
+  const id='pmi-'+pmItemCount;
+  const el=document.createElement('div');
+  el.id=id;
+  el.dataset.cardId=cardId;
+  el.style.cssText='display:flex;gap:6px;align-items:center';
+  const defaultType=cb.dataset.type||'business';
+  el.innerHTML=`
+    <input type="text" value="${cb.dataset.label}" class="form-input" style="flex:2" data-field="desc" onchange="recalcPayoutSplit()">
+    <input type="number" value="${parseFloat(cb.dataset.amount||0).toFixed(2)}" step="0.01" class="form-input" style="flex:1" data-field="amount" oninput="recalcPayoutSplit()">
+    <select class="form-input" style="flex:1" data-field="type" onchange="recalcPayoutSplit()">
+      <option value="business" ${defaultType==='business'?'selected':''}>Business 50/50</option>
+      <option value="andrew" ${defaultType==='andrew'?'selected':''}>Andrew Personal</option>
+      <option value="matt" ${defaultType==='matt'?'selected':''}>Matt Personal</option>
+    </select>
+    <button class="btn btn-danger btn-sm" onclick="removePayoutItem('${id}','${cardId}')">✕</button>
+  `;
+  document.getElementById('pm-items').appendChild(el);
+  recalcPayoutSplit();
+}
+
+function removePayoutItem(rowId, cardId){
+  document.getElementById(rowId)?.remove();
+  // Uncheck in picker if visible
+  const cb=document.querySelector(`#pm-card-list input[data-card-id="${cardId}"]`);
+  if(cb)cb.checked=false;
+  recalcPayoutSplit();
+}
+
+function addPayoutItemManual(){
   pmItemCount++;
   const id='pmi-'+pmItemCount;
   const el=document.createElement('div');
@@ -2377,29 +2508,53 @@ function addPayoutItem(){
     <select class="form-input" style="flex:1" data-field="type" onchange="recalcPayoutSplit()">
       <option value="business">Business 50/50</option>
       <option value="andrew">Andrew Personal</option>
+      <option value="matt">Matt Personal</option>
     </select>
     <button class="btn btn-danger btn-sm" onclick="document.getElementById('${id}').remove();recalcPayoutSplit()">✕</button>
   `;
   document.getElementById('pm-items').appendChild(el);
 }
 
+// Keep old addPayoutItem as alias for any existing calls
+function addPayoutItem(){addPayoutItemManual();}
+
 function recalcPayoutSplit(){
   const rows=[...document.getElementById('pm-items').children];
-  let andrewTotal=0,businessTotal=0;
+  let andrewTotal=0,mattTotal=0,businessTotal=0;
   rows.forEach(row=>{
-    const amt=parseFloat(row.querySelector('[data-field=amount]').value)||0;
-    const type=row.querySelector('[data-field=type]').value;
+    const amt=parseFloat(row.querySelector('[data-field=amount]')?.value)||0;
+    const type=row.querySelector('[data-field=type]')?.value||'business';
     if(type==='andrew')andrewTotal+=amt;
+    else if(type==='matt')mattTotal+=amt;
     else businessTotal+=amt;
   });
+
+  const sellingFees=parseFloat(document.getElementById('pm-selling-fees')?.value)||0;
+  const shippingFees=parseFloat(document.getElementById('pm-shipping-fees')?.value)||0;
+  const promoFees=parseFloat(document.getElementById('pm-promo-fees')?.value)||0;
+  const totalFees=sellingFees+shippingFees+promoFees;
+
+  // Fees split: business fees split 50/50, personal fees go to owner
+  // Simple approach: split all fees proportionally by gross
+  const gross=andrewTotal+mattTotal+businessTotal;
   const andrewCut=andrewTotal+(businessTotal*0.5);
-  const mattCut=businessTotal*0.5;
+  const mattCut=mattTotal+(businessTotal*0.5);
+
+  // Fee allocation: proportional share of fees
+  const andrewFeeShare=gross>0?(andrewCut/gross)*totalFees:totalFees*0.5;
+  const mattFeeShare=gross>0?(mattCut/gross)*totalFees:totalFees*0.5;
+
+  const andrewNet=Math.max(0,andrewCut-andrewFeeShare);
+  const mattNet=Math.max(0,mattCut-mattFeeShare);
+
   document.getElementById('pm-split-preview').innerHTML=`
-    <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <span>Business total: <b>$${businessTotal.toFixed(2)}</b></span>
-      <span>Andrew personal: <b>$${andrewTotal.toFixed(2)}</b></span>
-      <span style="color:var(--accent)">Andrew's cut: <b>$${andrewCut.toFixed(2)}</b></span>
-      <span style="color:var(--success)">Your cut: <b>$${mattCut.toFixed(2)}</b></span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <div><div style="font-size:.7rem;color:var(--text2);margin-bottom:2px">Gross Card Sales</div><div style="font-weight:700">$${gross.toFixed(2)}</div></div>
+      <div><div style="font-size:.7rem;color:#ef4444;margin-bottom:2px">Total Fees</div><div style="font-weight:700;color:#ef4444">−$${totalFees.toFixed(2)}</div></div>
+      <div><div style="font-size:.7rem;color:var(--text2);margin-bottom:2px">Business 50/50</div><div style="font-weight:700">$${businessTotal.toFixed(2)}</div></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;grid-column:1/-1"></div>
+      <div><div style="font-size:.7rem;color:var(--accent);margin-bottom:2px">Andrew's Cut (net)</div><div style="font-weight:700;color:var(--accent)">$${andrewNet.toFixed(2)}</div></div>
+      <div><div style="font-size:.7rem;color:var(--success);margin-bottom:2px">Matt's Cut (net)</div><div style="font-weight:700;color:var(--success)">$${mattNet.toFixed(2)}</div></div>
     </div>
   `;
 }
@@ -2409,29 +2564,51 @@ async function savePayout(){
   const payoutNumber=document.getElementById('pm-number').value.trim();
   const totalReceived=parseFloat(document.getElementById('pm-total').value)||0;
   const notes=document.getElementById('pm-notes').value.trim();
+  const sellingFees=parseFloat(document.getElementById('pm-selling-fees').value)||0;
+  const shippingFees=parseFloat(document.getElementById('pm-shipping-fees').value)||0;
+  const promoFees=parseFloat(document.getElementById('pm-promo-fees').value)||0;
+  const totalFees=sellingFees+shippingFees+promoFees;
+
   if(!payoutDate||!totalReceived){showToast('Date and total are required','error');return;}
 
   const rows=[...document.getElementById('pm-items').children];
   const items=rows.map(row=>({
     desc:row.querySelector('[data-field=desc]').value.trim(),
     amount:parseFloat(row.querySelector('[data-field=amount]').value)||0,
-    type:row.querySelector('[data-field=type]').value
+    type:row.querySelector('[data-field=type]').value,
+    cardId:row.dataset.cardId||null
   })).filter(i=>i.desc&&i.amount>0);
 
-  let andrewTotal=0,businessTotal=0;
-  items.forEach(i=>{if(i.type==='andrew')andrewTotal+=i.amount;else businessTotal+=i.amount;});
-  const andrewCut=andrewTotal+(businessTotal*0.5);
-  const mattCut=businessTotal*0.5;
+  let andrewTotal=0,mattTotal=0,businessTotal=0;
+  items.forEach(i=>{
+    if(i.type==='andrew')andrewTotal+=i.amount;
+    else if(i.type==='matt')mattTotal+=i.amount;
+    else businessTotal+=i.amount;
+  });
+  const gross=andrewTotal+mattTotal+businessTotal;
+  const andrewCutGross=andrewTotal+(businessTotal*0.5);
+  const mattCutGross=mattTotal+(businessTotal*0.5);
+  const andrewFeeShare=gross>0?(andrewCutGross/gross)*totalFees:totalFees*0.5;
+  const mattFeeShare=gross>0?(mattCutGross/gross)*totalFees:totalFees*0.5;
+  const andrewCut=Math.max(0,andrewCutGross-andrewFeeShare);
+  const mattCut=Math.max(0,mattCutGross-mattFeeShare);
 
   const{data:payout,error}=await sb.from('payouts').insert({
     user_id:CU.id,payout_date:payoutDate,payout_number:payoutNumber||null,
-    total_received:totalReceived,andrew_cut:andrewCut,matt_cut:mattCut,notes:notes||null
+    total_received:totalReceived,andrew_cut:andrewCut,matt_cut:mattCut,
+    selling_fees:sellingFees||null,shipping_fees:shippingFees||null,promo_fees:promoFees||null,
+    notes:notes||null
   }).select().single();
-  if(error){showToast('Error saving payout','error');return;}
+  if(error){showToast('Error saving payout','error');console.error(error);return;}
 
   if(items.length){
     await sb.from('payout_items').insert(items.map(i=>({
-      payout_id:payout.id,card_description:i.desc,amount:i.amount,is_andrew_personal:i.type==='andrew'
+      payout_id:payout.id,
+      card_description:i.desc,
+      amount:i.amount,
+      is_andrew_personal:i.type==='andrew',
+      is_matt_personal:i.type==='matt',
+      card_id:i.cardId||null
     })));
   }
   closePayoutModal();
