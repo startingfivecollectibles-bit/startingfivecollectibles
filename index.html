@@ -1129,14 +1129,25 @@ select option{background:var(--surface2);}
 
 <!-- Andrew Sale Modal -->
 <div class="modal-overlay" id="andrew-sale-modal" style="display:none" onclick="if(event.target===this)closeAndrewSaleModal()">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-header"><span class="modal-title">Log Andrew's Sale</span><button class="modal-close" onclick="closeAndrewSaleModal()">✕</button></div>
     <p style="font-size:.83rem;color:var(--text2);margin-bottom:14px">A shared card sold on Andrew's eBay. Enter the net amount he received — you're owed 50%.</p>
     <div style="display:flex;gap:12px;margin-bottom:12px">
       <div style="flex:1"><label class="form-label">Sale Date</label><input type="date" id="as-date" class="form-input"></div>
       <div style="flex:1"><label class="form-label">Net Sale Amount ($)</label><input type="number" id="as-amount" step="0.01" placeholder="0.00" class="form-input" oninput="updateAndrewSaleSplit()"></div>
     </div>
-    <div style="margin-bottom:12px"><label class="form-label">Card Description</label><input type="text" id="as-desc" class="form-input" placeholder="e.g. 2024 Topps Chrome Wemby RC PSA 10"></div>
+    <!-- Card picker -->
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label class="form-label" style="margin:0">Card Description</label>
+        <button class="btn btn-secondary btn-sm" onclick="loadSoldCardsForAndrewSale()">🔄 Pick from Sold Cards</button>
+      </div>
+      <div id="as-card-picker" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px;max-height:200px;overflow-y:auto">
+        <div style="font-size:.75rem;color:var(--text2);margin-bottom:6px">Select the card that sold:</div>
+        <div id="as-card-list" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+      <input type="text" id="as-desc" class="form-input" placeholder="e.g. 2024 Topps Chrome Wemby RC PSA 10">
+    </div>
     <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="as-split-preview">Enter amount to see split.</div>
     <div style="margin-bottom:12px"><label class="form-label">Notes</label><input type="text" id="as-notes" class="form-input" placeholder="Optional"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -2863,9 +2874,40 @@ function openAndrewSaleModal(){
   document.getElementById('as-desc').value='';
   document.getElementById('as-notes').value='';
   document.getElementById('as-split-preview').innerHTML='Enter amount to see split.';
+  document.getElementById('as-card-picker').style.display='none';
+  document.getElementById('as-card-list').innerHTML='';
   document.getElementById('andrew-sale-modal').style.display='flex';
 }
 function closeAndrewSaleModal(){document.getElementById('andrew-sale-modal').style.display='none';}
+
+async function loadSoldCardsForAndrewSale(){
+  const picker=document.getElementById('as-card-picker');
+  const listEl=document.getElementById('as-card-list');
+  listEl.innerHTML='<div style="color:var(--text2);font-size:.8rem">Loading…</div>';
+  picker.style.display='block';
+  const{data:cards,error}=await sb.from('cards').select('id,player,year,card_set,card_number,sale_price,sale_date,collection_type')
+    .eq('status','sold').order('sale_date',{ascending:false}).limit(80);
+  if(error||!cards?.length){listEl.innerHTML='<div style="color:var(--text2);font-size:.8rem">No sold cards found.</div>';return;}
+  listEl.innerHTML=cards.map(c=>{
+    const label=`${c.year||''} ${c.card_set||''} ${c.player||''}${c.card_number?' #'+c.card_number:''}`.trim();
+    return`<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface);font-size:.8rem">
+      <input type="radio" name="as-card-pick" data-label="${label.replace(/"/g,'&quot;')}" data-amount="${c.sale_price||0}" onchange="selectAndrewSaleCard(this)">
+      <span style="flex:1">${label}</span>
+      <span style="font-family:'DM Mono',monospace;color:var(--success);font-size:.8rem">$${(c.sale_price||0).toFixed(2)}</span>
+      <span style="color:var(--text2);font-size:.72rem">${c.sale_date||''}</span>
+    </label>`;
+  }).join('');
+}
+
+function selectAndrewSaleCard(radio){
+  document.getElementById('as-desc').value=radio.dataset.label;
+  const amt=parseFloat(radio.dataset.amount)||0;
+  if(amt>0){
+    document.getElementById('as-amount').value=amt.toFixed(2);
+    updateAndrewSaleSplit();
+  }
+  document.getElementById('as-card-picker').style.display='none';
+}
 
 function updateAndrewSaleSplit(){
   const amt=parseFloat(document.getElementById('as-amount').value)||0;
@@ -2937,38 +2979,37 @@ async function deleteAndrewSale(id){
 // ─── SETTLEMENT CALCULATOR ────────────────────────────────────────
 async function renderSettlement(){
   const uid=CU.id;
-  const[{data:payouts},{data:boxes},{data:andrewSales},{data:sentPayments}]=await Promise.all([
+  const[{data:payouts},{data:boxes},{data:andrewSales}]=await Promise.all([
     sb.from('payouts').select('*').eq('user_id',uid),
     sb.from('andrew_box_purchases').select('*').eq('user_id',uid).eq('settled',false),
-    sb.from('andrew_sales').select('*').eq('user_id',uid).eq('settled',false),
-    sb.from('payout_sent').select('*').eq('user_id',uid)
+    sb.from('andrew_sales').select('*').eq('user_id',uid).eq('settled',false)
   ]);
 
-  // What you owe Andrew from MY eBay payouts (unsettled)
-  const totalSent=(sentPayments||[]).reduce((s,p)=>s+(p.amount||0),0);
-  const totalAndrewFromPayouts=(payouts||[]).reduce((s,p)=>s+(p.andrew_cut||0),0);
-  const payoutDebt=Math.max(0,totalAndrewFromPayouts-totalSent);
+  // What you owe Andrew from MY eBay payouts — per-payout remaining balance
+  const payoutDebt=(payouts||[]).reduce((s,p)=>{
+    const owed=p.andrew_cut||0;
+    const sent=p.sent_amount||0;
+    return s+Math.max(0,owed-sent);
+  },0);
 
-  // What you owe Andrew from his box purchases (you owe 50%)
+  // What you owe Andrew from his box purchases (your 50%)
   const boxDebt=(boxes||[]).reduce((s,b)=>s+(b.matt_owes||0),0);
 
-  // What Andrew owes you from his sales (you get 50%)
+  // What Andrew owes you from his sales (your 50%)
   const andrewOwesYou=(andrewSales||[]).reduce((s,s2)=>s+(s2.matt_cut||0),0);
 
   // Grand totals
   const youOweAndrew=payoutDebt+boxDebt;
-  const andrewOwesTotal=andrewOwesYou;
-  const net=youOweAndrew-andrewOwesTotal;
+  const net=youOweAndrew-andrewOwesYou;
   const mattPays=net>0;
   const netAbs=Math.abs(net);
 
   document.getElementById('settlement-content').innerHTML=`
     <div style="max-width:620px">
-      <!-- Breakdown -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">
         <div style="padding:12px 16px;background:var(--surface2);font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--text2)">WHAT YOU OWE ANDREW</div>
         <div style="padding:12px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">
-          <span style="font-size:.88rem">Unsettled eBay payout cuts</span>
+          <span style="font-size:.88rem">Unpaid eBay payout cuts</span>
           <span style="font-family:'DM Mono',monospace;color:var(--accent2)">$${payoutDebt.toFixed(2)}</span>
         </div>
         <div style="padding:12px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">
@@ -2989,20 +3030,17 @@ async function renderSettlement(){
         </div>
         <div style="padding:12px 16px;display:flex;justify-content:space-between;background:rgba(46,204,113,.05)">
           <span style="font-weight:700">Subtotal Andrew owes you</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--success)">$${andrewOwesTotal.toFixed(2)}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--success)">$${andrewOwesYou.toFixed(2)}</span>
         </div>
       </div>
 
-      <!-- Net result -->
       <div style="background:${mattPays?'rgba(245,166,35,.08)':'rgba(46,204,113,.08)'};border:2px solid ${mattPays?'var(--accent2)':'var(--success)'};border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--text2);margin-bottom:6px">NET SETTLEMENT</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:${mattPays?'var(--accent2)':'var(--success)'};letter-spacing:2px">$${netAbs.toFixed(2)}</div>
-        <div style="font-size:.92rem;margin-top:4px;color:var(--text)">${mattPays?'<b>You owe Andrew</b> this amount':'<b>Andrew owes you</b> this amount'}</div>
-        ${netAbs<0.01?'<div style="font-size:.85rem;color:var(--success);margin-top:4px">✓ All square!</div>':''}
+        <div style="font-size:.92rem;margin-top:4px;color:var(--text)">${netAbs<0.01?'✓ All square!':(mattPays?'<b>You owe Andrew</b> this amount':'<b>Andrew owes you</b> this amount')}</div>
       </div>
 
-      <!-- Unsettled items detail -->
-      ${(boxes||[]).length>0?`<div style="margin-bottom:10px;font-size:.82rem;color:var(--text2)">📦 Unsettled boxes: ${(boxes||[]).map(b=>b.box_description).join(', ')}</div>`:''}
+      ${(boxes||[]).length>0?`<div style="margin-bottom:8px;font-size:.82rem;color:var(--text2)">📦 Unsettled boxes: ${(boxes||[]).map(b=>b.box_description).join(', ')}</div>`:''}
       ${(andrewSales||[]).length>0?`<div style="margin-bottom:14px;font-size:.82rem;color:var(--text2)">🏷️ Unsettled Andrew sales: ${(andrewSales||[]).map(s=>s.card_description).join(', ')}</div>`:''}
 
       <button class="btn btn-primary" onclick="markAllSettled()" style="width:100%;padding:14px;font-size:1rem">✓ Mark Everything Settled</button>
@@ -3012,22 +3050,20 @@ async function renderSettlement(){
 async function markAllSettled(){
   if(!confirm('Mark all unsettled items as settled? This will clear the running balance.'))return;
   const uid=CU.id;
+
+  // Settle boxes and Andrew's sales
   await Promise.all([
     sb.from('andrew_box_purchases').update({settled:true}).eq('user_id',uid).eq('settled',false),
     sb.from('andrew_sales').update({settled:true}).eq('user_id',uid).eq('settled',false)
   ]);
-  // Record a settlement event with current net
-  const[{data:payouts},{data:sentPayments}]=await Promise.all([
-    sb.from('payouts').select('andrew_cut').eq('user_id',uid),
-    sb.from('payout_sent').select('amount').eq('user_id',uid)
-  ]);
-  const totalAndrewFromPayouts=(payouts||[]).reduce((s,p)=>s+(p.andrew_cut||0),0);
-  const totalSent=(sentPayments||[]).reduce((s,p)=>s+(p.amount||0),0);
-  const payoutBalance=totalAndrewFromPayouts-totalSent;
-  if(payoutBalance>0.01){
-    // Record a settlement payment to zero out payout balance too
-    await sb.from('payout_sent').insert({user_id:uid,amount:payoutBalance,sent_date:new Date().toISOString().split('T')[0],notes:'Settlement'});
+
+  // Zero out any remaining payout balances by setting sent_amount = andrew_cut
+  const{data:payouts}=await sb.from('payouts').select('id,andrew_cut,sent_amount').eq('user_id',uid);
+  const unsettledPayouts=(payouts||[]).filter(p=>(p.andrew_cut||0)>(p.sent_amount||0));
+  for(const p of unsettledPayouts){
+    await sb.from('payouts').update({sent_amount:p.andrew_cut,sent_date:new Date().toISOString().split('T')[0]}).eq('id',p.id);
   }
+
   showToast('All settled! Balance cleared.','success');
   renderSettlement();
 }
