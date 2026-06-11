@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-10 | v27 -->
+<!-- Starting Five Collectibles | Build: 2026-06-10 | v28 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v27 · 2026-06-10</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v28 · 2026-06-10</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -438,10 +438,47 @@ select option{background:var(--surface2);}
       <div class="table-container"><div id="box-table"></div></div>
     </div>
     <div class="page" id="page-payouts">
-      <div class="page-header"><span class="page-title">eBay Payouts</span><div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="openSentModal()">💸 Pay Andrew</button><button class="btn btn-primary" onclick="openPayoutModal()">+ Add Payout</button></div></div>
-      <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Track eBay payouts, calculate Andrew's cut, and record when you've sent payment.</p>
-      <div class="stats-grid" id="payout-stats"></div>
-      <div id="payout-list"></div>
+      <div class="page-header">
+        <span class="page-title">Andrew Settlement</span>
+        <div style="display:flex;gap:8px" id="payout-action-btns">
+          <button class="btn btn-secondary" onclick="openSentModal()">💸 Record Payment</button>
+          <button class="btn btn-primary" id="payout-add-btn" onclick="openPayoutModal()">+ Add Payout</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0">
+        <button class="payout-tab active" id="ptab-mine" onclick="setPayoutTab('mine')" style="padding:8px 16px;border:none;background:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-1px">📥 My eBay Payouts</button>
+        <button class="payout-tab" id="ptab-boxes" onclick="setPayoutTab('boxes')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">📦 Andrew's Box Purchases</button>
+        <button class="payout-tab" id="ptab-andrew-sales" onclick="setPayoutTab('andrew-sales')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">🏷️ Andrew's Sales</button>
+        <button class="payout-tab" id="ptab-settle" onclick="setPayoutTab('settle')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">⚖️ Settlement</button>
+      </div>
+
+      <!-- My eBay Payouts tab -->
+      <div id="ptab-content-mine">
+        <p style="color:var(--text2);font-size:.85rem;margin-bottom:14px">Money that hits your bank from eBay. Calculate Andrew's cut of shared sales.</p>
+        <div class="stats-grid" id="payout-stats"></div>
+        <div id="payout-list"></div>
+      </div>
+
+      <!-- Andrew's Box Purchases tab -->
+      <div id="ptab-content-boxes" style="display:none">
+        <p style="color:var(--text2);font-size:.85rem;margin-bottom:14px">When Andrew buys a box you split, log it here. You owe him 50% of the cost.</p>
+        <div class="stats-grid" id="box-purchase-stats"></div>
+        <div id="box-purchase-list"></div>
+      </div>
+
+      <!-- Andrew's Sales tab -->
+      <div id="ptab-content-andrew-sales" style="display:none">
+        <p style="color:var(--text2);font-size:.85rem;margin-bottom:14px">When a shared card sells on Andrew's eBay account, log the net amount. He owes you 50%.</p>
+        <div class="stats-grid" id="andrew-sales-stats"></div>
+        <div id="andrew-sales-list"></div>
+      </div>
+
+      <!-- Settlement tab -->
+      <div id="ptab-content-settle" style="display:none">
+        <div id="settlement-content"></div>
+      </div>
     </div>
 
     <div class="page" id="page-rankings">
@@ -1068,7 +1105,48 @@ select option{background:var(--surface2);}
   </div>
 </div>
 
-<div class="modal-overlay" id="cost-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<!-- Andrew Box Purchase Modal -->
+<div class="modal-overlay" id="box-purchase-modal" style="display:none" onclick="if(event.target===this)closeBoxPurchaseModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><span class="modal-title">Log Andrew's Box Purchase</span><button class="modal-close" onclick="closeBoxPurchaseModal()">✕</button></div>
+    <p style="font-size:.83rem;color:var(--text2);margin-bottom:14px">Andrew bought a box you're splitting. You owe him 50% of the cost.</p>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1"><label class="form-label">Date Purchased</label><input type="date" id="bp-date" class="form-input"></div>
+      <div style="flex:1"><label class="form-label">Box Cost ($)</label><input type="number" id="bp-cost" step="0.01" placeholder="0.00" class="form-input" oninput="updateBoxSplit()"></div>
+    </div>
+    <div style="margin-bottom:12px"><label class="form-label">Box Description</label><input type="text" id="bp-desc" class="form-input" placeholder="e.g. 2025-26 Topps Chrome Hobby Box"></div>
+    <div style="margin-bottom:12px"><label class="form-label">Sport</label>
+      <select id="bp-sport" class="form-input"><option value="Basketball">Basketball</option><option value="Baseball">Baseball</option><option value="Football">Football</option><option value="Soccer">Soccer</option><option value="Hockey">Hockey</option><option value="Other">Other</option></select>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="bp-split-preview">Enter cost to see split.</div>
+    <div style="margin-bottom:12px"><label class="form-label">Notes</label><input type="text" id="bp-notes" class="form-input" placeholder="Optional"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeBoxPurchaseModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBoxPurchase()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Andrew Sale Modal -->
+<div class="modal-overlay" id="andrew-sale-modal" style="display:none" onclick="if(event.target===this)closeAndrewSaleModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><span class="modal-title">Log Andrew's Sale</span><button class="modal-close" onclick="closeAndrewSaleModal()">✕</button></div>
+    <p style="font-size:.83rem;color:var(--text2);margin-bottom:14px">A shared card sold on Andrew's eBay. Enter the net amount he received — you're owed 50%.</p>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1"><label class="form-label">Sale Date</label><input type="date" id="as-date" class="form-input"></div>
+      <div style="flex:1"><label class="form-label">Net Sale Amount ($)</label><input type="number" id="as-amount" step="0.01" placeholder="0.00" class="form-input" oninput="updateAndrewSaleSplit()"></div>
+    </div>
+    <div style="margin-bottom:12px"><label class="form-label">Card Description</label><input type="text" id="as-desc" class="form-input" placeholder="e.g. 2024 Topps Chrome Wemby RC PSA 10"></div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:.85rem" id="as-split-preview">Enter amount to see split.</div>
+    <div style="margin-bottom:12px"><label class="form-label">Notes</label><input type="text" id="as-notes" class="form-input" placeholder="Optional"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeAndrewSaleModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAndrewSale()">Save</button>
+    </div>
+  </div>
+</div>
+
+
   <div class="modal" style="max-width:440px">
     <h3 id="cost-modal-title">Add Daily Cost</h3>
     <div class="form-grid">
@@ -2673,7 +2751,288 @@ async function deletePayout(id){
   showToast('Payout deleted');
   renderPayouts();
 }
+
+// ─── PAYOUT PAGE TABS ─────────────────────────────────────────────
+let activePayoutTab='mine';
+
+function setPayoutTab(tab){
+  activePayoutTab=tab;
+  ['mine','boxes','andrew-sales','settle'].forEach(t=>{
+    const btn=document.getElementById('ptab-'+t);
+    const content=document.getElementById('ptab-content-'+t);
+    if(btn){btn.style.borderBottomColor=t===tab?'var(--accent)':'transparent';btn.style.color=t===tab?'var(--text)':'var(--text2)';}
+    if(content)content.style.display=t===tab?'block':'none';
+  });
+  const addBtn=document.getElementById('payout-add-btn');
+  if(tab==='mine'){addBtn.textContent='+ Add Payout';addBtn.onclick=openPayoutModal;addBtn.style.display='';}
+  else if(tab==='boxes'){addBtn.textContent='+ Log Box Purchase';addBtn.onclick=openBoxPurchaseModal;addBtn.style.display='';}
+  else if(tab==='andrew-sales'){addBtn.textContent='+ Log Andrew Sale';addBtn.onclick=openAndrewSaleModal;addBtn.style.display='';}
+  else{addBtn.style.display='none';}
+  if(tab==='boxes')renderBoxPurchases();
+  else if(tab==='andrew-sales')renderAndrewSales();
+  else if(tab==='settle')renderSettlement();
+}
+
+// ─── ANDREW BOX PURCHASES ─────────────────────────────────────────
+function openBoxPurchaseModal(){
+  document.getElementById('bp-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('bp-cost').value='';
+  document.getElementById('bp-desc').value='';
+  document.getElementById('bp-notes').value='';
+  document.getElementById('bp-split-preview').innerHTML='Enter cost to see split.';
+  document.getElementById('box-purchase-modal').style.display='flex';
+}
+function closeBoxPurchaseModal(){document.getElementById('box-purchase-modal').style.display='none';}
+
+function updateBoxSplit(){
+  const cost=parseFloat(document.getElementById('bp-cost').value)||0;
+  const mattOwes=cost*0.5;
+  document.getElementById('bp-split-preview').innerHTML=`
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <span>Box cost: <b>$${cost.toFixed(2)}</b></span>
+      <span style="color:var(--accent2)">You owe Andrew: <b>$${mattOwes.toFixed(2)}</b></span>
+      <span style="color:var(--text2)">Andrew's share: <b>$${mattOwes.toFixed(2)}</b></span>
+    </div>`;
+}
+
+async function saveBoxPurchase(){
+  const date=document.getElementById('bp-date').value;
+  const cost=parseFloat(document.getElementById('bp-cost').value)||0;
+  const desc=document.getElementById('bp-desc').value.trim();
+  const sport=document.getElementById('bp-sport').value;
+  const notes=document.getElementById('bp-notes').value.trim();
+  if(!date||!cost||!desc){showToast('Date, cost and description required','error');return;}
+  const{error}=await sb.from('andrew_box_purchases').insert({
+    user_id:CU.id,purchase_date:date,box_description:desc,sport,
+    total_cost:cost,matt_owes:cost*0.5,notes:notes||null,settled:false
+  });
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Box purchase logged!');
+  closeBoxPurchaseModal();
+  renderBoxPurchases();
+}
+
+async function renderBoxPurchases(){
+  const{data:purchases}=await sb.from('andrew_box_purchases').select('*').eq('user_id',CU.id).order('purchase_date',{ascending:false});
+  const all=purchases||[];
+  const unsettled=all.filter(p=>!p.settled);
+  const totalOwed=unsettled.reduce((s,p)=>s+(p.matt_owes||0),0);
+  const totalPaid=all.filter(p=>p.settled).reduce((s,p)=>s+(p.matt_owes||0),0);
+  document.getElementById('box-purchase-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total Box Splits</div></div>
+    <div class="stat-card" style="border-color:var(--accent2)"><div class="stat-value" style="color:var(--accent2)">$${totalOwed.toFixed(2)}</div><div class="stat-label">You Still Owe Andrew</div></div>
+    <div class="stat-card"><div class="stat-value">$${totalPaid.toFixed(2)}</div><div class="stat-label">Already Settled</div></div>
+  `;
+  if(!all.length){document.getElementById('box-purchase-list').innerHTML='<div class="empty-state"><div class="empty-icon">📦</div><div>No box purchases logged yet.</div></div>';return;}
+  document.getElementById('box-purchase-list').innerHTML=`
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="color:var(--text2);font-size:.78rem;text-transform:uppercase;letter-spacing:1px">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Box</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Sport</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Total Cost</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">You Owe</th>
+        <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Status</th>
+        <th style="padding:8px;border-bottom:1px solid var(--border)"></th>
+      </tr></thead>
+      <tbody>${all.map(p=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px;font-size:.83rem">${p.purchase_date||'—'}</td>
+        <td style="padding:8px;font-size:.83rem">${p.box_description||'—'}${p.notes?`<div style="font-size:.72rem;color:var(--text2)">${p.notes}</div>`:''}</td>
+        <td style="padding:8px;font-size:.83rem">${p.sport||'—'}</td>
+        <td style="padding:8px;text-align:right;font-family:'DM Mono',monospace">$${(p.total_cost||0).toFixed(2)}</td>
+        <td style="padding:8px;text-align:right;font-family:'DM Mono',monospace;color:var(--accent2)">$${(p.matt_owes||0).toFixed(2)}</td>
+        <td style="padding:8px;text-align:center">${p.settled
+          ?'<span style="font-size:.75rem;background:rgba(46,204,113,.2);color:var(--success);padding:2px 8px;border-radius:10px">Settled</span>'
+          :'<span style="font-size:.75rem;background:rgba(245,166,35,.15);color:var(--accent2);padding:2px 8px;border-radius:10px">Unsettled</span>'
+        }</td>
+        <td style="padding:8px"><button class="btn btn-danger btn-sm" data-id="${p.id}" onclick="deleteBoxPurchase(this.dataset.id)">Del</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function deleteBoxPurchase(id){
+  if(!confirm('Delete this box purchase?'))return;
+  await sb.from('andrew_box_purchases').delete().eq('id',id);
+  showToast('Deleted');renderBoxPurchases();
+}
+
+// ─── ANDREW'S SALES ───────────────────────────────────────────────
+function openAndrewSaleModal(){
+  document.getElementById('as-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('as-amount').value='';
+  document.getElementById('as-desc').value='';
+  document.getElementById('as-notes').value='';
+  document.getElementById('as-split-preview').innerHTML='Enter amount to see split.';
+  document.getElementById('andrew-sale-modal').style.display='flex';
+}
+function closeAndrewSaleModal(){document.getElementById('andrew-sale-modal').style.display='none';}
+
+function updateAndrewSaleSplit(){
+  const amt=parseFloat(document.getElementById('as-amount').value)||0;
+  const mattCut=amt*0.5;
+  document.getElementById('as-split-preview').innerHTML=`
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <span>Net sale: <b>$${amt.toFixed(2)}</b></span>
+      <span style="color:var(--success)">Andrew owes you: <b>$${mattCut.toFixed(2)}</b></span>
+      <span style="color:var(--text2)">Andrew keeps: <b>$${mattCut.toFixed(2)}</b></span>
+    </div>`;
+}
+
+async function saveAndrewSale(){
+  const date=document.getElementById('as-date').value;
+  const amount=parseFloat(document.getElementById('as-amount').value)||0;
+  const desc=document.getElementById('as-desc').value.trim();
+  const notes=document.getElementById('as-notes').value.trim();
+  if(!date||!amount||!desc){showToast('Date, amount and description required','error');return;}
+  const{error}=await sb.from('andrew_sales').insert({
+    user_id:CU.id,sale_date:date,card_description:desc,
+    net_amount:amount,matt_cut:amount*0.5,notes:notes||null,settled:false
+  });
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Sale logged!');
+  closeAndrewSaleModal();
+  renderAndrewSales();
+}
+
+async function renderAndrewSales(){
+  const{data:sales}=await sb.from('andrew_sales').select('*').eq('user_id',CU.id).order('sale_date',{ascending:false});
+  const all=sales||[];
+  const unsettled=all.filter(s=>!s.settled);
+  const totalOwedToMatt=unsettled.reduce((s,x)=>s+(x.matt_cut||0),0);
+  document.getElementById('andrew-sales-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Andrew's Sales Logged</div></div>
+    <div class="stat-card" style="border-color:var(--success)"><div class="stat-value" style="color:var(--success)">$${totalOwedToMatt.toFixed(2)}</div><div class="stat-label">Andrew Owes You</div></div>
+  `;
+  if(!all.length){document.getElementById('andrew-sales-list').innerHTML='<div class="empty-state"><div class="empty-icon">🏷️</div><div>No sales logged yet.</div></div>';return;}
+  document.getElementById('andrew-sales-list').innerHTML=`
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="color:var(--text2);font-size:.78rem;text-transform:uppercase;letter-spacing:1px">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Card</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Net Sale</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Your Cut</th>
+        <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Status</th>
+        <th style="padding:8px;border-bottom:1px solid var(--border)"></th>
+      </tr></thead>
+      <tbody>${all.map(s=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px;font-size:.83rem">${s.sale_date||'—'}</td>
+        <td style="padding:8px;font-size:.83rem">${s.card_description||'—'}${s.notes?`<div style="font-size:.72rem;color:var(--text2)">${s.notes}</div>`:''}</td>
+        <td style="padding:8px;text-align:right;font-family:'DM Mono',monospace">$${(s.net_amount||0).toFixed(2)}</td>
+        <td style="padding:8px;text-align:right;font-family:'DM Mono',monospace;color:var(--success)">$${(s.matt_cut||0).toFixed(2)}</td>
+        <td style="padding:8px;text-align:center">${s.settled
+          ?'<span style="font-size:.75rem;background:rgba(46,204,113,.2);color:var(--success);padding:2px 8px;border-radius:10px">Settled</span>'
+          :'<span style="font-size:.75rem;background:rgba(46,204,113,.15);color:var(--success);padding:2px 8px;border-radius:10px">Unsettled</span>'
+        }</td>
+        <td style="padding:8px"><button class="btn btn-danger btn-sm" data-id="${s.id}" onclick="deleteAndrewSale(this.dataset.id)">Del</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function deleteAndrewSale(id){
+  if(!confirm('Delete this sale?'))return;
+  await sb.from('andrew_sales').delete().eq('id',id);
+  showToast('Deleted');renderAndrewSales();
+}
+
+// ─── SETTLEMENT CALCULATOR ────────────────────────────────────────
+async function renderSettlement(){
+  const uid=CU.id;
+  const[{data:payouts},{data:boxes},{data:andrewSales},{data:sentPayments}]=await Promise.all([
+    sb.from('payouts').select('*').eq('user_id',uid),
+    sb.from('andrew_box_purchases').select('*').eq('user_id',uid).eq('settled',false),
+    sb.from('andrew_sales').select('*').eq('user_id',uid).eq('settled',false),
+    sb.from('payout_sent').select('*').eq('user_id',uid)
+  ]);
+
+  // What you owe Andrew from MY eBay payouts (unsettled)
+  const totalSent=(sentPayments||[]).reduce((s,p)=>s+(p.amount||0),0);
+  const totalAndrewFromPayouts=(payouts||[]).reduce((s,p)=>s+(p.andrew_cut||0),0);
+  const payoutDebt=Math.max(0,totalAndrewFromPayouts-totalSent);
+
+  // What you owe Andrew from his box purchases (you owe 50%)
+  const boxDebt=(boxes||[]).reduce((s,b)=>s+(b.matt_owes||0),0);
+
+  // What Andrew owes you from his sales (you get 50%)
+  const andrewOwesYou=(andrewSales||[]).reduce((s,s2)=>s+(s2.matt_cut||0),0);
+
+  // Grand totals
+  const youOweAndrew=payoutDebt+boxDebt;
+  const andrewOwesTotal=andrewOwesYou;
+  const net=youOweAndrew-andrewOwesTotal;
+  const mattPays=net>0;
+  const netAbs=Math.abs(net);
+
+  document.getElementById('settlement-content').innerHTML=`
+    <div style="max-width:620px">
+      <!-- Breakdown -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--surface2);font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--text2)">WHAT YOU OWE ANDREW</div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">
+          <span style="font-size:.88rem">Unsettled eBay payout cuts</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--accent2)">$${payoutDebt.toFixed(2)}</span>
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">
+          <span style="font-size:.88rem">Your share of Andrew's box purchases</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--accent2)">$${boxDebt.toFixed(2)}</span>
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;background:rgba(245,166,35,.06)">
+          <span style="font-weight:700">Subtotal you owe Andrew</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent2)">$${youOweAndrew.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--surface2);font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--text2)">WHAT ANDREW OWES YOU</div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">
+          <span style="font-size:.88rem">Your cut of Andrew's sales</span>
+          <span style="font-family:'DM Mono',monospace;color:var(--success)">$${andrewOwesYou.toFixed(2)}</span>
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;background:rgba(46,204,113,.05)">
+          <span style="font-weight:700">Subtotal Andrew owes you</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--success)">$${andrewOwesTotal.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <!-- Net result -->
+      <div style="background:${mattPays?'rgba(245,166,35,.08)':'rgba(46,204,113,.08)'};border:2px solid ${mattPays?'var(--accent2)':'var(--success)'};border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--text2);margin-bottom:6px">NET SETTLEMENT</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:${mattPays?'var(--accent2)':'var(--success)'};letter-spacing:2px">$${netAbs.toFixed(2)}</div>
+        <div style="font-size:.92rem;margin-top:4px;color:var(--text)">${mattPays?'<b>You owe Andrew</b> this amount':'<b>Andrew owes you</b> this amount'}</div>
+        ${netAbs<0.01?'<div style="font-size:.85rem;color:var(--success);margin-top:4px">✓ All square!</div>':''}
+      </div>
+
+      <!-- Unsettled items detail -->
+      ${(boxes||[]).length>0?`<div style="margin-bottom:10px;font-size:.82rem;color:var(--text2)">📦 Unsettled boxes: ${(boxes||[]).map(b=>b.box_description).join(', ')}</div>`:''}
+      ${(andrewSales||[]).length>0?`<div style="margin-bottom:14px;font-size:.82rem;color:var(--text2)">🏷️ Unsettled Andrew sales: ${(andrewSales||[]).map(s=>s.card_description).join(', ')}</div>`:''}
+
+      <button class="btn btn-primary" onclick="markAllSettled()" style="width:100%;padding:14px;font-size:1rem">✓ Mark Everything Settled</button>
+    </div>`;
+}
+
+async function markAllSettled(){
+  if(!confirm('Mark all unsettled items as settled? This will clear the running balance.'))return;
+  const uid=CU.id;
+  await Promise.all([
+    sb.from('andrew_box_purchases').update({settled:true}).eq('user_id',uid).eq('settled',false),
+    sb.from('andrew_sales').update({settled:true}).eq('user_id',uid).eq('settled',false)
+  ]);
+  // Record a settlement event with current net
+  const[{data:payouts},{data:sentPayments}]=await Promise.all([
+    sb.from('payouts').select('andrew_cut').eq('user_id',uid),
+    sb.from('payout_sent').select('amount').eq('user_id',uid)
+  ]);
+  const totalAndrewFromPayouts=(payouts||[]).reduce((s,p)=>s+(p.andrew_cut||0),0);
+  const totalSent=(sentPayments||[]).reduce((s,p)=>s+(p.amount||0),0);
+  const payoutBalance=totalAndrewFromPayouts-totalSent;
+  if(payoutBalance>0.01){
+    // Record a settlement payment to zero out payout balance too
+    await sb.from('payout_sent').insert({user_id:uid,amount:payoutBalance,sent_date:new Date().toISOString().split('T')[0],notes:'Settlement'});
+  }
+  showToast('All settled! Balance cleared.','success');
+  renderSettlement();
+}
 // ─────────────────────────────────────────────────────────────────
+
 
 async function renderCosts(){
   const{data:costs}=await sb.from('daily_costs').select('*').eq('user_id',CU.id).order('date',{ascending:false});
