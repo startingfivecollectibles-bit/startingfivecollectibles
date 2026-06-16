@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-16 | v29 -->
+<!-- Starting Five Collectibles | Build: 2026-06-10 | v28 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v29 · 2026-06-16</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v28 · 2026-06-10</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -543,31 +543,55 @@ select option{background:var(--surface2);}
 
     <!-- TRADE MODAL -->
     <div class="modal-overlay" id="trade-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-      <div class="modal" style="max-width:500px">
-        <h3 id="trade-modal-title">New Trade</h3>
-        <div class="form-group"><label>Contact Name</label><input id="tr-contact" placeholder="e.g. John from Facebook group"></div>
-        <div class="form-group"><label>Contact Info (optional)</label><input id="tr-info" placeholder="Facebook profile, email, etc."></div>
-        <div class="form-group">
-          <label>Stickers I'm Sending (codes, comma separated)</label>
-          <input id="tr-sending" placeholder="e.g. ARG17, BRA14, FRA20">
-          <div style="font-size:.74rem;color:var(--text2);margin-top:3px">These will be removed from your duplicates when trade completes</div>
+      <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto">
+        <div class="modal-header"><span class="modal-title" id="trade-modal-title">New Trade</span><button class="modal-close" onclick="document.getElementById('trade-modal').style.display='none'">✕</button></div>
+
+        <div style="display:flex;gap:12px;margin-bottom:12px">
+          <div style="flex:1"><label class="form-label">Contact Name</label><input class="form-input" id="tr-contact" placeholder="e.g. John from Facebook group"></div>
+          <div style="flex:1"><label class="form-label">Contact Info (optional)</label><input class="form-input" id="tr-info" placeholder="Facebook, email, etc."></div>
         </div>
-        <div class="form-group">
-          <label>Stickers I'm Receiving (codes, comma separated)</label>
-          <input id="tr-receiving" placeholder="e.g. USA16, ENG11, ESP15">
-          <div style="font-size:.74rem;color:var(--text2);margin-top:3px">These will be marked as Have when trade completes</div>
+
+        <!-- Sending picker -->
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label class="form-label" style="margin:0">Sending <span style="color:var(--text2);font-weight:400;font-size:.78rem">(from your duplicates)</span></label>
+            <span style="font-size:.75rem;color:var(--text2)" id="tr-sending-count">0 selected</span>
+          </div>
+          <div id="tr-sending-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px;margin-bottom:6px"></div>
+          <div style="max-height:160px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px" id="tr-dup-picker">
+            <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Your duplicates — click to add</div>
+            <div id="tr-dup-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          </div>
         </div>
-        <div class="form-group"><label>Status</label>
-          <select id="tr-status">
-            <option value="offered">Offered</option>
-            <option value="agreed">Agreed</option>
-            <option value="mailed">Mailed</option>
-            <option value="completed">Completed</option>
-          </select>
+
+        <!-- Receiving picker -->
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label class="form-label" style="margin:0">Receiving <span style="color:var(--text2);font-weight:400;font-size:.78rem">(from your needs)</span></label>
+            <span style="font-size:.75rem;color:var(--text2)" id="tr-receiving-count">0 selected</span>
+          </div>
+          <div id="tr-receiving-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px;margin-bottom:6px"></div>
+          <div style="max-height:160px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px" id="tr-need-picker">
+            <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Your needs — click to add</div>
+            <div id="tr-need-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="saveTrade()">Save</button>
+
+        <div style="margin-bottom:14px"><label class="form-label">Status</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="tr-status-btns">
+            <button class="tr-status-btn active" data-val="offered" onclick="setTradeStatus('offered')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:.8rem;cursor:pointer">Offered</button>
+            <button class="tr-status-btn" data-val="agreed" onclick="setTradeStatus('agreed')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.8rem;cursor:pointer">Agreed</button>
+            <button class="tr-status-btn" data-val="i_mailed" onclick="setTradeStatus('i_mailed')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.8rem;cursor:pointer">📬 I Mailed</button>
+            <button class="tr-status-btn" data-val="they_mailed" onclick="setTradeStatus('they_mailed')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.8rem;cursor:pointer">📨 They Mailed</button>
+            <button class="tr-status-btn" data-val="in_transit" onclick="setTradeStatus('in_transit')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.8rem;cursor:pointer">✈️ Both in Transit</button>
+            <button class="tr-status-btn" data-val="completed" onclick="setTradeStatus('completed')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:.8rem;cursor:pointer">✅ Completed</button>
+          </div>
+          <input type="hidden" id="tr-status" value="offered">
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-secondary" onclick="document.getElementById('trade-modal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTrade()">Save Trade</button>
         </div>
       </div>
     </div>
@@ -3900,8 +3924,7 @@ function renderStickerReport(){
   const dups=stickerCache.filter(s=>s.status==='duplicate');
   const need=stickerCache.filter(s=>s.status==='need');
   const total=stickerCache.length;
-  // Fix 1: percentage = have only (not have+dups)
-  const pct=total>0?Math.round((have.length/total)*100):0;
+  const pct=total>0?Math.round(((have.length+dups.length)/total)*100):0;
 
   const needByCountry={};
   need.forEach(s=>{if(!needByCountry[s.country])needByCountry[s.country]=[];needByCountry[s.country].push(s);});
@@ -3930,35 +3953,28 @@ function renderStickerReport(){
     </tr>`;
   }).join('');
 
-  // Fix 2: Clean text — needs list and dups list separately, easy to read
-  let needsText=`STICKERS NEEDED\n${'='.repeat(30)}\n`;
+  let textReport=`WC 2026 STICKER REPORT\n${'='.repeat(35)}\n`;
+  textReport+=`${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed\n\n`;
+  textReport+=`${'COUNTRY'.padEnd(22)}${'NEED'.padEnd(40)}DUPLICATES\n${'-'.repeat(90)}\n`;
   allCountries.forEach(c=>{
-    const ns=(needByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code);
-    if(ns.length) needsText+=`${c}: ${ns.join(', ')}\n`;
+    const ns=(needByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code).join(', ')||'—';
+    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:'')).join(', ')||'—';
+    if((needByCountry[c]||[]).length||(dupByCountry[c]||[]).length)
+      textReport+=`${c.padEnd(22)}${ns.padEnd(40)}${ds}\n`;
   });
 
-  let dupsText=`DUPLICATE STICKERS\n${'='.repeat(30)}\n`;
-  allCountries.forEach(c=>{
-    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:''));
-    if(ds.length) dupsText+=`${c}: ${ds.join(', ')}\n`;
-  });
-
-  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
-        <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="printStickerReport()">🖨️ Print / Save PDF</button>
+  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0">
-      <button class="btn btn-secondary btn-sm" onclick="copyStickerSection('needs-text')">📋 Copy Needs</button>
-      <button class="btn btn-secondary btn-sm" onclick="copyStickerSection('dups-text')">📋 Copy Duplicates</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-primary btn-sm" onclick="copyStickerReport()">📋 Copy as Text</button>
     </div>
-    <textarea id="needs-text" style="display:none">${needsText}</textarea>
-    <textarea id="dups-text" style="display:none">${dupsText}</textarea>
   </div>
-  <div id="sticker-report-table" style="overflow-x:auto">
+  <textarea id="report-text-data" style="display:none">${textReport}</textarea>
+  <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
       <thead>
         <tr style="background:var(--surface2)">
@@ -3972,51 +3988,18 @@ function renderStickerReport(){
   </div>`;
 }
 
-function copyStickerSection(id){
-  const ta=document.getElementById(id);
+function copyStickerReport(){
+  const ta=document.getElementById('report-text-data');
   if(!ta)return;
-  navigator.clipboard.writeText(ta.value)
-    .then(()=>showToast(id==='needs-text'?'Needs list copied!':'Duplicates list copied!','success'))
-    .catch(()=>{ta.style.display='block';ta.select();document.execCommand('copy');ta.style.display='none';showToast('Copied!','success');});
+  const text=ta.value;
+  navigator.clipboard.writeText(text).then(()=>showToast('Report copied to clipboard!','success')).catch(()=>{
+    // fallback
+    ta.style.display='block';ta.select();document.execCommand('copy');ta.style.display='none';
+    showToast('Copied!','success');
+  });
 }
 
-// Fix 3: Print clean PDF — opens a new window with just the table, no sidebar
-function printStickerReport(){
-  const tableHTML=document.getElementById('sticker-report-table')?.innerHTML||'';
-  const have=stickerCache.filter(s=>s.status==='have').length;
-  const dups=stickerCache.filter(s=>s.status==='duplicate').length;
-  const need=stickerCache.filter(s=>s.status==='need').length;
-  const total=stickerCache.length;
-  const pct=total>0?Math.round((have/total)*100):0;
-  const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>WC 2026 Sticker Report</title>
-  <style>
-    body{font-family:Arial,sans-serif;margin:30px;color:#111;background:#fff}
-    h1{font-size:1.4rem;margin-bottom:4px}
-    .sub{font-size:.85rem;color:#555;margin-bottom:20px}
-    table{width:100%;border-collapse:collapse;font-size:.82rem}
-    th{background:#f0f0f0;padding:8px 10px;text-align:left;border-bottom:2px solid #ccc;border-right:1px solid #ddd;text-transform:uppercase;font-size:.72rem;letter-spacing:.5px}
-    td{padding:7px 10px;border-bottom:1px solid #eee;border-right:1px solid #eee;vertical-align:top}
-    td:last-child,th:last-child{border-right:none}
-    .need{background:#fff0f0;border:1px solid #f5c6c6;border-radius:3px;padding:1px 5px;margin:1px;display:inline-block;font-size:.75rem}
-    .dup{background:#eff5ff;border:1px solid #b3d0ff;border-radius:3px;padding:1px 5px;margin:1px;display:inline-block;font-size:.75rem}
-    @media print{body{margin:15px}}
-  </style></head><body>
-  <h1>⚽ WC 2026 Sticker Report</h1>
-  <div class="sub">${have} / ${total} collected (${pct}%) &nbsp;·&nbsp; ${dups} duplicates &nbsp;·&nbsp; ${need} still needed</div>
-  ${tableHTML.replace(/background:[^;]+;border:[^;]+(rgba[^"]+)/g,'').replace(/class="[^"]*"/g,'').replace(/style="[^"]*need[^"]*"/g,'class="need"').replace(/style="[^"]*dup[^"]*"/g,'class="dup"')}
-  <script>window.onload=()=>{
-    // Convert inline chip spans to print-friendly classes
-    document.querySelectorAll('span').forEach(s=>{
-      if(s.style.background&&s.style.background.includes('239,68,68'))s.className='need';
-      else if(s.style.background&&s.style.background.includes('26,111,212'))s.className='dup';
-      s.removeAttribute('style');
-    });
-    window.print();
-  }<\/script>
-  </body></html>`);
-  win.document.close();
-}
+
 
 function renderByCountry(){
   const byCountry={};
@@ -4151,39 +4134,50 @@ function renderDuplicates(){
   }).join('');
 }
 
+const STATUS_META={
+  offered:   {label:'Offered',     color:'var(--accent2)', icon:'💬'},
+  agreed:    {label:'Agreed',      color:'var(--accent)',  icon:'🤝'},
+  i_mailed:  {label:'I Mailed',    color:'#f59e0b',        icon:'📬'},
+  they_mailed:{label:'They Mailed',color:'#8b5cf6',        icon:'📨'},
+  in_transit:{label:'In Transit',  color:'#06b6d4',        icon:'✈️'},
+  completed: {label:'Completed',   color:'var(--success)', icon:'✅'},
+};
+
+let trSending=[];// selected codes being sent
+let trReceiving=[];// selected codes being received
+
 async function renderTradesTab(){
   const{data:trades}=await sb.from('wc2026_trades').select('*').eq('user_id',CU.id).order('created_at',{ascending:false});
   const el=document.getElementById('sticker-content');
-  const statusColors={offered:'var(--accent2)',agreed:'var(--accent)',mailed:'#f59e0b',completed:'var(--success)'};
   if(!trades?.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🤝</div><div>No trades yet. Use the + New Trade button to start one.</div></div>`;
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🤝</div><div>No trades yet. Click + New Trade to start one.</div></div>`;
     return;
   }
   el.innerHTML=trades.map(t=>{
     const sending=Array.isArray(t.sending)?t.sending:[];
     const receiving=Array.isArray(t.receiving)?t.receiving:[];
-    const col=statusColors[t.status]||'var(--text2)';
-    return`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--radius);padding:14px;margin-bottom:10px">
+    const sm=STATUS_META[t.status]||{label:t.status,color:'var(--text2)',icon:'•'};
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${sm.color};border-radius:var(--radius);padding:14px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div>
-          <div style="font-weight:700">${t.contact}</div>
+          <div style="font-weight:700;font-size:.95rem">${t.contact}</div>
           ${t.contact_info?`<div style="font-size:.76rem;color:var(--text2)">${t.contact_info}</div>`:''}
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="background:${col};color:#fff;padding:2px 10px;border-radius:10px;font-size:.72rem;font-weight:700;text-transform:uppercase">${t.status}</span>
-          <button class="btn btn-secondary btn-sm" data-id="${t.id}" data-contact="${(t.contact||'').replace(/"/g,'&quot;')}" data-info="${(t.contact_info||'').replace(/"/g,'&quot;')}" data-sending="${sending.join(',')}" data-receiving="${receiving.join(',')}" data-status="${t.status}" onclick="editTradeFromBtn(this)">Edit</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="background:${sm.color};color:#fff;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:700">${sm.icon} ${sm.label}</span>
+          <button class="btn btn-secondary btn-sm" data-id="${t.id}" onclick="openEditTrade('${t.id}')">Edit</button>
           ${t.status!=='completed'?`<button class="btn btn-success btn-sm" data-id="${t.id}" onclick="completeTrade(this.dataset.id)">✓ Complete</button>`:''}
           <button class="btn btn-danger btn-sm" data-id="${t.id}" onclick="deleteTrade(this.dataset.id)">Del</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.8rem">
         <div>
-          <div style="color:var(--text2);margin-bottom:4px;font-size:.7rem;text-transform:uppercase">Sending (${sending.length})</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${sending.map(c=>`<span style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:2px 6px">${c}</span>`).join('')||'—'}</div>
+          <div style="color:#ef4444;margin-bottom:5px;font-size:.7rem;text-transform:uppercase;font-weight:600">📤 Sending (${sending.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${sending.map(c=>`<span style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:2px 7px;font-size:.75rem">${c}</span>`).join('')||'<span style="color:var(--text2)">—</span>'}</div>
         </div>
         <div>
-          <div style="color:var(--text2);margin-bottom:4px;font-size:.7rem;text-transform:uppercase">Receiving (${receiving.length})</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${receiving.map(c=>`<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 6px">${c}</span>`).join('')||'—'}</div>
+          <div style="color:var(--success);margin-bottom:5px;font-size:.7rem;text-transform:uppercase;font-weight:600">📥 Receiving (${receiving.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${receiving.map(c=>`<span style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 7px;font-size:.75rem">${c}</span>`).join('')||'<span style="color:var(--text2)">—</span>'}</div>
         </div>
       </div>
     </div>`;
@@ -4192,45 +4186,125 @@ async function renderTradesTab(){
 
 function openTradeModal(){
   editTradeId=null;
-  ['tr-contact','tr-info','tr-sending','tr-receiving'].forEach(f=>document.getElementById(f).value='');
+  trSending=[];trReceiving=[];
+  document.getElementById('tr-contact').value='';
+  document.getElementById('tr-info').value='';
   document.getElementById('tr-status').value='offered';
+  setTradeStatus('offered');
   document.getElementById('trade-modal-title').textContent='New Trade';
+  populateTradePickers();
   document.getElementById('trade-modal').style.display='flex';
 }
 
-function editTradeFromBtn(btn){
-  editTradeId=btn.dataset.id;
-  document.getElementById('tr-contact').value=btn.dataset.contact||'';
-  document.getElementById('tr-info').value=btn.dataset.info||'';
-  document.getElementById('tr-sending').value=btn.dataset.sending||'';
-  document.getElementById('tr-receiving').value=btn.dataset.receiving||'';
-  document.getElementById('tr-status').value=btn.dataset.status||'offered';
+async function openEditTrade(id){
+  const{data:t}=await sb.from('wc2026_trades').select('*').eq('id',id).single();
+  if(!t)return;
+  editTradeId=id;
+  trSending=[...(t.sending||[])];
+  trReceiving=[...(t.receiving||[])];
+  document.getElementById('tr-contact').value=t.contact||'';
+  document.getElementById('tr-info').value=t.contact_info||'';
+  setTradeStatus(t.status||'offered');
   document.getElementById('trade-modal-title').textContent='Edit Trade';
+  populateTradePickers();
   document.getElementById('trade-modal').style.display='flex';
+}
+
+// Keep old name for any existing calls
+function editTradeFromBtn(btn){openEditTrade(btn.dataset.id);}
+
+function setTradeStatus(val){
+  document.getElementById('tr-status').value=val;
+  document.querySelectorAll('.tr-status-btn').forEach(b=>{
+    const active=b.dataset.val===val;
+    const sm=STATUS_META[b.dataset.val]||{color:'var(--accent)'};
+    b.style.background=active?sm.color:'none';
+    b.style.color=active?'#fff':'var(--text2)';
+    b.style.borderColor=active?sm.color:'var(--border)';
+  });
+}
+
+function populateTradePickers(){
+  // Duplicates picker
+  const dups=stickerCache.filter(s=>s.status==='duplicate').sort(stickerNumericSort);
+  const dupEl=document.getElementById('tr-dup-list');
+  dupEl.innerHTML=dups.length
+    ? dups.map(s=>{
+        const sel=trSending.includes(s.code);
+        return`<span onclick="toggleTradeSend('${s.code}')" id="trsend-${s.code}" style="cursor:pointer;background:${sel?'rgba(239,68,68,.35)':'rgba(239,68,68,.1)'};border:1px solid ${sel?'rgba(239,68,68,.7)':'rgba(239,68,68,.3)'};border-radius:4px;padding:3px 8px;font-size:.75rem;transition:all .1s">${s.code}${s.duplicate_count>1?` ×${s.duplicate_count}`:''}</span>`;
+      }).join('')
+    : '<span style="color:var(--text2);font-size:.8rem">No duplicates available</span>';
+
+  // Needs picker
+  const needs=stickerCache.filter(s=>s.status==='need').sort(stickerNumericSort);
+  const needEl=document.getElementById('tr-need-list');
+  needEl.innerHTML=needs.length
+    ? needs.map(s=>{
+        const sel=trReceiving.includes(s.code);
+        return`<span onclick="toggleTradeReceive('${s.code}')" id="trrecv-${s.code}" style="cursor:pointer;background:${sel?'rgba(34,197,94,.35)':'rgba(34,197,94,.1)'};border:1px solid ${sel?'rgba(34,197,94,.7)':'rgba(34,197,94,.3)'};border-radius:4px;padding:3px 8px;font-size:.75rem;transition:all .1s">${s.code}</span>`;
+      }).join('')
+    : '<span style="color:var(--text2);font-size:.8rem">No needs — collection complete!</span>';
+
+  refreshTradeChips();
+}
+
+function toggleTradeSend(code){
+  const idx=trSending.indexOf(code);
+  if(idx>=0)trSending.splice(idx,1);else trSending.push(code);
+  const el=document.getElementById('trsend-'+code);
+  if(el){
+    const sel=trSending.includes(code);
+    el.style.background=sel?'rgba(239,68,68,.35)':'rgba(239,68,68,.1)';
+    el.style.borderColor=sel?'rgba(239,68,68,.7)':'rgba(239,68,68,.3)';
+  }
+  refreshTradeChips();
+}
+
+function toggleTradeReceive(code){
+  const idx=trReceiving.indexOf(code);
+  if(idx>=0)trReceiving.splice(idx,1);else trReceiving.push(code);
+  const el=document.getElementById('trrecv-'+code);
+  if(el){
+    const sel=trReceiving.includes(code);
+    el.style.background=sel?'rgba(34,197,94,.35)':'rgba(34,197,94,.1)';
+    el.style.borderColor=sel?'rgba(34,197,94,.7)':'rgba(34,197,94,.3)';
+  }
+  refreshTradeChips();
+}
+
+function refreshTradeChips(){
+  document.getElementById('tr-sending-count').textContent=trSending.length+' selected';
+  document.getElementById('tr-receiving-count').textContent=trReceiving.length+' selected';
+  document.getElementById('tr-sending-chips').innerHTML=trSending.length
+    ? trSending.map(c=>`<span onclick="toggleTradeSend('${c}')" style="cursor:pointer;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.5);border-radius:4px;padding:3px 8px;font-size:.78rem">${c} ✕</span>`).join('')
+    : '<span style="color:var(--text2);font-size:.78rem">None selected — pick from duplicates below</span>';
+  document.getElementById('tr-receiving-chips').innerHTML=trReceiving.length
+    ? trReceiving.map(c=>`<span onclick="toggleTradeReceive('${c}')" style="cursor:pointer;background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.5);border-radius:4px;padding:3px 8px;font-size:.78rem">${c} ✕</span>`).join('')
+    : '<span style="color:var(--text2);font-size:.78rem">None selected — pick from needs below</span>';
 }
 
 async function saveTrade(){
   const contact=document.getElementById('tr-contact').value.trim();
   if(!contact){showToast('Enter a contact name','error');return;}
-  const sending=document.getElementById('tr-sending').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
-  const receiving=document.getElementById('tr-receiving').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
   const status=document.getElementById('tr-status').value;
   const payload={
     contact,
-    contact_info:document.getElementById('tr-info').value||null,
-    sending,receiving,status,
+    contact_info:document.getElementById('tr-info').value.trim()||null,
+    sending:trSending,
+    receiving:trReceiving,
+    status,
     user_id:CU.id,
     updated_at:new Date().toISOString()
   };
   let error;
   if(editTradeId){
     ({error}=await sb.from('wc2026_trades').update(payload).eq('id',editTradeId));
-    if(status==='completed')await completeTrade(editTradeId,sending,receiving);
+    if(status==='completed')await completeTrade(editTradeId,trSending,trReceiving);
   } else {
     ({error}=await sb.from('wc2026_trades').insert(payload));
   }
   if(error){showToast('Error: '+error.message,'error');return;}
-  showToast(editTradeId?'Trade updated!':'Trade added!','success');
+  showToast(editTradeId?'Trade updated!':'Trade saved!','success');
   document.getElementById('trade-modal').style.display='none';
   editTradeId=null;
   if(stickerTab==='trades')renderTradesTab();
