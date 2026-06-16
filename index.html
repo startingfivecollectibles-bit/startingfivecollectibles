@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-10 | v28 -->
+<!-- Starting Five Collectibles | Build: 2026-06-16 | v29 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v28 · 2026-06-10</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v29 · 2026-06-16</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -3900,7 +3900,8 @@ function renderStickerReport(){
   const dups=stickerCache.filter(s=>s.status==='duplicate');
   const need=stickerCache.filter(s=>s.status==='need');
   const total=stickerCache.length;
-  const pct=total>0?Math.round(((have.length+dups.length)/total)*100):0;
+  // Fix 1: percentage = have only (not have+dups)
+  const pct=total>0?Math.round((have.length/total)*100):0;
 
   const needByCountry={};
   need.forEach(s=>{if(!needByCountry[s.country])needByCountry[s.country]=[];needByCountry[s.country].push(s);});
@@ -3929,28 +3930,35 @@ function renderStickerReport(){
     </tr>`;
   }).join('');
 
-  let textReport=`WC 2026 STICKER REPORT\n${'='.repeat(35)}\n`;
-  textReport+=`${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed\n\n`;
-  textReport+=`${'COUNTRY'.padEnd(22)}${'NEED'.padEnd(40)}DUPLICATES\n${'-'.repeat(90)}\n`;
+  // Fix 2: Clean text — needs list and dups list separately, easy to read
+  let needsText=`STICKERS NEEDED\n${'='.repeat(30)}\n`;
   allCountries.forEach(c=>{
-    const ns=(needByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code).join(', ')||'—';
-    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:'')).join(', ')||'—';
-    if((needByCountry[c]||[]).length||(dupByCountry[c]||[]).length)
-      textReport+=`${c.padEnd(22)}${ns.padEnd(40)}${ds}\n`;
+    const ns=(needByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code);
+    if(ns.length) needsText+=`${c}: ${ns.join(', ')}\n`;
   });
 
-  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
-      <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length+dups.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed</div>
+  let dupsText=`DUPLICATE STICKERS\n${'='.repeat(30)}\n`;
+  allCountries.forEach(c=>{
+    const ds=(dupByCountry[c]||[]).sort(stickerNumericSort).map(s=>s.code+(s.duplicate_count>1?` x${s.duplicate_count}`:''));
+    if(ds.length) dupsText+=`${c}: ${ds.join(', ')}\n`;
+  });
+
+  return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent)">Collection Report</div>
+        <div style="font-size:.82rem;color:var(--text2);margin-top:3px">${have.length} / ${total} collected (${pct}%) · ${dups.length} duplicates · ${need.length} still needed</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="printStickerReport()">🖨️ Print / Save PDF</button>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print</button>
-      <button class="btn btn-primary btn-sm" onclick="copyStickerReport()">📋 Copy as Text</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0">
+      <button class="btn btn-secondary btn-sm" onclick="copyStickerSection('needs-text')">📋 Copy Needs</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyStickerSection('dups-text')">📋 Copy Duplicates</button>
     </div>
+    <textarea id="needs-text" style="display:none">${needsText}</textarea>
+    <textarea id="dups-text" style="display:none">${dupsText}</textarea>
   </div>
-  <textarea id="report-text-data" style="display:none">${textReport}</textarea>
-  <div style="overflow-x:auto">
+  <div id="sticker-report-table" style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
       <thead>
         <tr style="background:var(--surface2)">
@@ -3964,18 +3972,51 @@ function renderStickerReport(){
   </div>`;
 }
 
-function copyStickerReport(){
-  const ta=document.getElementById('report-text-data');
+function copyStickerSection(id){
+  const ta=document.getElementById(id);
   if(!ta)return;
-  const text=ta.value;
-  navigator.clipboard.writeText(text).then(()=>showToast('Report copied to clipboard!','success')).catch(()=>{
-    // fallback
-    ta.style.display='block';ta.select();document.execCommand('copy');ta.style.display='none';
-    showToast('Copied!','success');
-  });
+  navigator.clipboard.writeText(ta.value)
+    .then(()=>showToast(id==='needs-text'?'Needs list copied!':'Duplicates list copied!','success'))
+    .catch(()=>{ta.style.display='block';ta.select();document.execCommand('copy');ta.style.display='none';showToast('Copied!','success');});
 }
 
-
+// Fix 3: Print clean PDF — opens a new window with just the table, no sidebar
+function printStickerReport(){
+  const tableHTML=document.getElementById('sticker-report-table')?.innerHTML||'';
+  const have=stickerCache.filter(s=>s.status==='have').length;
+  const dups=stickerCache.filter(s=>s.status==='duplicate').length;
+  const need=stickerCache.filter(s=>s.status==='need').length;
+  const total=stickerCache.length;
+  const pct=total>0?Math.round((have/total)*100):0;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>WC 2026 Sticker Report</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:30px;color:#111;background:#fff}
+    h1{font-size:1.4rem;margin-bottom:4px}
+    .sub{font-size:.85rem;color:#555;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    th{background:#f0f0f0;padding:8px 10px;text-align:left;border-bottom:2px solid #ccc;border-right:1px solid #ddd;text-transform:uppercase;font-size:.72rem;letter-spacing:.5px}
+    td{padding:7px 10px;border-bottom:1px solid #eee;border-right:1px solid #eee;vertical-align:top}
+    td:last-child,th:last-child{border-right:none}
+    .need{background:#fff0f0;border:1px solid #f5c6c6;border-radius:3px;padding:1px 5px;margin:1px;display:inline-block;font-size:.75rem}
+    .dup{background:#eff5ff;border:1px solid #b3d0ff;border-radius:3px;padding:1px 5px;margin:1px;display:inline-block;font-size:.75rem}
+    @media print{body{margin:15px}}
+  </style></head><body>
+  <h1>⚽ WC 2026 Sticker Report</h1>
+  <div class="sub">${have} / ${total} collected (${pct}%) &nbsp;·&nbsp; ${dups} duplicates &nbsp;·&nbsp; ${need} still needed</div>
+  ${tableHTML.replace(/background:[^;]+;border:[^;]+(rgba[^"]+)/g,'').replace(/class="[^"]*"/g,'').replace(/style="[^"]*need[^"]*"/g,'class="need"').replace(/style="[^"]*dup[^"]*"/g,'class="dup"')}
+  <script>window.onload=()=>{
+    // Convert inline chip spans to print-friendly classes
+    document.querySelectorAll('span').forEach(s=>{
+      if(s.style.background&&s.style.background.includes('239,68,68'))s.className='need';
+      else if(s.style.background&&s.style.background.includes('26,111,212'))s.className='dup';
+      s.removeAttribute('style');
+    });
+    window.print();
+  }<\/script>
+  </body></html>`);
+  win.document.close();
+}
 
 function renderByCountry(){
   const byCountry={};
