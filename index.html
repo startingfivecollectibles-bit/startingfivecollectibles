@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-10 | v28 -->
+<!-- Starting Five Collectibles | Build: 2026-06-18 | v32 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v28 · 2026-06-10</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v32 · 2026-06-18</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -1182,6 +1182,7 @@ select option{background:var(--surface2);}
 </div>
 
 
+<div class="modal-overlay" id="cost-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal" style="max-width:440px">
     <h3 id="cost-modal-title">Add Daily Cost</h3>
     <div class="form-grid">
