@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-06-18 | v32 -->
+<!-- Starting Five Collectibles | Build: 2026-06-18 | v33 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -239,7 +239,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v32 · 2026-06-18</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v33 · 2026-06-18</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -3816,11 +3816,11 @@ async function renderStickers(){
 function updateStickerProgress(){
   const total=stickerCache.length;
   const have=stickerCache.filter(s=>s.status==='have').length;
-  const dup=stickerCache.filter(s=>s.status==='duplicate').length;
+  const dup=stickerCache.filter(s=>s.status==='have'&&(s.duplicate_count||0)>0).length;
   const need=stickerCache.filter(s=>s.status==='need').length;
   const pct=total>0?Math.round((have/total)*100):0;
   document.getElementById('sticker-progress-bar').style.width=pct+'%';
-  document.getElementById('sticker-stats').textContent=have+' / '+total+' ('+pct+'% complete)';
+  document.getElementById('sticker-stats').textContent=have+' / '+total+' complete ('+pct+'%) · '+need+' needed · '+dup+' with duplicates';
   document.getElementById('count-have').textContent=have;
   document.getElementById('count-need').textContent=need;
   document.getElementById('count-dup').textContent=dup;
@@ -4065,36 +4065,27 @@ function toggleCountry(country){
 async function cycleStickerStatus(id){
   const s=stickerCache.find(x=>x.id===id);
   if(!s)return;
-  let newStatus,newCount=s.duplicate_count||0;
-  if(s.status==='need'){newStatus='have';newCount=0;}
-  else if(s.status==='have'){newStatus='duplicate';newCount=1;}
-  else{
-    // Each click adds another duplicate; right-click or long-hold to reduce (handled via chip - button)
-    newStatus='duplicate';newCount=newCount+1;
+  let newStatus=s.status,newCount=s.duplicate_count||0;
+  if(s.status==='need'){
+    newStatus='have';newCount=0;
+  } else if(s.status==='have'){
+    // Every click past 'have' adds a duplicate copy — status stays 'have'
+    newCount=newCount+1;
   }
-  // Fix 2: if becoming duplicate, prompt for parallel label
-  let parallel=s.parallel||null;
-  if(newStatus==='duplicate'&&newCount===1){
-    const p=prompt('Parallel label? (e.g. Blue, Gold) — leave blank if base copy');
-    parallel=p&&p.trim()?p.trim():null;
-  }
-  if(newStatus==='need')parallel=null;
-  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:newCount,parallel}).eq('id',id);
-  s.status=newStatus;s.duplicate_count=newCount;s.parallel=parallel;
+  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:newCount}).eq('id',id);
+  s.status=newStatus;s.duplicate_count=newCount;
   updateStickerProgress();
-  // Fix 4: re-render chip by id — reliable regardless of prior re-renders
   const chip=document.getElementById('chip-'+id);
   if(chip)chip.outerHTML=stickerChip(s);
 }
 
 async function decrementSticker(id){
   const s=stickerCache.find(x=>x.id===id);
-  if(!s||s.status!=='duplicate')return;
+  if(!s||(s.duplicate_count||0)<=0)return;
   const newCount=(s.duplicate_count||1)-1;
-  const newStatus=newCount<=0?'have':'duplicate';
-  const newParallel=newStatus==='have'?null:s.parallel;
-  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:Math.max(0,newCount),parallel:newParallel}).eq('id',id);
-  s.status=newStatus;s.duplicate_count=Math.max(0,newCount);s.parallel=newParallel;
+  await sb.from('wc2026_stickers').update({duplicate_count:newCount,parallel:newCount===0?null:s.parallel}).eq('id',id);
+  s.duplicate_count=newCount;
+  if(newCount===0)s.parallel=null;
   updateStickerProgress();
   const chip=document.getElementById('chip-'+id);
   if(chip)chip.outerHTML=stickerChip(s);
@@ -4103,10 +4094,13 @@ async function decrementSticker(id){
 async function undoStickerStatus(id){
   const s=stickerCache.find(x=>x.id===id);
   if(!s||s.status==='need')return;
-  // Cycle backwards: duplicate → have → need
-  const newStatus=s.status==='duplicate'?'have':'need';
-  await sb.from('wc2026_stickers').update({status:newStatus,duplicate_count:0,parallel:null}).eq('id',id);
-  s.status=newStatus;s.duplicate_count=0;s.parallel=null;
+  // If has duplicates, remove one first; otherwise go back to need
+  if((s.duplicate_count||0)>0){
+    await decrementSticker(id);
+    return;
+  }
+  await sb.from('wc2026_stickers').update({status:'need',duplicate_count:0,parallel:null}).eq('id',id);
+  s.status='need';s.duplicate_count=0;s.parallel=null;
   updateStickerProgress();
   const chip=document.getElementById('chip-'+id);
   if(chip)chip.outerHTML=stickerChip(s);
@@ -4114,25 +4108,102 @@ async function undoStickerStatus(id){
 
 function renderDuplicates(){
   const dups=stickerCache.filter(s=>s.status==='duplicate');
-  if(!dups.length)return`<div class="empty-state"><div class="empty-icon">🔄</div><div>No duplicates yet. As you collect stickers, duplicates will appear here.</div></div>`;
+  if(!dups.length)return`<div class="empty-state"><div class="empty-icon">🔄</div><div>No duplicates yet.</div></div>`;
   const byCountry={};
   dups.forEach(s=>{if(!byCountry[s.country])byCountry[s.country]=[];byCountry[s.country].push(s);});
-  const countries=Object.keys(byCountry).sort((a,b)=>(COUNTRY_CODE[a]||a).localeCompare(COUNTRY_CODE[b]||b));
-  return`<div style="margin-bottom:12px;font-size:.83rem;color:var(--text2)">${dups.length} duplicate sticker${dups.length>1?'s':''} available for trading</div>`+
+  const countries=Object.keys(byCountry).sort((a,b)=>a.localeCompare(b));
+  const totalExtras=dups.reduce((sum,s)=>sum+(s.duplicate_count||1),0);
+  return`<div style="margin-bottom:12px;font-size:.83rem;color:var(--text2)">${dups.length} sticker${dups.length!==1?'s':''} with duplicates · ${totalExtras} total extra copies · click ✏️ to set variation</div>`+
   countries.map(country=>{
     const sorted=byCountry[country].sort(stickerNumericSort);
-    return`<div style="margin-bottom:14px">
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${countryDisplayName(country)} <span style="font-weight:400;color:var(--text2)">${country}</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${sorted.map(s=>`
-          <div style="background:rgba(26,111,212,.2);border:1px solid rgba(26,111,212,.4);border-radius:6px;padding:5px 9px;font-size:.75rem;display:flex;align-items:center;gap:5px">
-            ${s.is_foil?'✨ ':''}${s.code} <span style="color:var(--text2)">${s.player}</span>
-            ${s.parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:0 5px;font-size:.62rem">${s.parallel}</span>`:''}
-            <span style="background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:.65rem">×${s.duplicate_count||1}</span>
-          </div>`).join('')}
-      </div>
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
+      <div style="padding:8px 14px;background:var(--surface2);font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px">${country}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+        <thead><tr style="color:var(--text2);font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:6px 12px">Code</th>
+          <th style="text-align:left;padding:6px 12px">Player</th>
+          <th style="text-align:center;padding:6px 12px">Qty</th>
+          <th style="text-align:left;padding:6px 12px">Variation</th>
+          <th style="padding:6px 12px"></th>
+        </tr></thead>
+        <tbody>${sorted.map(s=>`<tr id="duprow-${s.id}" style="border-top:1px solid var(--border)">
+          <td style="padding:7px 12px;font-weight:700">${s.is_foil?'✨ ':''}${s.code}</td>
+          <td style="padding:7px 12px;color:var(--text2);font-size:.8rem">${s.player||'—'}</td>
+          <td style="padding:7px 12px;text-align:center">
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+              <button onclick="adjustDupCount('${s.id}',-1)" style="background:rgba(239,68,68,.2);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center">−</button>
+              <span id="dupcount-${s.id}" style="font-weight:700;min-width:20px;text-align:center">${s.duplicate_count||1}</span>
+              <button onclick="adjustDupCount('${s.id}',1)" style="background:rgba(34,197,94,.2);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center">+</button>
+            </div>
+          </td>
+          <td style="padding:7px 12px">
+            <div id="dupvar-${s.id}" style="display:flex;align-items:center;gap:6px">
+              ${s.parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:1px 8px;font-size:.72rem">${s.parallel}</span>`:'<span style="color:var(--text2);font-size:.78rem">Base</span>'}
+              <button onclick="editDupVariation('${s.id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem;padding:0" title="Edit variation">✏️</button>
+            </div>
+          </td>
+          <td style="padding:7px 12px;text-align:right">
+            <button onclick="undoStickerStatus('${s.id}')" style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:.75rem;color:var(--text2);padding:2px 8px">↩ Remove</button>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table>
     </div>`;
   }).join('');
+}
+
+async function adjustDupCount(id,delta){
+  const s=stickerCache.find(x=>x.id===id);
+  if(!s)return;
+  const newCount=Math.max(1,(s.duplicate_count||1)+delta);
+  await sb.from('wc2026_stickers').update({duplicate_count:newCount}).eq('id',id);
+  s.duplicate_count=newCount;
+  const el=document.getElementById('dupcount-'+id);
+  if(el)el.textContent=newCount;
+  const chip=document.getElementById('chip-'+id);
+  if(chip)chip.outerHTML=stickerChip(s);
+}
+
+function editDupVariation(id){
+  const s=stickerCache.find(x=>x.id===id);
+  if(!s)return;
+  document.getElementById('dup-var-modal')?.remove();
+  const VARIATIONS=['Base','Blue','Gold','Silver','Red','Green','Purple','Orange','Black','Holo','Refractor','Shimmer','Short Print','Foil','Other'];
+  const modal=document.createElement('div');
+  modal.id='dup-var-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-width:320px;max-width:400px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-weight:700">${s.code} · ${s.player||''}</div>
+      <button onclick="document.getElementById('dup-var-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text2)">✕</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Select variation</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      ${VARIATIONS.map(v=>{
+        const val=v==='Base'?'':v;
+        const active=(!s.parallel&&v==='Base')||(s.parallel===v);
+        return`<button onclick="setDupVariation('${s.id}','${val}')" style="padding:5px 12px;border-radius:16px;border:1px solid ${active?'var(--accent)':'var(--border)'};background:${active?'var(--accent)':'none'};color:${active?'#fff':'var(--text)'};cursor:pointer;font-size:.8rem">${v}</button>`;
+      }).join('')}
+    </div>
+    <div style="font-size:.75rem;color:var(--text2);margin-bottom:6px">Or type custom:</div>
+    <div style="display:flex;gap:8px">
+      <input id="dup-var-custom" class="form-input" value="${s.parallel||''}" placeholder="e.g. Rainbow Foil" style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="setDupVariation('${s.id}',document.getElementById('dup-var-custom').value.trim())">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function setDupVariation(id,value){
+  const s=stickerCache.find(x=>x.id===id);
+  if(!s)return;
+  const parallel=value||null;
+  await sb.from('wc2026_stickers').update({parallel}).eq('id',id);
+  s.parallel=parallel;
+  document.getElementById('dup-var-modal')?.remove();
+  const cell=document.getElementById('dupvar-'+id);
+  if(cell)cell.innerHTML=`${parallel?`<span style="background:#7c3aed;color:#fff;border-radius:8px;padding:1px 8px;font-size:.72rem">${parallel}</span>`:'<span style="color:var(--text2);font-size:.78rem">Base</span>'}<button onclick="editDupVariation('${id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem;padding:0">✏️</button>`;
+  const chip=document.getElementById('chip-'+id);
+  if(chip)chip.outerHTML=stickerChip(s);
 }
 
 const STATUS_META={
