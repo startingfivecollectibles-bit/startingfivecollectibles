@@ -159,9 +159,6 @@ select option{background:var(--surface2);}
 .totals-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.85rem;}
 .totals-row:last-child{border-bottom:none;}
 .totals-row .tval{font-family:'DM Mono',monospace;color:var(--accent);}
-.consol-wrap{display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start;}
-.consol-target{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:sticky;top:20px;}
-.consol-target h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--accent);margin-bottom:12px;}
 .grail-price{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;color:var(--accent);text-align:center;line-height:1;}
 .progress-bar-wrap{background:var(--surface2);border-radius:20px;height:9px;overflow:hidden;margin:9px 0;}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:20px;transition:width .4s;}
@@ -255,7 +252,6 @@ select option{background:var(--surface2);}
       <div class="nav-section">Business</div>
       <button class="nav-item" onclick="showPage('sales')"><span class="icon">💰</span> Sales History</button>
       <button class="nav-item" onclick="showPage('tax')"><span class="icon">🧾</span> Tax Summary</button>
-      <button class="nav-item" onclick="showPage('consolidation')"><span class="icon">🔄</span> Consolidation</button>
       <div class="nav-section">Tools</div>
       <button class="nav-item" onclick="showPage('intel')"><span class="icon">🧠</span> Buy Intel</button>
       <button class="nav-item" onclick="showPage('releases')"><span class="icon">📅</span> Releases</button>
@@ -265,12 +261,12 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('boxes')"><span class="icon">📦</span> Box Tracker</button>
       <button class="nav-item" onclick="showPage('costs')"><span class="icon">🧾</span> Daily Costs</button>
       <button class="nav-item" onclick="showPage('payouts')"><span class="icon">💰</span> eBay Payouts</button>
-      <button class="nav-item" onclick="showPage('rankings')"><span class="icon">🎯</span> Buy Rankings</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
       <button class="nav-item" onclick="showPage('blasters')"><span class="icon">📦</span> Blaster Tracker</button>
       <button class="nav-item" onclick="showPage('alerts')"><span class="icon">🚨</span> Sell Alerts</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
+      <button class="nav-item" onclick="showPage('listing-sandbox')"><span class="icon">🧪</span> Listing Sandbox</button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-info" id="user-email" title="Click to see your email">—</div>
@@ -393,25 +389,6 @@ select option{background:var(--surface2);}
         </div>
       </div>
     </div>
-    <div class="page" id="page-consolidation">
-      <div class="page-header"><span class="page-title">Consolidation Calculator</span></div>
-      <p style="color:var(--text2);margin-bottom:16px;font-size:.88rem">Pick cards you are willing to sell and track progress toward your grail card.</p>
-      <div class="consol-wrap">
-        <div id="consol-cards"></div>
-        <div class="consol-target">
-          <h3>🏆 Grail Target</h3>
-          <div class="form-group" style="margin-bottom:9px"><label>Target Card Name</label><input id="grail-name" placeholder="e.g. 2011 Topps Trout RC" oninput="updateConsol()"></div>
-          <div class="form-group" style="margin-bottom:14px"><label>Target Price ($)</label><input id="grail-price" type="number" placeholder="0.00" oninput="updateConsol()"></div>
-          <div style="text-align:center;padding:10px 0"><div style="font-size:.8rem;color:var(--text2);margin-bottom:4px" id="grail-name-disp">Set target above</div><div class="grail-price" id="grail-price-disp">$0</div></div>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
-          <div style="font-size:.8rem;color:var(--text2);text-align:center;margin-bottom:12px" id="prog-label">Select cards to sell</div>
-          <div style="border-top:1px solid var(--border);padding-top:12px">
-            <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:5px"><span style="color:var(--text2)">Selected:</span><span class="mono" id="sel-total" style="color:var(--success)">$0.00</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:.83rem"><span style="color:var(--text2)">Still need:</span><span class="mono" id="still-need" style="color:var(--accent2)">$0.00</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div class="page" id="page-research"><div class="page-header"><span class="page-title">Research Notes</span><button class="btn btn-primary" onclick="openNoteModal()">+ Add Note</button></div><div class="note-grid" id="note-grid"></div></div>
     <div class="page" id="page-upload">
       <div class="page-header"><span class="page-title">Bulk Upload</span></div>
@@ -480,10 +457,7 @@ select option{background:var(--surface2);}
       </div>
     </div>
 
-    <div class="page" id="page-rankings">
-      <div class="page-header"><span class="page-title">Buy Rankings</span><button class="btn btn-primary" onclick="openRankingModal()">+ Add Card to Watch</button></div>
-      <p style="color:var(--text2);font-size:.88rem;margin-bottom:16px">Set strike prices and target margins. The site flags cards as a good buy when market price hits your target.</p>
-      <div id="rankings-table"></div>
+    <div class="page" id="listing-sandbox-page">
     </div>
     <div class="page" id="page-costs">
       <div class="page-header"><span class="page-title">Daily Costs</span><button class="btn btn-primary" onclick="openCostModal()">+ Add Cost</button></div>
@@ -1110,24 +1084,6 @@ select option{background:var(--surface2);}
     </div>
   </div>
 </div>
-<!-- RANKING MODAL -->
-<div class="modal-overlay" id="ranking-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal" style="max-width:520px">
-    <h3>Add Card to Watch</h3>
-    <div class="form-grid">
-      <div class="form-group full"><label>Card Name</label><input id="rk-name" placeholder="e.g. 2025 Topps Cooper Flagg PSA 10"></div>
-      <div class="form-group"><label>Sport</label><select id="rk-sport"><option>Basketball</option><option>Baseball</option><option>Football</option><option>Hockey</option><option>Soccer</option><option>F1</option><option>Pokemon</option><option>Other</option></select></div>
-      <div class="form-group"><label>Strike Price ($) — max you'd pay</label><input id="rk-strike" type="number" step="0.01" placeholder="0.00"></div>
-      <div class="form-group"><label>Target Sell Price ($)</label><input id="rk-target" type="number" step="0.01" placeholder="0.00"></div>
-      <div class="form-group"><label>Current Market Price ($)</label><input id="rk-market" type="number" step="0.01" placeholder="0.00"></div>
-      <div class="form-group full"><label>Notes</label><textarea id="rk-notes" placeholder="Why you want it, strategy..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="document.getElementById('ranking-modal').style.display='none'">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRanking()">Save</button>
-    </div>
-  </div>
-</div>
 
 <!-- RESEARCH TOOL MODAL -->
 <div class="modal-overlay" id="research-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
@@ -1403,9 +1359,10 @@ function showPage(n){
   currentPage=n;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
-  document.getElementById('page-'+n)?.classList.add('active');
+  const pageId=n==='listing-sandbox'?'listing-sandbox-page':'page-'+n;
+  document.getElementById(pageId)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,consolidation:renderConsol,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,costs:renderCosts,payouts:renderPayouts};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,costs:renderCosts,payouts:renderPayouts};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -1877,8 +1834,6 @@ function openNoteModal(){['title','sport','tags','body'].forEach(f=>document.get
 async function saveNote(){const{error}=await sb.from('research_notes').insert({title:document.getElementById('n-title').value,sport:document.getElementById('n-sport').value,tags:document.getElementById('n-tags').value,content:document.getElementById('n-body').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Saved!','success');document.getElementById('note-modal').style.display='none';renderResearch();}
 async function deleteNote(id){await sb.from('research_notes').delete().eq('id',id);showToast('Deleted','success');renderResearch();}
 
-async function renderConsol(){const{data:c}=await getQ();const sell=(c||[]).filter(x=>x.status!=='sold');document.getElementById('consol-cards').innerHTML=sell.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">${sell.map(x=>`<div class="sell-row"><input type="checkbox" class="sell-cb" onchange="updateConsol()" data-cost="${x.cost_paid||0}"><div style="flex:1"><strong>${x.player||'—'}</strong> <span style="color:var(--text2);font-size:.8rem">${x.year||''} ${x.card_set||''}</span></div><span class="mono" style="color:var(--accent)">$${(x.cost_paid||0).toFixed(2)}</span></div>`).join('')}</div>`:`<div class="empty-state"><div class="empty-icon">🔄</div><div>No cards in collection yet</div></div>`;updateConsol();}
-function updateConsol(){const target=parseFloat(document.getElementById('grail-price').value)||0;const name=document.getElementById('grail-name').value;document.getElementById('grail-name-disp').textContent=name||'Set target above';document.getElementById('grail-price-disp').textContent='$'+(target||0).toFixed(0);const checked=document.querySelectorAll('.sell-cb:checked');const total=Array.from(checked).reduce((s,cb)=>s+parseFloat(cb.dataset.cost||0),0);const pct=target>0?Math.min(100,(total/target)*100):0;document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('prog-label').textContent=pct>=100?'🎉 You can afford it!':pct>0?pct.toFixed(0)+'% there':'Select cards to sell';document.getElementById('sel-total').textContent='$'+total.toFixed(2);document.getElementById('still-need').textContent='$'+Math.max(0,target-total).toFixed(2);}
 
 function loadCenterImg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{CIMG=new Image();CIMG.onload=()=>{document.getElementById('center-upload-zone').style.display='none';document.getElementById('center-workspace').style.display='block';const cv=document.getElementById('center-canvas');const mw=Math.min(480,cv.parentElement.offsetWidth-20);const sc=mw/CIMG.width;cv.width=mw;cv.height=CIMG.height*sc;cv.getContext('2d').drawImage(CIMG,0,0,cv.width,cv.height);};CIMG.src=ev.target.result;};r.readAsDataURL(f);CPT=[];document.getElementById('center-results').style.display='none';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));}
 function resetCenter(){CPT=[];CIMG=null;document.getElementById('center-results').style.display='none';document.getElementById('center-workspace').style.display='none';document.getElementById('center-upload-zone').style.display='flex';document.getElementById('center-img-input').value='';document.querySelectorAll('.cstep').forEach((s,i)=>s.classList.toggle('active',i===0));const cv=document.getElementById('center-canvas');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);}
@@ -3164,29 +3119,6 @@ async function applyMassUpdate(){
   showToast('Updated '+ids.length+' cards!','success');
   await loadCardCache();clearSelection();renderCol();
 }
-
-// ─── BUY RANKINGS ─────────────────────────────────────────────────────────
-async function renderRankings(){
-  const{data:items}=await sb.from('buy_rankings').select('*').order('created_at',{ascending:false});
-  if(!items?.length){document.getElementById('rankings-table').innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div>No cards being tracked yet. Add cards you want to buy at the right price.</div></div>`;return;}
-  let html=`<div class="table-container"><table><thead><tr><th>Card</th><th>Sport</th><th>Strike Price</th><th>Target Sell</th><th>Market Price</th><th>Margin</th><th>Signal</th><th></th></tr></thead><tbody>`;
-  items.forEach(r=>{
-    const margin=r.target_sell&&r.strike_price?((r.target_sell-r.strike_price)/r.strike_price*100):0;
-    const isBuy=r.market_price&&r.strike_price&&r.market_price<=r.strike_price;
-    const isClose=r.market_price&&r.strike_price&&r.market_price<=r.strike_price*1.1;
-    const signal=isBuy?'<span style="background:rgba(46,204,113,.2);color:var(--success);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">🟢 BUY NOW</span>':isClose?'<span style="background:rgba(245,166,35,.2);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">🟡 GETTING CLOSE</span>':'<span style="background:rgba(136,136,170,.15);color:var(--text2);padding:3px 10px;border-radius:20px;font-size:.75rem">⚪ WAIT</span>';
-    html+=`<tr><td><strong>${r.card_name||'—'}</strong><br><span style="font-size:.75rem;color:var(--text2)">${r.notes||''}</span></td><td>${r.sport||'—'}</td><td class="mono">$${(r.strike_price||0).toFixed(2)}</td><td class="mono">$${(r.target_sell||0).toFixed(2)}</td>
-    <td><input type="number" step="0.01" value="${r.market_price||''}" placeholder="0.00" style="width:85px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:.82rem" onchange="updateRankingMarket('${r.id}',this.value)"></td>
-    <td class="mono" style="color:${margin>=20?'var(--success)':'var(--text2)'}">${margin.toFixed(1)}%</td>
-    <td>${signal}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="deleteRanking('${r.id}')">Del</button></td></tr>`;
-  });
-  document.getElementById('rankings-table').innerHTML=html+'</tbody></table></div>';
-}
-function openRankingModal(){['rk-name','rk-strike','rk-target','rk-market','rk-notes'].forEach(f=>document.getElementById(f).value='');document.getElementById('ranking-modal').style.display='flex';}
-async function saveRanking(){const{error}=await sb.from('buy_rankings').insert({card_name:document.getElementById('rk-name').value,sport:document.getElementById('rk-sport').value,strike_price:parseFloat(document.getElementById('rk-strike').value)||null,target_sell:parseFloat(document.getElementById('rk-target').value)||null,market_price:parseFloat(document.getElementById('rk-market').value)||null,notes:document.getElementById('rk-notes').value});if(error){showToast('Error: '+error.message,'error');return;}showToast('Added to watch list!','success');document.getElementById('ranking-modal').style.display='none';renderRankings();}
-async function updateRankingMarket(id,val){await sb.from('buy_rankings').update({market_price:parseFloat(val)||null}).eq('id',id);renderRankings();}
-async function deleteRanking(id){if(!confirm('Remove?'))return;await sb.from('buy_rankings').delete().eq('id',id);renderRankings();}
 
 // ─── RESEARCH + LISTING TOOL ──────────────────────────────────────────────
 let researchCardId=null;
