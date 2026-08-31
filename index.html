@@ -428,6 +428,7 @@ select option{background:var(--surface2);}
         <button class="payout-tab" id="ptab-boxes" onclick="setPayoutTab('boxes')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">📦 Andrew's Box Purchases</button>
         <button class="payout-tab" id="ptab-andrew-sales" onclick="setPayoutTab('andrew-sales')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">🏷️ Andrew's Sales</button>
         <button class="payout-tab" id="ptab-settle" onclick="setPayoutTab('settle')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">⚖️ Settlement</button>
+        <button class="payout-tab" id="ptab-partner-calc" onclick="setPayoutTab('partner-calc')" style="padding:8px 16px;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">🧮 Partner Calculator</button>
       </div>
 
       <!-- My eBay Payouts tab -->
@@ -454,6 +455,22 @@ select option{background:var(--surface2);}
       <!-- Settlement tab -->
       <div id="ptab-content-settle" style="display:none">
         <div id="settlement-content"></div>
+      </div>
+
+      <!-- Partner Calculator tab -->
+      <div id="ptab-content-partner-calc" style="display:none">
+        <p style="color:var(--text2);font-size:.85rem;margin-bottom:14px">Pulls unpaid sold cards, splits each 50/50 by who sold it, and nets Andrew's cut of your sales against your cut of his sales.</p>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="openHistImportModal()">🗂️ Mark Past Sales as Paid</button>
+          <button class="btn btn-secondary" onclick="loadPartnerCalcCards()">🔄 Refresh Unpaid Sales</button>
+        </div>
+        <div id="pcalc-summary" style="margin-bottom:16px"></div>
+        <div id="pcalc-card-list"></div>
+        <div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="pcalc-batch-name" class="form-input" placeholder="Batch name (e.g. Aug 2026 Settlement)" style="max-width:280px">
+          <button class="btn btn-primary" id="pcalc-save-btn" onclick="savePartnerBatch()" disabled>💾 Save Batch &amp; Mark Paid</button>
+        </div>
+        <div id="pcalc-batch-history" style="margin-top:24px"></div>
       </div>
     </div>
 
@@ -1040,6 +1057,21 @@ select option{background:var(--surface2);}
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="document.getElementById('payout-sent-modal').style.display='none'">Cancel</button>
       <button class="btn btn-primary" onclick="savePayoutSent()">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="hist-import-modal" style="display:none" onclick="if(event.target===this)closeHistImportModal()">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header"><span class="modal-title">Mark Past Sales as Paid</span><button class="modal-close" onclick="closeHistImportModal()">✕</button></div>
+    <p style="font-size:.8rem;color:var(--text2);margin-bottom:10px">Select past sold cards to retroactively mark paid (or group into a named historical batch) so they stop showing up in the Partner Calculator.</p>
+    <input type="text" id="hist-search" class="form-input" placeholder="Search sold cards…" style="margin-bottom:10px" oninput="renderHistImportList()">
+    <div style="font-size:.75rem;color:var(--text2);margin-bottom:6px"><a href="#" onclick="toggleHistSelectAll(event)" style="color:var(--accent)">Select/Deselect All Visible</a></div>
+    <div id="hist-import-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+    <div style="margin-bottom:12px"><label class="form-label">Historical Batch Name <span style="color:var(--text2);font-weight:400;font-size:.78rem">— optional</span></label><input type="text" id="hist-batch-name" class="form-input" placeholder="e.g. Pre-2026 Sales"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeHistImportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHistImport()">Mark Selected as Paid</button>
     </div>
   </div>
 </div>
@@ -2091,6 +2123,8 @@ function sbxAssignedIds(){
   return ids;
 }
 
+function sbxPrice(c){return c.market_price!=null?c.market_price:(c.asking_price!=null?c.asking_price:(c.cost_paid||0));}
+
 function renderSandboxInventoryList(){
   const q=(document.getElementById('sbx-search')?.value||'').toLowerCase().trim();
   const assigned=sbxAssignedIds();
@@ -2111,11 +2145,16 @@ function renderSandboxInventoryList(){
 
   listEl.innerHTML=remaining.map(c=>{
     const label=sbxLabel(c);
+    const price=sbxPrice(c);
+    const eligible=price>5;
     return`<div style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--surface2);font-size:.78rem">
       <div style="font-weight:600">${sbxEsc(label)}</div>
-      <div style="color:var(--text2);font-size:.72rem;margin-bottom:5px">${sbxEsc(c.team||'')}${c.condition?' · '+sbxEsc(c.condition):''}</div>
+      <div style="color:var(--text2);font-size:.72rem;margin-bottom:5px">${sbxEsc(c.team||'')}${c.condition?' · '+sbxEsc(c.condition):''} · $${price.toFixed(2)}</div>
       <div style="display:flex;gap:5px">
-        <button class="btn btn-secondary btn-sm" style="flex:1;padding:3px 6px;font-size:.7rem" onclick="addToSandboxSolo('${c.id}')">→ Solo</button>
+        ${eligible
+          ?`<button class="btn btn-secondary btn-sm" style="flex:1;padding:3px 6px;font-size:.7rem" onclick="addToSandboxSolo('${c.id}')">→ Solo</button>`
+          :`<span style="flex:1;font-size:.68rem;color:var(--text2);display:flex;align-items:center">Under $5 — use Lots</span>`
+        }
         <select class="form-input" style="flex:1;padding:3px 4px;font-size:.7rem" onchange="if(this.value)addToSandboxMulti('${c.id}',this.value);this.value=''">
           <option value="">→ Multi…</option>
           <option value="__new__">+ New Group</option>
@@ -2128,6 +2167,8 @@ function renderSandboxInventoryList(){
 
 function addToSandboxSolo(cardId){
   cardId=String(cardId);
+  const card=sbxPool.find(c=>String(c.id)===cardId);
+  if(card&&sbxPrice(card)<=5){showToast('Solo Listings are for cards over $5 — try a Team/Player Lot instead','error');return;}
   if(!sbxState.soloIds.includes(cardId))sbxState.soloIds.push(cardId);
   saveSandboxState();
   renderSandboxInventoryList();
@@ -2145,16 +2186,23 @@ function removeFromSandboxSolo(cardId){
 
 function renderSandboxSolo(){
   const assigned=new Set(sbxState.soloIds.map(String));
-  const cards=sbxPool.filter(c=>assigned.has(String(c.id)));
+  let cards=sbxPool.filter(c=>assigned.has(String(c.id)));
+  // Solo Listings are for cards over $5 — prune any that dropped below threshold since being staged
+  const belowThreshold=cards.filter(c=>sbxPrice(c)<=5).map(c=>String(c.id));
+  if(belowThreshold.length){
+    sbxState.soloIds=sbxState.soloIds.filter(id=>!belowThreshold.includes(String(id)));
+    saveSandboxState();
+    cards=cards.filter(c=>sbxPrice(c)>5);
+  }
   document.getElementById('sbx-solo-count').textContent=`(${cards.length})`;
   const listEl=document.getElementById('sbx-solo-list');
   if(!cards.length){
-    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No solo listings staged yet.</div></div>';
+    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No solo listings staged yet (cards over $5 only).</div></div>';
     return;
   }
   listEl.innerHTML=cards.map(c=>`
     <div style="display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--surface2);font-size:.78rem">
-      <span style="flex:1">${sbxEsc(sbxLabel(c))}</span>
+      <span style="flex:1">${sbxEsc(sbxLabel(c))} <span style="color:var(--text2)">· $${sbxPrice(c).toFixed(2)}</span></span>
       <button class="btn btn-danger btn-sm" style="padding:2px 6px;font-size:.68rem" onclick="removeFromSandboxSolo('${c.id}')">✕</button>
     </div>`).join('');
 }
@@ -2240,26 +2288,28 @@ function renderSandboxMulti(){
 function renderSandboxLots(){
   const assigned=sbxAssignedIds();
   const leftover=sbxPool.filter(c=>!assigned.has(String(c.id)));
-  const byTeam={};
+  // Group by team when available; fall back to player name for sports/cards with no team (golf, boxing, etc.)
+  const byGroup={};
   leftover.forEach(c=>{
     const team=(c.team||'').trim();
-    if(!team)return;
-    if(!byTeam[team])byTeam[team]=[];
-    byTeam[team].push(c);
+    const key=team||(c.player||'').trim();
+    if(!key)return;
+    if(!byGroup[key])byGroup[key]={cards:[],isTeam:!!team};
+    byGroup[key].cards.push(c);
   });
-  const teams=Object.keys(byTeam).filter(t=>byTeam[t].length>=2).sort((a,b)=>byTeam[b].length-byTeam[a].length);
+  const groups=Object.keys(byGroup).filter(k=>byGroup[k].cards.length>=2).sort((a,b)=>byGroup[b].cards.length-byGroup[a].cards.length);
 
   const listEl=document.getElementById('sbx-lots-list');
-  if(!teams.length){
-    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No team/player lots yet — lots need 2+ unstaged cards from the same team.</div></div>';
+  if(!groups.length){
+    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No team/player lots yet — lots need 2+ unstaged cards from the same team or player.</div></div>';
     return;
   }
-  listEl.innerHTML=teams.map(team=>{
-    const cards=byTeam[team];
+  listEl.innerHTML=groups.map(key=>{
+    const{cards,isTeam}=byGroup[key];
     return`<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface2)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:600;font-size:.85rem">${sbxEsc(team)} <span style="background:var(--accent);color:#0a0a0f;border-radius:10px;padding:1px 8px;font-size:.7rem;margin-left:4px">${cards.length}</span></div>
-        <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick='copySandboxTeamLot(${JSON.stringify(team)},this)'>📋 Copy</button>
+        <div style="font-weight:600;font-size:.85rem">${sbxEsc(key)} ${isTeam?'':'<span style="color:var(--text2);font-weight:400;font-size:.7rem">(by player)</span>'} <span style="background:var(--accent);color:#0a0a0f;border-radius:10px;padding:1px 8px;font-size:.7rem;margin-left:4px">${cards.length} cards</span></div>
+        <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick='copySandboxTeamLot(${JSON.stringify(key)},${isTeam},this)'>📋 Copy</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         ${cards.map(c=>`<div style="font-size:.76rem;background:var(--surface);border-radius:5px;padding:4px 6px">${sbxEsc(sbxLabel(c))}${c.condition?' · '+sbxEsc(c.condition):''}</div>`).join('')}
@@ -2288,11 +2338,14 @@ function copySandboxMultiGroup(groupId,btn){
   sbxCopyText(text.trim(),btn);
 }
 
-function copySandboxTeamLot(team,btn){
+function copySandboxTeamLot(key,isTeam,btn){
   const assigned=sbxAssignedIds();
-  const cards=sbxPool.filter(c=>!assigned.has(String(c.id))&&(c.team||'').trim()===team);
+  const cards=sbxPool.filter(c=>{
+    if(assigned.has(String(c.id)))return false;
+    return isTeam?(c.team||'').trim()===key:(!(c.team||'').trim()&&(c.player||'').trim()===key);
+  });
   if(!cards.length){showToast('No cards found for this lot','error');return;}
-  let text=`${team} Lot — ${cards.length} Cards\n`;
+  let text=`${key} Lot — ${cards.length} Cards\n`;
   cards.forEach(c=>{
     text+=`- ${sbxLabel(c)}${c.condition?' · '+c.condition:''}\n`;
   });
@@ -2946,7 +2999,7 @@ let activePayoutTab='mine';
 
 function setPayoutTab(tab){
   activePayoutTab=tab;
-  ['mine','boxes','andrew-sales','settle'].forEach(t=>{
+  ['mine','boxes','andrew-sales','settle','partner-calc'].forEach(t=>{
     const btn=document.getElementById('ptab-'+t);
     const content=document.getElementById('ptab-content-'+t);
     if(btn){btn.style.borderBottomColor=t===tab?'var(--accent)':'transparent';btn.style.color=t===tab?'var(--text)':'var(--text2)';}
@@ -2960,6 +3013,234 @@ function setPayoutTab(tab){
   if(tab==='boxes')renderBoxPurchases();
   else if(tab==='andrew-sales')renderAndrewSales();
   else if(tab==='settle')renderSettlement();
+  else if(tab==='partner-calc'){loadPartnerCalcCards();renderPartnerBatchHistory();}
+}
+
+// ─── PARTNER PAYOUT CALCULATOR ─────────────────────────────────────
+// Requires DB migration (see comment above payouts table or run manually):
+//   alter table cards add column if not exists sold_by text;               -- 'Me' | 'Andrew'
+//   alter table cards add column if not exists payout_status text;         -- null/'unpaid' | 'paid'
+//   alter table cards add column if not exists payout_batch_id uuid;
+//   create table if not exists payout_batches (
+//     id uuid primary key default gen_random_uuid(),
+//     user_id uuid, batch_name text, batch_date date,
+//     total_my_sales numeric, andrew_cut numeric,
+//     total_andrew_sales numeric, my_cut numeric,
+//     net_amount numeric, direction text, card_count int,
+//     created_at timestamptz default now()
+//   );
+let pcalcCards=[];
+let pcalcSelected=new Set();
+let pcalcNet=null;
+
+function pcalcBasis(c){return c.net_profit!=null?c.net_profit:(c.sale_price||0);}
+
+async function loadPartnerCalcCards(){
+  const listEl=document.getElementById('pcalc-card-list');
+  if(!listEl)return;
+  listEl.innerHTML='<div style="color:var(--text2);font-size:.85rem">Loading unpaid sold cards…</div>';
+  const{data:cards,error}=await sb.from('cards').select('*').eq('status','sold')
+    .or('payout_status.is.null,payout_status.eq.unpaid').order('sale_date',{ascending:false});
+  if(error){
+    listEl.innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><div>Couldn't load cards — make sure the sold_by / payout_status columns exist on the cards table (see migration note in code).<br><span style="color:var(--text2);font-size:.75rem">${error.message}</span></div></div>`;
+    document.getElementById('pcalc-save-btn').disabled=true;
+    return;
+  }
+  pcalcCards=cards||[];
+  pcalcSelected=new Set(pcalcCards.map(c=>c.id));
+  renderPartnerCalcList();
+}
+
+function renderPartnerCalcList(){
+  const listEl=document.getElementById('pcalc-card-list');
+  if(!pcalcCards.length){
+    listEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div>No unpaid sold cards — everything is settled.</div></div>';
+    document.getElementById('pcalc-save-btn').disabled=true;
+    recalcPartnerBatch();
+    return;
+  }
+  listEl.innerHTML=`<div style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+    <table style="width:100%;font-size:.8rem;border-collapse:collapse">
+      <thead><tr style="color:var(--text2);position:sticky;top:0;background:var(--surface)"><th style="text-align:left;padding:6px 8px">Incl.</th><th style="text-align:left;padding:6px 8px">Card</th><th style="text-align:right;padding:6px 8px">Net Profit</th><th style="text-align:center;padding:6px 8px">Sold By</th></tr></thead>
+      <tbody>${pcalcCards.map(c=>{
+        const label=`${c.year||''} ${c.card_set||''} ${c.player||''}${c.card_number?' #'+c.card_number:''}`.trim();
+        const soldBy=c.sold_by||'Me';
+        const checked=pcalcSelected.has(c.id)?'checked':'';
+        return`<tr style="border-top:1px solid var(--border)">
+          <td style="padding:5px 8px"><input type="checkbox" data-id="${c.id}" ${checked} onchange="togglePcalcCard('${c.id}',this.checked)"></td>
+          <td style="padding:5px 8px">${sbxEsc(label)}<div style="color:var(--text2);font-size:.72rem">${c.sale_date||''}</div></td>
+          <td style="padding:5px 8px;text-align:right">$${pcalcBasis(c).toFixed(2)}</td>
+          <td style="padding:5px 8px;text-align:center">
+            <select class="form-input" style="font-size:.75rem;padding:2px 4px" onchange="setPcalcSoldBy('${c.id}',this.value)">
+              <option value="Me" ${soldBy==='Me'?'selected':''}>Me</option>
+              <option value="Andrew" ${soldBy==='Andrew'?'selected':''}>Andrew</option>
+            </select>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`;
+  document.getElementById('pcalc-save-btn').disabled=false;
+  recalcPartnerBatch();
+}
+
+function togglePcalcCard(id,checked){
+  id=String(id);
+  if(checked)pcalcSelected.add(id);else pcalcSelected.delete(id);
+  // Sets from Supabase ids may be non-string; normalize comparison in recalc via String()
+  recalcPartnerBatch();
+}
+
+function setPcalcSoldBy(id,val){
+  const c=pcalcCards.find(x=>String(x.id)===String(id));
+  if(c)c.sold_by=val;
+  recalcPartnerBatch();
+}
+
+function recalcPartnerBatch(){
+  const included=pcalcCards.filter(c=>pcalcSelected.has(String(c.id))||pcalcSelected.has(c.id));
+  const mySales=included.filter(c=>(c.sold_by||'Me')==='Me');
+  const andrewSales=included.filter(c=>c.sold_by==='Andrew');
+  const totalMySales=mySales.reduce((s,c)=>s+pcalcBasis(c),0);
+  const totalAndrewSales=andrewSales.reduce((s,c)=>s+pcalcBasis(c),0);
+  const andrewCut=totalMySales*0.5;
+  const myCut=totalAndrewSales*0.5;
+  const net=Math.round((andrewCut-myCut)*100)/100;
+  const who=net>0?`Matt owes Andrew $${net.toFixed(2)}`:net<0?`Andrew owes Matt $${Math.abs(net).toFixed(2)}`:'Settled — no payment needed';
+  const summaryEl=document.getElementById('pcalc-summary');
+  if(summaryEl){
+    summaryEl.innerHTML=`
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value">$${totalMySales.toFixed(2)}</div><div class="stat-label">Total My Sales (${mySales.length})</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent)">$${andrewCut.toFixed(2)}</div><div class="stat-label">Andrew's Cut</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalAndrewSales.toFixed(2)}</div><div class="stat-label">Total Andrew Sales (${andrewSales.length})</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--purple)">$${myCut.toFixed(2)}</div><div class="stat-label">My Cut</div></div>
+        <div class="stat-card" style="border-color:${net===0?'var(--success)':'var(--danger)'};grid-column:1/-1">
+          <div class="stat-value" style="color:${net===0?'var(--success)':'var(--danger)'}">$${Math.abs(net).toFixed(2)}</div>
+          <div class="stat-label">${who}</div>
+        </div>
+      </div>`;
+  }
+  pcalcNet={andrewCut,myCut,totalMySales,totalAndrewSales,net,mySalesCount:mySales.length,andrewSalesCount:andrewSales.length};
+}
+
+async function savePartnerBatch(){
+  const included=pcalcCards.filter(c=>pcalcSelected.has(String(c.id))||pcalcSelected.has(c.id));
+  if(!included.length){showToast('Select at least one card','error');return;}
+  recalcPartnerBatch();
+  const batchName=document.getElementById('pcalc-batch-name').value.trim()||('Batch '+new Date().toISOString().split('T')[0]);
+  const{data:batch,error}=await sb.from('payout_batches').insert({
+    user_id:CU.id,batch_name:batchName,batch_date:new Date().toISOString().split('T')[0],
+    total_my_sales:pcalcNet.totalMySales,andrew_cut:pcalcNet.andrewCut,
+    total_andrew_sales:pcalcNet.totalAndrewSales,my_cut:pcalcNet.myCut,
+    net_amount:Math.abs(pcalcNet.net),direction:pcalcNet.net>0?'matt_owes_andrew':pcalcNet.net<0?'andrew_owes_matt':'even',
+    card_count:included.length
+  }).select().single();
+  if(error){showToast('Error saving batch: '+error.message,'error');console.error(error);return;}
+  for(const c of included){
+    await sb.from('cards').update({payout_status:'paid',sold_by:c.sold_by||'Me',payout_batch_id:batch.id}).eq('id',c.id);
+  }
+  showToast(`Batch saved — ${included.length} card${included.length>1?'s':''} marked paid`);
+  document.getElementById('pcalc-batch-name').value='';
+  cardCache=[];
+  await loadCardCache();
+  await loadPartnerCalcCards();
+  renderPartnerBatchHistory();
+}
+
+async function renderPartnerBatchHistory(){
+  const el=document.getElementById('pcalc-batch-history');
+  if(!el)return;
+  const{data:batches,error}=await sb.from('payout_batches').select('*').eq('user_id',CU.id).order('batch_date',{ascending:false}).limit(20);
+  if(error||!batches||!batches.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-weight:700;margin-bottom:8px">Past Batches</div>'+batches.map(b=>{
+    const dirLabel=b.direction==='matt_owes_andrew'?'Matt → Andrew':b.direction==='andrew_owes_matt'?'Andrew → Matt':'Settled';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:.82rem;flex-wrap:wrap;gap:4px">
+      <span>${sbxEsc(b.batch_name)} <span style="color:var(--text2)">${b.batch_date} · ${b.card_count||0} cards</span></span>
+      <span style="font-weight:700">${dirLabel}: $${(b.net_amount||0).toFixed(2)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── HISTORICAL PAYOUT IMPORT ───────────────────────────────────────
+let histCards=[];
+let histSelected=new Set();
+
+async function openHistImportModal(){
+  document.getElementById('hist-import-modal').style.display='flex';
+  document.getElementById('hist-search').value='';
+  document.getElementById('hist-batch-name').value='';
+  histSelected=new Set();
+  const listEl=document.getElementById('hist-import-list');
+  listEl.innerHTML='<div style="color:var(--text2);font-size:.8rem">Loading sold cards…</div>';
+  const{data:cards,error}=await sb.from('cards').select('*').eq('status','sold').order('sale_date',{ascending:false}).limit(300);
+  if(error){
+    listEl.innerHTML=`<div class="empty-state"><div>Error loading cards: ${error.message}</div></div>`;
+    return;
+  }
+  histCards=cards||[];
+  renderHistImportList();
+}
+
+function closeHistImportModal(){
+  document.getElementById('hist-import-modal').style.display='none';
+}
+
+function renderHistImportList(){
+  const q=(document.getElementById('hist-search')?.value||'').toLowerCase().trim();
+  let cards=histCards;
+  if(q)cards=cards.filter(c=>`${c.player||''} ${c.team||''} ${c.card_set||''} ${c.year||''}`.toLowerCase().includes(q));
+  const listEl=document.getElementById('hist-import-list');
+  if(!cards.length){
+    listEl.innerHTML='<div class="empty-state" style="padding:14px"><div>No sold cards found.</div></div>';
+    return;
+  }
+  listEl.innerHTML=cards.map(c=>{
+    const label=`${c.year||''} ${c.card_set||''} ${c.player||''}${c.card_number?' #'+c.card_number:''}`.trim();
+    const isPaid=c.payout_status==='paid';
+    const checked=histSelected.has(String(c.id))?'checked':'';
+    return`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);font-size:.8rem">
+      <input type="checkbox" data-id="${c.id}" ${checked} onchange="toggleHistCard('${c.id}',this.checked)">
+      <span style="flex:1">${sbxEsc(label)} <span style="color:var(--text2)">${c.sale_date||''} · $${(c.net_profit!=null?c.net_profit:(c.sale_price||0)).toFixed(2)}</span></span>
+      ${isPaid?'<span style="font-size:.68rem;background:rgba(34,197,94,.2);color:var(--success);border-radius:4px;padding:1px 6px">Already Paid</span>':''}
+    </label>`;
+  }).join('');
+}
+
+function toggleHistCard(id,checked){
+  id=String(id);
+  if(checked)histSelected.add(id);else histSelected.delete(id);
+}
+
+function toggleHistSelectAll(e){
+  e.preventDefault();
+  const boxes=[...document.querySelectorAll('#hist-import-list input[type=checkbox]')];
+  const allChecked=boxes.every(b=>b.checked);
+  boxes.forEach(b=>{b.checked=!allChecked;toggleHistCard(b.dataset.id,b.checked);});
+}
+
+async function saveHistImport(){
+  if(!histSelected.size){showToast('Select at least one card','error');return;}
+  const batchName=document.getElementById('hist-batch-name').value.trim();
+  let batchId=null;
+  if(batchName){
+    const{data:batch,error}=await sb.from('payout_batches').insert({
+      user_id:CU.id,batch_name:batchName,batch_date:new Date().toISOString().split('T')[0],
+      total_my_sales:0,andrew_cut:0,total_andrew_sales:0,my_cut:0,net_amount:0,
+      direction:'historical_import',card_count:histSelected.size
+    }).select().single();
+    if(error){showToast('Error creating batch: '+error.message,'error');console.error(error);return;}
+    batchId=batch.id;
+  }
+  const ids=[...histSelected];
+  const{error:updErr}=await sb.from('cards').update({payout_status:'paid',...(batchId?{payout_batch_id:batchId}:{})}).in('id',ids);
+  if(updErr){showToast('Error marking cards paid: '+updErr.message,'error');console.error(updErr);return;}
+  showToast(`${ids.length} card${ids.length>1?'s':''} marked as paid`);
+  closeHistImportModal();
+  cardCache=[];
+  await loadCardCache();
+  loadPartnerCalcCards();
+  renderPartnerBatchHistory();
 }
 
 // ─── ANDREW BOX PURCHASES ─────────────────────────────────────────
