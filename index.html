@@ -263,7 +263,6 @@ select option{background:var(--surface2);}
       <button class="nav-item" onclick="showPage('payouts')"><span class="icon">💰</span> eBay Payouts</button>
       <button class="nav-item" onclick="showPage('scouting')"><span class="icon">🔭</span> Scouting Tool</button>
       <button class="nav-item" onclick="showPage('blasters')"><span class="icon">📦</span> Blaster Tracker</button>
-      <button class="nav-item" onclick="showPage('alerts')"><span class="icon">🚨</span> Sell Alerts</button>
       <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Team Access</button>
       <button class="nav-item" id="nav-todo" onclick="showPage('todo')"><span class="icon">✅</span> My To-Do</button>
       <button class="nav-item" onclick="showPage('listing-sandbox')"><span class="icon">🧪</span> Listing Sandbox</button>
@@ -303,6 +302,10 @@ select option{background:var(--surface2);}
           <select class="filter-select" id="mass-status" style="display:none"><option value="in_collection">In Collection</option><option value="listed">Listed</option><option value="on_hold_grade">On Hold to Grade</option><option value="being_graded">Being Graded</option><option value="psa_vault">In PSA Vault</option></select>
           <select class="filter-select" id="mass-blaster" style="display:none"><option value="">— No Blaster —</option></select>
           <button class="btn btn-primary btn-sm" onclick="applyMassUpdate()">Apply to Selected</button>
+          <span style="width:1px;height:20px;background:var(--border)"></span>
+          <input class="filter-select" id="mass-price" type="number" step="0.01" min="0" placeholder="Price ($)" style="width:100px">
+          <button class="btn btn-primary btn-sm" onclick="applyMassPrice()">💲 Bulk Set Price</button>
+          <button class="btn btn-success btn-sm" onclick="applyMassMarkListed()">✅ Mark Selected as Listed</button>
           <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Cancel</button>
         </div>
         <div class="table-container">
@@ -482,13 +485,22 @@ select option{background:var(--surface2);}
           <button class="btn btn-secondary" onclick="renderSandbox()">🔄 Refresh Inventory</button>
         </div>
       </div>
-      <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Stage unlisted cards into Solo, Multi-Variation, or Team/Player Lot groups, then copy clean listing text for eBay.</p>
+      <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Check off any combination of cards from your inventory below, then build a Solo listing, a Custom Lot, or a Multi-Variation listing — then copy clean listing text for eBay.</p>
 
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
         <!-- Sandbox Inventory (left panel) -->
-        <div style="flex:0 0 260px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
+        <div style="flex:0 0 280px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
           <div style="font-weight:700;margin-bottom:8px">📥 Sandbox Inventory <span id="sbx-inv-count" style="color:var(--text2);font-weight:400;font-size:.78rem"></span></div>
-          <input type="text" id="sbx-search" class="form-input" placeholder="Search player, team, set…" style="margin-bottom:10px" oninput="renderSandboxInventoryList()">
+          <input type="text" id="sbx-search" class="form-input" placeholder="Search player, team, set…" style="margin-bottom:8px" oninput="renderSandboxInventoryList()">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.78rem;color:var(--text2)">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sbx-select-all-cb" onchange="sbxToggleSelectAll(this)" style="accent-color:var(--accent)"> Select All</label>
+            <button class="btn btn-secondary btn-sm" style="padding:2px 7px;font-size:.7rem" onclick="sbxDeselectAll()">Deselect All</button>
+            <span id="sbx-selected-count" style="margin-left:auto;white-space:nowrap">0 selected</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('lot')">🏷️ Create Custom Lot</button>
+            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('variation')">🎨 Create Multi-Variation</button>
+          </div>
           <div id="sbx-inventory-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
@@ -500,16 +512,13 @@ select option{background:var(--surface2);}
           </div>
 
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:6px">
-              <div style="font-weight:700">2️⃣ Multi-Variation</div>
-              <button class="btn btn-secondary btn-sm" onclick="addSandboxMultiParent()">+ New Parent Variation</button>
-            </div>
-            <div id="sbx-multi-list" style="display:flex;flex-direction:column;gap:10px"></div>
+            <div style="font-weight:700;margin-bottom:10px">2️⃣ Custom Lots <span id="sbx-lot-count" style="color:var(--text2);font-weight:400;font-size:.78rem"></span></div>
+            <div id="sbx-lot-list" style="display:flex;flex-direction:column;gap:10px"></div>
           </div>
 
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
-            <div style="font-weight:700;margin-bottom:10px">3️⃣ Team / Player Lots</div>
-            <div id="sbx-lots-list" style="display:flex;flex-direction:column;gap:10px"></div>
+            <div style="font-weight:700;margin-bottom:10px">3️⃣ Multi-Variation Listings <span id="sbx-var-count" style="color:var(--text2);font-weight:400;font-size:.78rem"></span></div>
+            <div id="sbx-var-list" style="display:flex;flex-direction:column;gap:10px"></div>
           </div>
         </div>
       </div>
@@ -578,33 +587,6 @@ select option{background:var(--surface2);}
         <div id="bd-cards-list" style="max-height:340px;overflow-y:auto"></div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('blaster-detail-modal').style.display='none'">Close</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-alerts">
-      <div class="page-header">
-        <span class="page-title">Sell Alerts</span>
-        <button class="btn btn-primary" onclick="openAlertModal()">+ Add Alert</button>
-      </div>
-      <p style="color:var(--text2);font-size:.88rem;margin-bottom:18px;line-height:1.6">Track sell signals for cards you own. Use the Gemini sweep to scan for recent sports events that might affect card values.</p>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="runAlertSweep()" id="sweep-btn">🤖 Gemini News Sweep</button>
-        <span style="font-size:.83rem;color:var(--text2)">Scans recent sports events and flags cards you own worth selling</span>
-        <div id="sweep-status" style="font-size:.83rem;color:var(--accent);display:none"></div>
-      </div>
-      <div id="alerts-list"></div>
-    </div>
-
-    <!-- ALERT MODAL -->
-    <div class="modal-overlay" id="alert-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-      <div class="modal" style="max-width:460px">
-        <h3 id="alert-modal-title">Add Sell Alert</h3>
-        <div class="form-group"><label>Alert</label><input id="al-text" placeholder="e.g. Cooper Flagg wins ROY — sell now"></div>
-        <div class="form-group"><label>Player (optional)</label><input id="al-player" placeholder="e.g. Cooper Flagg"></div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="saveAlert()">Save</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('alert-modal').style.display='none'">Cancel</button>
         </div>
       </div>
     </div>
@@ -1432,7 +1414,7 @@ function showPage(n){
   const pageId=n==='listing-sandbox'?'listing-sandbox-page':'page-'+n;
   document.getElementById(pageId)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+n+"'"))x.classList.add('active');});
-  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,alerts:renderAlerts,blasters:renderBlasters,costs:renderCosts,payouts:renderPayouts,'listing-sandbox':renderSandbox};
+  const L={dashboard:loadDash,collection:function(){cardCache=[];loadCardCache().then(()=>renderCol());},players:renderPlayers,sales:renderSales,tax:renderTax,wantlist:renderWant,intel:renderIntel,releases:renderReleases,research:renderResearch,totals:renderTotals,admin:renderAdmin,boxes:renderBoxes,todo:renderTodo,scouting:renderScouting,blasters:renderBlasters,costs:renderCosts,payouts:renderPayouts,'listing-sandbox':renderSandbox};
   if(L[n])L[n]();
 }
 function switchCollection(t){
@@ -2079,13 +2061,20 @@ function sbxEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 function sbxLabel(c){return`${c.year||''} ${c.card_set||''} ${c.player||''}${c.card_number?' #'+c.card_number:''}${c.variation?' ('+c.variation+')':''}`.trim();}
 function sbxStorageKey(){return'sfc_sandbox_'+(typeof CC!=='undefined'?CC:'business');}
 
-let sbxState={soloIds:[],multiGroups:[]};
+let sbxState={soloIds:[],groups:[]};
 let sbxPool=[];// in_collection cards eligible for the sandbox, from cardCache
+let sbxSelectedIds=new Set();// transient checkbox selection in the inventory panel
 
 function loadSandboxState(){
   let saved=null;
   try{saved=JSON.parse(localStorage.getItem(sbxStorageKey())||'null');}catch(e){saved=null;}
-  sbxState=saved&&typeof saved==='object'?{soloIds:saved.soloIds||[],multiGroups:saved.multiGroups||[]}:{soloIds:[],multiGroups:[]};
+  if(saved&&typeof saved==='object'){
+    // Migrate any older saved state (multiGroups) into the unified groups list
+    const migrated=saved.groups||(saved.multiGroups?saved.multiGroups.map(g=>({id:g.id,name:g.name,type:'variation',cardIds:g.cardIds||[]})):[]);
+    sbxState={soloIds:saved.soloIds||[],groups:migrated};
+  } else {
+    sbxState={soloIds:[],groups:[]};
+  }
 }
 
 function saveSandboxState(){
@@ -2093,8 +2082,9 @@ function saveSandboxState(){
 }
 
 function clearSandboxState(){
-  if(!confirm('Clear all Solo and Multi-Variation groupings in the Sandbox? Team Lots will simply re-compute from your inventory.'))return;
-  sbxState={soloIds:[],multiGroups:[]};
+  if(!confirm('Clear all Solo, Custom Lot, and Multi-Variation groupings in the Sandbox?'))return;
+  sbxState={soloIds:[],groups:[]};
+  sbxSelectedIds.clear();
   saveSandboxState();
   renderSandbox();
 }
@@ -2108,18 +2098,18 @@ async function renderSandbox(){
 
   // Drop any stale ids (cards sold/listed/removed since last visit)
   sbxState.soloIds=sbxState.soloIds.filter(id=>poolIds.has(String(id)));
-  sbxState.multiGroups.forEach(g=>{g.cardIds=(g.cardIds||[]).filter(id=>poolIds.has(String(id)));});
+  sbxState.groups.forEach(g=>{g.cardIds=(g.cardIds||[]).filter(id=>poolIds.has(String(id)));});
   saveSandboxState();
+  Array.from(sbxSelectedIds).forEach(id=>{if(!poolIds.has(id))sbxSelectedIds.delete(id);});
 
   renderSandboxInventoryList();
   renderSandboxSolo();
-  renderSandboxMulti();
-  renderSandboxLots();
+  renderSandboxGroups();
 }
 
 function sbxAssignedIds(){
   const ids=new Set(sbxState.soloIds.map(String));
-  sbxState.multiGroups.forEach(g=>(g.cardIds||[]).forEach(id=>ids.add(String(id))));
+  sbxState.groups.forEach(g=>(g.cardIds||[]).forEach(id=>ids.add(String(id))));
   return ids;
 }
 
@@ -2135,45 +2125,96 @@ function renderSandboxInventoryList(){
     remaining=remaining.filter(c=>`${c.player||''} ${c.team||''} ${c.card_set||''} ${c.year||''}`.toLowerCase().includes(q));
   }
 
+  // Drop selections for cards no longer in the visible/remaining pool (assigned or filtered out)
+  const remainingIds=new Set(remaining.map(c=>String(c.id)));
+  Array.from(sbxSelectedIds).forEach(id=>{if(!remainingIds.has(id))sbxSelectedIds.delete(id);});
+
   const listEl=document.getElementById('sbx-inventory-list');
   if(!remaining.length){
     listEl.innerHTML='<div class="empty-state" style="padding:20px"><div>No unstaged cards.</div></div>';
+    sbxUpdateSelectedCountDisplay();
     return;
   }
-
-  const groupOptions=sbxState.multiGroups.map(g=>`<option value="${g.id}">${sbxEsc(g.name)}</option>`).join('');
 
   listEl.innerHTML=remaining.map(c=>{
     const label=sbxLabel(c);
     const price=sbxPrice(c);
     const eligible=price>5;
+    const checked=sbxSelectedIds.has(String(c.id))?'checked':'';
     return`<div style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--surface2);font-size:.78rem">
-      <div style="font-weight:600">${sbxEsc(label)}</div>
-      <div style="color:var(--text2);font-size:.72rem;margin-bottom:5px">${sbxEsc(c.team||'')}${c.condition?' · '+sbxEsc(c.condition):''} · $${price.toFixed(2)}</div>
-      <div style="display:flex;gap:5px">
-        ${eligible
-          ?`<button class="btn btn-secondary btn-sm" style="flex:1;padding:3px 6px;font-size:.7rem" onclick="addToSandboxSolo('${c.id}')">→ Solo</button>`
-          :`<span style="flex:1;font-size:.68rem;color:var(--text2);display:flex;align-items:center">Under $5 — use Lots</span>`
-        }
-        <select class="form-input" style="flex:1;padding:3px 4px;font-size:.7rem" onchange="if(this.value)addToSandboxMulti('${c.id}',this.value);this.value=''">
-          <option value="">→ Multi…</option>
-          <option value="__new__">+ New Group</option>
-          ${groupOptions}
-        </select>
+      <div style="display:flex;align-items:flex-start;gap:6px">
+        <input type="checkbox" class="sbx-inv-cb" data-id="${c.id}" ${checked} onchange="sbxToggleCardSelect('${c.id}',this.checked)" style="accent-color:var(--accent);margin-top:3px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${sbxEsc(label)}</div>
+          <div style="color:var(--text2);font-size:.72rem;margin-bottom:5px">${sbxEsc(c.team||'')}${c.condition?' · '+sbxEsc(c.condition):''} · $${price.toFixed(2)}</div>
+          ${eligible
+            ?`<button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="addToSandboxSolo('${c.id}')">→ Solo</button>`
+            :`<span style="font-size:.68rem;color:var(--text2)">Under $5 — use a Custom Lot</span>`
+          }
+        </div>
       </div>
     </div>`;
   }).join('');
+  sbxUpdateSelectedCountDisplay();
+}
+
+function sbxToggleCardSelect(cardId,checked){
+  cardId=String(cardId);
+  if(checked)sbxSelectedIds.add(cardId);else sbxSelectedIds.delete(cardId);
+  sbxUpdateSelectedCountDisplay();
+}
+
+function sbxUpdateSelectedCountDisplay(){
+  const el=document.getElementById('sbx-selected-count');
+  if(el)el.textContent=sbxSelectedIds.size+' selected';
+  const master=document.getElementById('sbx-select-all-cb');
+  if(master){
+    const visible=document.querySelectorAll('.sbx-inv-cb');
+    master.checked=visible.length>0&&Array.from(visible).every(cb=>cb.checked);
+  }
+}
+
+function sbxToggleSelectAll(masterCb){
+  document.querySelectorAll('.sbx-inv-cb').forEach(cb=>{
+    cb.checked=masterCb.checked;
+    const id=String(cb.dataset.id);
+    if(masterCb.checked)sbxSelectedIds.add(id);else sbxSelectedIds.delete(id);
+  });
+  sbxUpdateSelectedCountDisplay();
+}
+
+function sbxDeselectAll(){
+  sbxSelectedIds.clear();
+  document.querySelectorAll('.sbx-inv-cb').forEach(cb=>cb.checked=false);
+  const master=document.getElementById('sbx-select-all-cb');
+  if(master)master.checked=false;
+  sbxUpdateSelectedCountDisplay();
+}
+
+function createSandboxGroupFromSelection(type){
+  if(!sbxSelectedIds.size){showToast('Check at least one card first','error');return;}
+  const label=type==='variation'?'Multi-Variation Listing':'Custom Lot';
+  const example=type==='variation'?'2026 Chrome Refractor Pick Your Card':'Yankees 10-Card Starter Lot';
+  const name=prompt(`Name this ${label} (e.g. "${example}"):`);
+  if(!name||!name.trim())return;
+  const group={id:'sg-'+Date.now()+'-'+Math.floor(Math.random()*1000),name:name.trim(),type,cardIds:Array.from(sbxSelectedIds)};
+  sbxState.groups.push(group);
+  sbxSelectedIds.clear();
+  saveSandboxState();
+  renderSandboxInventoryList();
+  renderSandboxGroups();
+  showToast(`${label} created!`,'success');
 }
 
 function addToSandboxSolo(cardId){
   cardId=String(cardId);
   const card=sbxPool.find(c=>String(c.id)===cardId);
-  if(card&&sbxPrice(card)<=5){showToast('Solo Listings are for cards over $5 — try a Team/Player Lot instead','error');return;}
+  if(card&&sbxPrice(card)<=5){showToast('Solo Listings are for cards over $5 — try a Custom Lot instead','error');return;}
   if(!sbxState.soloIds.includes(cardId))sbxState.soloIds.push(cardId);
+  sbxSelectedIds.delete(cardId);
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxSolo();
-  renderSandboxLots();
 }
 
 function removeFromSandboxSolo(cardId){
@@ -2181,7 +2222,6 @@ function removeFromSandboxSolo(cardId){
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxSolo();
-  renderSandboxLots();
 }
 
 function renderSandboxSolo(){
@@ -2207,115 +2247,65 @@ function renderSandboxSolo(){
     </div>`).join('');
 }
 
-function addSandboxMultiParent(){
-  const name=prompt('Name this Multi-Variation parent listing (e.g. "2023 Topps Chrome LeBron James — Variations"):');
-  if(!name||!name.trim())return;
-  const group={id:'mg-'+Date.now()+'-'+Math.floor(Math.random()*1000),name:name.trim(),cardIds:[]};
-  sbxState.multiGroups.push(group);
-  saveSandboxState();
-  renderSandboxInventoryList();
-  renderSandboxMulti();
-  return group.id;
-}
-
-function addToSandboxMulti(cardId,groupId){
-  if(groupId==='__new__'){
-    groupId=addSandboxMultiParent();
-    if(!groupId)return;
-  }
-  const group=sbxState.multiGroups.find(g=>g.id===groupId);
-  if(!group)return;
-  cardId=String(cardId);
-  if(!group.cardIds.includes(cardId))group.cardIds.push(cardId);
-  saveSandboxState();
-  renderSandboxInventoryList();
-  renderSandboxMulti();
-  renderSandboxLots();
-}
-
-function removeFromSandboxMulti(groupId,cardId){
-  const group=sbxState.multiGroups.find(g=>g.id===groupId);
+function removeFromSandboxGroup(groupId,cardId){
+  const group=sbxState.groups.find(g=>g.id===groupId);
   if(!group)return;
   group.cardIds=group.cardIds.filter(id=>String(id)!==String(cardId));
   saveSandboxState();
   renderSandboxInventoryList();
-  renderSandboxMulti();
-  renderSandboxLots();
+  renderSandboxGroups();
 }
 
-function renameSandboxMultiGroup(groupId,newName){
-  const group=sbxState.multiGroups.find(g=>g.id===groupId);
+function renameSandboxGroup(groupId,newName){
+  const group=sbxState.groups.find(g=>g.id===groupId);
   if(!group)return;
   group.name=newName.trim()||group.name;
   saveSandboxState();
 }
 
-function deleteSandboxMultiGroup(groupId){
-  if(!confirm('Remove this parent variation group? Its cards will return to Sandbox Inventory.'))return;
-  sbxState.multiGroups=sbxState.multiGroups.filter(g=>g.id!==groupId);
+function deleteSandboxGroup(groupId){
+  if(!confirm('Remove this group? Its cards will return to Sandbox Inventory.'))return;
+  sbxState.groups=sbxState.groups.filter(g=>g.id!==groupId);
   saveSandboxState();
   renderSandboxInventoryList();
-  renderSandboxMulti();
-  renderSandboxLots();
+  renderSandboxGroups();
 }
 
-function renderSandboxMulti(){
-  const listEl=document.getElementById('sbx-multi-list');
-  if(!sbxState.multiGroups.length){
-    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No parent variation listings yet. Click "+ New Parent Variation" to start one.</div></div>';
-    return;
-  }
+function sbxRenderGroupCard(g){
   const byId={};sbxPool.forEach(c=>byId[String(c.id)]=c);
-  listEl.innerHTML=sbxState.multiGroups.map(g=>{
-    const children=(g.cardIds||[]).map(id=>byId[String(id)]).filter(Boolean);
-    return`<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface2)">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <input type="text" value="${sbxEsc(g.name)}" class="form-input" style="flex:1;font-size:.8rem;padding:4px 6px" onchange="renameSandboxMultiGroup('${g.id}',this.value)">
-        <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="copySandboxMultiGroup('${g.id}',this)">📋 Copy</button>
-        <button class="btn btn-danger btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="deleteSandboxMultiGroup('${g.id}')">✕</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${children.length?children.map(c=>`
-          <div style="display:flex;align-items:center;gap:6px;font-size:.76rem;background:var(--surface);border-radius:5px;padding:4px 6px">
-            <span style="flex:1">${sbxEsc(sbxLabel(c))}${c.condition?' · '+sbxEsc(c.condition):''}</span>
-            <button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:.65rem" onclick="removeFromSandboxMulti('${g.id}','${c.id}')">✕</button>
-          </div>`).join(''):'<div style="color:var(--text2);font-size:.72rem">No cards yet — add from Sandbox Inventory.</div>'}
-      </div>
-    </div>`;
-  }).join('');
+  const children=(g.cardIds||[]).map(id=>byId[String(id)]).filter(Boolean);
+  return`<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface2)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <input type="text" value="${sbxEsc(g.name)}" class="form-input" style="flex:1;font-size:.8rem;padding:4px 6px" onchange="renameSandboxGroup('${g.id}',this.value)">
+      <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="copySandboxGroup('${g.id}',this)">📋 Copy</button>
+      <button class="btn btn-danger btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="deleteSandboxGroup('${g.id}')">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${children.length?children.map(c=>`
+        <div style="display:flex;align-items:center;gap:6px;font-size:.76rem;background:var(--surface);border-radius:5px;padding:4px 6px">
+          <span style="flex:1">${sbxEsc(sbxLabel(c))}${c.condition?' · '+sbxEsc(c.condition):''}</span>
+          <button class="btn btn-danger btn-sm" style="padding:1px 5px;font-size:.65rem" onclick="removeFromSandboxGroup('${g.id}','${c.id}')">✕</button>
+        </div>`).join(''):'<div style="color:var(--text2);font-size:.72rem">No cards in this group.</div>'}
+    </div>
+  </div>`;
 }
 
-function renderSandboxLots(){
-  const assigned=sbxAssignedIds();
-  const leftover=sbxPool.filter(c=>!assigned.has(String(c.id)));
-  // Group by team when available; fall back to player name for sports/cards with no team (golf, boxing, etc.)
-  const byGroup={};
-  leftover.forEach(c=>{
-    const team=(c.team||'').trim();
-    const key=team||(c.player||'').trim();
-    if(!key)return;
-    if(!byGroup[key])byGroup[key]={cards:[],isTeam:!!team};
-    byGroup[key].cards.push(c);
-  });
-  const groups=Object.keys(byGroup).filter(k=>byGroup[k].cards.length>=2).sort((a,b)=>byGroup[b].cards.length-byGroup[a].cards.length);
+function renderSandboxGroups(){
+  const lotGroups=sbxState.groups.filter(g=>g.type==='lot');
+  const varGroups=sbxState.groups.filter(g=>g.type==='variation');
 
-  const listEl=document.getElementById('sbx-lots-list');
-  if(!groups.length){
-    listEl.innerHTML='<div class="empty-state" style="padding:16px"><div>No team/player lots yet — lots need 2+ unstaged cards from the same team or player.</div></div>';
-    return;
-  }
-  listEl.innerHTML=groups.map(key=>{
-    const{cards,isTeam}=byGroup[key];
-    return`<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface2)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:600;font-size:.85rem">${sbxEsc(key)} ${isTeam?'':'<span style="color:var(--text2);font-weight:400;font-size:.7rem">(by player)</span>'} <span style="background:var(--accent);color:#0a0a0f;border-radius:10px;padding:1px 8px;font-size:.7rem;margin-left:4px">${cards.length} cards</span></div>
-        <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick='copySandboxTeamLot(${JSON.stringify(key)},${isTeam},this)'>📋 Copy</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${cards.map(c=>`<div style="font-size:.76rem;background:var(--surface);border-radius:5px;padding:4px 6px">${sbxEsc(sbxLabel(c))}${c.condition?' · '+sbxEsc(c.condition):''}</div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  document.getElementById('sbx-lot-count').textContent=`(${lotGroups.length})`;
+  document.getElementById('sbx-var-count').textContent=`(${varGroups.length})`;
+
+  const lotEl=document.getElementById('sbx-lot-list');
+  lotEl.innerHTML=lotGroups.length
+    ?lotGroups.map(sbxRenderGroupCard).join('')
+    :'<div class="empty-state" style="padding:16px"><div>No custom lots yet. Check cards in Sandbox Inventory and click "Create Custom Lot".</div></div>';
+
+  const varEl=document.getElementById('sbx-var-list');
+  varEl.innerHTML=varGroups.length
+    ?varGroups.map(sbxRenderGroupCard).join('')
+    :'<div class="empty-state" style="padding:16px"><div>No multi-variation listings yet. Check cards in Sandbox Inventory and click "Create Multi-Variation".</div></div>';
 }
 
 function sbxCopyText(text,btn){
@@ -2325,29 +2315,16 @@ function sbxCopyText(text,btn){
   }).catch(()=>showToast('Could not copy — try again','error'));
 }
 
-function copySandboxMultiGroup(groupId,btn){
-  const group=sbxState.multiGroups.find(g=>g.id===groupId);
+function copySandboxGroup(groupId,btn){
+  const group=sbxState.groups.find(g=>g.id===groupId);
   if(!group)return;
   const byId={};sbxPool.forEach(c=>byId[String(c.id)]=c);
   const children=(group.cardIds||[]).map(id=>byId[String(id)]).filter(Boolean);
   if(!children.length){showToast('Add cards to this group first','error');return;}
-  let text=`${group.name}\nVariations Available:\n`;
+  const heading=group.type==='variation'?'Variations Available:':`${children.length} Cards:`;
+  let text=`${group.name}\n${heading}\n`;
   children.forEach(c=>{
     text+=`- ${sbxLabel(c)}${c.condition?' · '+c.condition:''}${c.serial_number?' · #'+c.serial_number:''}\n`;
-  });
-  sbxCopyText(text.trim(),btn);
-}
-
-function copySandboxTeamLot(key,isTeam,btn){
-  const assigned=sbxAssignedIds();
-  const cards=sbxPool.filter(c=>{
-    if(assigned.has(String(c.id)))return false;
-    return isTeam?(c.team||'').trim()===key:(!(c.team||'').trim()&&(c.player||'').trim()===key);
-  });
-  if(!cards.length){showToast('No cards found for this lot','error');return;}
-  let text=`${key} Lot — ${cards.length} Cards\n`;
-  cards.forEach(c=>{
-    text+=`- ${sbxLabel(c)}${c.condition?' · '+c.condition:''}\n`;
   });
   sbxCopyText(text.trim(),btn);
 }
@@ -3697,6 +3674,26 @@ async function applyMassUpdate(){
   showToast('Updated '+ids.length+' cards!','success');
   await loadCardCache();clearSelection();renderCol();
 }
+async function applyMassPrice(){
+  const ids=Array.from(document.querySelectorAll('.card-select-cb:checked')).map(x=>x.dataset.id);
+  if(!ids.length){showToast('No cards selected','error');return;}
+  const priceInput=document.getElementById('mass-price');
+  const v=parseFloat(priceInput?.value);
+  if(isNaN(v)||v<0){showToast('Enter a valid price','error');return;}
+  const{error}=await sb.from('cards').update({asking_price:v}).in('id',ids);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Set price to $'+v.toFixed(2)+' for '+ids.length+' cards!','success');
+  if(priceInput)priceInput.value='';
+  await loadCardCache();clearSelection();renderCol();
+}
+async function applyMassMarkListed(){
+  const ids=Array.from(document.querySelectorAll('.card-select-cb:checked')).map(x=>x.dataset.id);
+  if(!ids.length){showToast('No cards selected','error');return;}
+  const{error}=await sb.from('cards').update({status:'listed'}).in('id',ids);
+  if(error){showToast('Error: '+error.message,'error');return;}
+  showToast('Marked '+ids.length+' cards as Listed!','success');
+  await loadCardCache();clearSelection();renderCol();
+}
 
 // ─── RESEARCH + LISTING TOOL ──────────────────────────────────────────────
 let researchCardId=null;
@@ -3775,139 +3772,6 @@ function calcListingProfit(){
   </div>`;
   const sc=researchCardCost<20?150:0;
   document.getElementById('ebay-list-link').href='https://www.ebay.com/sl/sell?title='+encodeURIComponent(document.getElementById('research-card-name').textContent.slice(0,80))+'&shippingcost='+sc+'&buyitnowprice='+price.toFixed(2)+'&categoryId=213';
-}
-
-// ─── SELL ALERTS ──────────────────────────────────────────────────────────
-let editAlertId=null;
-function openAlertModal(){
-  editAlertId=null;
-  document.getElementById('al-text').value='';
-  document.getElementById('al-player').value='';
-  document.getElementById('alert-modal-title').textContent='Add Sell Alert';
-  document.getElementById('alert-modal').style.display='flex';
-}
-async function saveAlert(){
-  const text=document.getElementById('al-text').value.trim();
-  if(!text){showToast('Enter alert text','error');return;}
-  const payload={alert_text:text,player:document.getElementById('al-player').value.trim()||null,created_by:CU.id};
-  let error;
-  if(editAlertId){
-    ({error}=await sb.from('sell_alerts').update(payload).eq('id',editAlertId));
-  } else {
-    ({error}=await sb.from('sell_alerts').insert(payload));
-  }
-  if(error){showToast('Error: '+error.message,'error');return;}
-  showToast(editAlertId?'Updated!':'Alert added!','success');
-  document.getElementById('alert-modal').style.display='none';
-  editAlertId=null;
-  renderAlerts();
-}
-async function renderAlerts(){
-  const{data:alerts}=await sb.from('sell_alerts').select('*').is('dismissed_at',null).order('created_at',{ascending:false});
-  const{data:dismissed}=await sb.from('sell_alerts').select('*').not('dismissed_at','is',null).order('dismissed_at',{ascending:false}).limit(5);
-  const el=document.getElementById('alerts-list');
-  let html='';
-  if(!alerts?.length&&!dismissed?.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🚨</div><div>No sell alerts yet. Add one manually or run the Gemini sweep.</div></div>`;
-    return;
-  }
-  if(alerts?.length){
-    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--accent2);margin-bottom:12px">🔥 Active Alerts</div>`;
-    html+=alerts.map(a=>`
-      <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-        <div>
-          <div style="font-weight:600;margin-bottom:4px">${a.alert_text}</div>
-          ${a.player?`<div style="font-size:.78rem;color:var(--accent)">👤 ${a.player}</div>`:''}
-          <div style="font-size:.72rem;color:var(--text2);margin-top:4px">${new Date(a.created_at).toLocaleDateString()}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-secondary btn-sm" data-id="${a.id}" data-text="${(a.alert_text||'').replace(/"/g,'&quot;')}" data-player="${(a.player||'').replace(/"/g,'&quot;')}" onclick="editAlertFromBtn(this)">Edit</button>
-          <button class="btn btn-success btn-sm" data-id="${a.id}" onclick="dismissAlert(this.dataset.id)">✓ Done</button>
-          <button class="btn btn-danger btn-sm" data-id="${a.id}" onclick="deleteAlert(this.dataset.id)">Del</button>
-        </div>
-      </div>`).join('');
-  }
-  if(dismissed?.length){
-    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text2);margin-top:20px;margin-bottom:12px">✓ Recently Dismissed</div>`;
-    html+=dismissed.map(a=>`
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;opacity:.6;display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div>
-          <div style="font-size:.88rem;text-decoration:line-through">${a.alert_text}</div>
-          ${a.player?`<div style="font-size:.74rem;color:var(--text2)">${a.player}</div>`:''}
-        </div>
-        <button class="btn btn-danger btn-sm" data-id="${a.id}" onclick="deleteAlert(this.dataset.id)">Del</button>
-      </div>`).join('');
-  }
-  el.innerHTML=html;
-}
-function editAlertFromBtn(btn){
-  editAlertId=btn.dataset.id;
-  document.getElementById('al-text').value=btn.dataset.text||'';
-  document.getElementById('al-player').value=btn.dataset.player||'';
-  document.getElementById('alert-modal-title').textContent='Edit Alert';
-  document.getElementById('alert-modal').style.display='flex';
-}
-async function dismissAlert(id){
-  await sb.from('sell_alerts').update({dismissed_at:new Date().toISOString()}).eq('id',id);
-  showToast('Alert dismissed','success');
-  renderAlerts();
-}
-async function deleteAlert(id){
-  if(!confirm('Delete this alert?'))return;
-  await sb.from('sell_alerts').delete().eq('id',id);
-  showToast('Deleted','success');
-  renderAlerts();
-}
-async function runAlertSweep(){
-  const btn=document.getElementById('sweep-btn');
-  const status=document.getElementById('sweep-status');
-  btn.disabled=true;
-  status.style.display='block';
-  status.textContent='Loading your cards...';
-  // Get all cards we own (not sold)
-  const{data:cards}=await sb.from('cards').select('player,sport').neq('status','sold');
-  const players=[...new Set((cards||[]).map(c=>c.player).filter(Boolean))];
-  if(!players.length){showToast('No cards found to check','error');btn.disabled=false;return;}
-  status.textContent='Asking Gemini to scan recent sports news...';
-  try{
-    const key=await getGeminiKey();
-    if(!key){showToast('Gemini key not configured','error');btn.disabled=false;return;}
-    const prompt=`You are a sports card market expert. Based on RECENT sports news and events (awards, championships, trades, injuries, records, retirements), identify any sell signals for cards from this list of players I own:
-
-${players.slice(0,80).join(', ')}
-
-Return ONLY a JSON array with no markdown. Each item should be a sell signal:
-[{"player":"Player Name","reason":"One sentence explaining the sell signal","urgency":"high|medium|low"}]
-
-Only include players from my list where there is a GENUINE recent reason to sell. If no signals exist return an empty array []. Maximum 8 results.`;
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:1024}})
-    });
-    if(!res.ok){const e=await res.text();throw new Error('Gemini error: '+res.status);}
-    const data=await res.json();
-    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
-    const jsonMatch=raw.match(/\[[\s\S]*\]/);
-    if(!jsonMatch){showToast('No signals found','success');btn.disabled=false;status.style.display='none';return;}
-    const signals=JSON.parse(jsonMatch[0]);
-    if(!signals.length){showToast('No sell signals found for your players','success');btn.disabled=false;status.style.display='none';return;}
-    // Save each as an alert
-    for(const s of signals){
-      await sb.from('sell_alerts').insert({
-        alert_text:`${s.urgency==='high'?'🔥':'📊'} ${s.reason}`,
-        player:s.player,
-        created_by:CU.id
-      });
-    }
-    showToast(`Found ${signals.length} sell signal${signals.length>1?'s':''}!`,'success');
-    status.style.display='none';
-    renderAlerts();
-  }catch(e){
-    showToast('Error: '+e.message,'error');
-    status.textContent='Error — try again.';
-  }
-  btn.disabled=false;
 }
 
 // ─── PRICE HISTORY ────────────────────────────────────────────────────────
