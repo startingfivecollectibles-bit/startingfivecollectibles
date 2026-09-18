@@ -1990,13 +1990,16 @@ async function confirmCSV(){
     const condition=condIsGrade?'Graded':condRaw||null;
     const isAuto=r.autograph&&r.autograph.toLowerCase()==='yes';
     const alreadySold=r.already_sold&&r.already_sold.toLowerCase()==='yes';
+    const validStatuses=['in_collection','listed','on_hold_grade','being_graded','psa_vault','sold'];
+    const rawStatus=(r.status||'').trim().toLowerCase().replace(/\s+/g,'_');
+    const csvStatus=validStatuses.includes(rawStatus)?rawStatus:'in_collection';
     return{
       user_id:CU.id,collection_type:CC,
       player:r.player,team:r.team||null,sport:r.sport||null,
       year:parseInt(r.year)||null,card_set:r.card_set||null,
       card_number:r.card_number||null,variation:r.variation||null,
       condition:condition,
-      status:alreadySold?'sold':(r.status||'in_collection'),
+      status:alreadySold?'sold':csvStatus,
       serial_number:r.serial_number||null,
       auto_type:isAuto?'on-card':null,
       grade_company:g.company,grade_number:g.number,
