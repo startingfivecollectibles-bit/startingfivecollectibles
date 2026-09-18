@@ -497,9 +497,16 @@ select option{background:var(--surface2);}
             <button class="btn btn-secondary btn-sm" style="padding:2px 7px;font-size:.7rem" onclick="sbxDeselectAll()">Deselect All</button>
             <span id="sbx-selected-count" style="margin-left:auto;white-space:nowrap">0 selected</span>
           </div>
-          <div style="display:flex;gap:6px;margin-bottom:10px">
-            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('lot')">🏷️ Create Custom Lot</button>
-            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('variation')">🎨 Create Multi-Variation</button>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('lot')">🏷️ Move to Custom Lot</button>
+            <button class="btn btn-primary btn-sm" style="flex:1;font-size:.7rem;padding:6px 4px" onclick="createSandboxGroupFromSelection('variation')">🎨 Move to Multi-Variation</button>
+          </div>
+          <div style="margin-bottom:10px">
+            <button class="btn btn-secondary btn-sm" style="width:100%;font-size:.7rem;padding:6px 4px" onclick="moveSelectedToSolo()">➡️ Move Selected to Solo Listings</button>
+          </div>
+          <div id="sbx-existing-group-row" style="display:none;gap:6px;margin-bottom:10px">
+            <select id="sbx-existing-group-select" class="form-input" style="flex:1;font-size:.72rem;padding:4px 6px"></select>
+            <button class="btn btn-secondary btn-sm" style="font-size:.7rem;padding:6px 8px;white-space:nowrap" onclick="addSelectedToExistingGroup()">➕ Add</button>
           </div>
           <div id="sbx-inventory-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
@@ -2066,7 +2073,7 @@ function sbxStorageKey(){return'sfc_sandbox_'+(typeof CC!=='undefined'?CC:'busin
 
 let sbxState={soloIds:[],groups:[]};
 let sbxPool=[];// in_collection cards eligible for the sandbox, from cardCache
-let sbxSelectedIds=new Set();// transient checkbox selection in the inventory panel
+let selectedSandboxCardIds=[];// transient multi-select checkbox array in the inventory panel
 
 function loadSandboxState(){
   let saved=null;
@@ -2087,7 +2094,7 @@ function saveSandboxState(){
 function clearSandboxState(){
   if(!confirm('Clear all Solo, Custom Lot, and Multi-Variation groupings in the Sandbox?'))return;
   sbxState={soloIds:[],groups:[]};
-  sbxSelectedIds.clear();
+  selectedSandboxCardIds=[];
   saveSandboxState();
   renderSandbox();
 }
@@ -2103,7 +2110,7 @@ async function renderSandbox(){
   sbxState.soloIds=sbxState.soloIds.filter(id=>poolIds.has(String(id)));
   sbxState.groups.forEach(g=>{g.cardIds=(g.cardIds||[]).filter(id=>poolIds.has(String(id)));});
   saveSandboxState();
-  Array.from(sbxSelectedIds).forEach(id=>{if(!poolIds.has(id))sbxSelectedIds.delete(id);});
+  selectedSandboxCardIds=selectedSandboxCardIds.filter(id=>poolIds.has(id));
 
   renderSandboxInventoryList();
   renderSandboxSolo();
@@ -2130,9 +2137,10 @@ function renderSandboxInventoryList(){
 
   // Drop selections for cards no longer in the visible/remaining pool (assigned or filtered out)
   const remainingIds=new Set(remaining.map(c=>String(c.id)));
-  Array.from(sbxSelectedIds).forEach(id=>{if(!remainingIds.has(id))sbxSelectedIds.delete(id);});
+  selectedSandboxCardIds=selectedSandboxCardIds.filter(id=>remainingIds.has(id));
 
   const listEl=document.getElementById('sbx-inventory-list');
+  sbxRefreshExistingGroupDropdown();
   if(!remaining.length){
     listEl.innerHTML='<div class="empty-state" style="padding:20px"><div>No unstaged cards.</div></div>';
     sbxUpdateSelectedCountDisplay();
@@ -2143,7 +2151,7 @@ function renderSandboxInventoryList(){
     const label=sbxLabel(c);
     const price=sbxPrice(c);
     const eligible=price>5;
-    const checked=sbxSelectedIds.has(String(c.id))?'checked':'';
+    const checked=selectedSandboxCardIds.includes(String(c.id))?'checked':'';
     return`<div style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--surface2);font-size:.78rem">
       <div style="display:flex;align-items:flex-start;gap:6px">
         <input type="checkbox" class="sbx-inv-cb" data-id="${c.id}" ${checked} onchange="sbxToggleCardSelect('${c.id}',this.checked)" style="accent-color:var(--accent);margin-top:3px;flex-shrink:0">
@@ -2163,13 +2171,15 @@ function renderSandboxInventoryList(){
 
 function sbxToggleCardSelect(cardId,checked){
   cardId=String(cardId);
-  if(checked)sbxSelectedIds.add(cardId);else sbxSelectedIds.delete(cardId);
+  const idx=selectedSandboxCardIds.indexOf(cardId);
+  if(checked&&idx===-1)selectedSandboxCardIds.push(cardId);
+  else if(!checked&&idx!==-1)selectedSandboxCardIds.splice(idx,1);
   sbxUpdateSelectedCountDisplay();
 }
 
 function sbxUpdateSelectedCountDisplay(){
   const el=document.getElementById('sbx-selected-count');
-  if(el)el.textContent=sbxSelectedIds.size+' selected';
+  if(el)el.textContent=selectedSandboxCardIds.length+' selected';
   const master=document.getElementById('sbx-select-all-cb');
   if(master){
     const visible=document.querySelectorAll('.sbx-inv-cb');
@@ -2181,13 +2191,15 @@ function sbxToggleSelectAll(masterCb){
   document.querySelectorAll('.sbx-inv-cb').forEach(cb=>{
     cb.checked=masterCb.checked;
     const id=String(cb.dataset.id);
-    if(masterCb.checked)sbxSelectedIds.add(id);else sbxSelectedIds.delete(id);
+    const idx=selectedSandboxCardIds.indexOf(id);
+    if(masterCb.checked&&idx===-1)selectedSandboxCardIds.push(id);
+    else if(!masterCb.checked&&idx!==-1)selectedSandboxCardIds.splice(idx,1);
   });
   sbxUpdateSelectedCountDisplay();
 }
 
 function sbxDeselectAll(){
-  sbxSelectedIds.clear();
+  selectedSandboxCardIds=[];
   document.querySelectorAll('.sbx-inv-cb').forEach(cb=>cb.checked=false);
   const master=document.getElementById('sbx-select-all-cb');
   if(master)master.checked=false;
@@ -2195,18 +2207,70 @@ function sbxDeselectAll(){
 }
 
 function createSandboxGroupFromSelection(type){
-  if(!sbxSelectedIds.size){showToast('Check at least one card first','error');return;}
+  if(!selectedSandboxCardIds.length){showToast('Check at least one card first','error');return;}
   const label=type==='variation'?'Multi-Variation Listing':'Custom Lot';
   const example=type==='variation'?'2026 Chrome Refractor Pick Your Card':'Yankees 10-Card Starter Lot';
   const name=prompt(`Name this ${label} (e.g. "${example}"):`);
   if(!name||!name.trim())return;
-  const group={id:'sg-'+Date.now()+'-'+Math.floor(Math.random()*1000),name:name.trim(),type,cardIds:Array.from(sbxSelectedIds)};
+  const group={id:'sg-'+Date.now()+'-'+Math.floor(Math.random()*1000),name:name.trim(),type,cardIds:selectedSandboxCardIds.slice()};
   sbxState.groups.push(group);
-  sbxSelectedIds.clear();
+  selectedSandboxCardIds=[];
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxGroups();
-  showToast(`${label} created!`,'success');
+  showToast(`${label} created with ${group.cardIds.length} card${group.cardIds.length===1?'':'s'}!`,'success');
+}
+
+function moveSelectedToSolo(){
+  if(!selectedSandboxCardIds.length){showToast('Check at least one card first','error');return;}
+  const byId={};sbxPool.forEach(c=>byId[String(c.id)]=c);
+  let added=0,skipped=0;
+  selectedSandboxCardIds.forEach(id=>{
+    const card=byId[id];
+    if(card&&sbxPrice(card)>5){
+      if(!sbxState.soloIds.includes(id))sbxState.soloIds.push(id);
+      added++;
+    } else {
+      skipped++;
+    }
+  });
+  selectedSandboxCardIds=[];
+  saveSandboxState();
+  renderSandboxInventoryList();
+  renderSandboxSolo();
+  if(added)showToast(`Moved ${added} card${added===1?'':'s'} to Solo Listings${skipped?` (${skipped} skipped — $5 or under)`:''}`,'success');
+  else showToast('All selected cards are $5 or under — try a Custom Lot instead','error');
+}
+
+function sbxRefreshExistingGroupDropdown(){
+  const row=document.getElementById('sbx-existing-group-row');
+  const sel=document.getElementById('sbx-existing-group-select');
+  if(!row||!sel)return;
+  if(!sbxState.groups.length){
+    row.style.display='none';
+    return;
+  }
+  row.style.display='flex';
+  const prevValue=sel.value;
+  sel.innerHTML=sbxState.groups.map(g=>`<option value="${g.id}">${sbxEsc(g.name)} (${g.type==='variation'?'Multi-Variation':'Custom Lot'})</option>`).join('');
+  if(sbxState.groups.some(g=>g.id===prevValue))sel.value=prevValue;
+}
+
+function addSelectedToExistingGroup(){
+  if(!selectedSandboxCardIds.length){showToast('Check at least one card first','error');return;}
+  const sel=document.getElementById('sbx-existing-group-select');
+  const groupId=sel?.value;
+  const group=sbxState.groups.find(g=>g.id===groupId);
+  if(!group){showToast('Pick a group first','error');return;}
+  let added=0;
+  selectedSandboxCardIds.forEach(id=>{
+    if(!group.cardIds.includes(id)){group.cardIds.push(id);added++;}
+  });
+  selectedSandboxCardIds=[];
+  saveSandboxState();
+  renderSandboxInventoryList();
+  renderSandboxGroups();
+  showToast(`Added ${added} card${added===1?'':'s'} to "${group.name}"`,'success');
 }
 
 function addToSandboxSolo(cardId){
@@ -2214,7 +2278,8 @@ function addToSandboxSolo(cardId){
   const card=sbxPool.find(c=>String(c.id)===cardId);
   if(card&&sbxPrice(card)<=5){showToast('Solo Listings are for cards over $5 — try a Custom Lot instead','error');return;}
   if(!sbxState.soloIds.includes(cardId))sbxState.soloIds.push(cardId);
-  sbxSelectedIds.delete(cardId);
+  const idx=selectedSandboxCardIds.indexOf(cardId);
+  if(idx!==-1)selectedSandboxCardIds.splice(idx,1);
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxSolo();
@@ -2303,12 +2368,14 @@ function renderSandboxGroups(){
   const lotEl=document.getElementById('sbx-lot-list');
   lotEl.innerHTML=lotGroups.length
     ?lotGroups.map(sbxRenderGroupCard).join('')
-    :'<div class="empty-state" style="padding:16px"><div>No custom lots yet. Check cards in Sandbox Inventory and click "Create Custom Lot".</div></div>';
+    :'<div class="empty-state" style="padding:16px"><div>No custom lots yet. Check cards in Sandbox Inventory and click "Move to Custom Lot".</div></div>';
 
   const varEl=document.getElementById('sbx-var-list');
   varEl.innerHTML=varGroups.length
     ?varGroups.map(sbxRenderGroupCard).join('')
-    :'<div class="empty-state" style="padding:16px"><div>No multi-variation listings yet. Check cards in Sandbox Inventory and click "Create Multi-Variation".</div></div>';
+    :'<div class="empty-state" style="padding:16px"><div>No multi-variation listings yet. Check cards in Sandbox Inventory and click "Move to Multi-Variation".</div></div>';
+
+  sbxRefreshExistingGroupDropdown();
 }
 
 function sbxCopyText(text,btn){
