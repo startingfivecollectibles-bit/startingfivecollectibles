@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Starting Five Collectibles | Build: 2026-08-30 | v35 -->
+<!-- Starting Five Collectibles | Build: 2026-09-18 | v36 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -236,7 +236,7 @@ select option{background:var(--surface2);}
 </div>
 <div id="app">
   <div class="sidebar">
-    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v35 · 2026-08-30</span></div>
+    <div class="sidebar-logo"><h2>Starting Five<br>Collectibles</h2><span>v36 · 2026-09-18</span></div>
     <div class="collection-toggle">
       <button class="col-btn active" id="btn-business" onclick="switchCollection('business')">💼 Biz</button>
       <button class="col-btn" id="btn-personal" onclick="switchCollection('personal')">👤 Mine</button>
@@ -489,8 +489,12 @@ select option{background:var(--surface2);}
 
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
         <!-- Sandbox Inventory (left panel) -->
-        <div style="flex:0 0 280px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
+        <div id="sbx-inv-panel" style="flex:0 0 280px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;max-height:78vh;overflow-y:auto">
           <div style="font-weight:700;margin-bottom:8px">📥 Sandbox Inventory <span id="sbx-inv-count" style="color:var(--text2);font-weight:400;font-size:.78rem"></span></div>
+          <div id="sbx-target-banner" style="display:none;align-items:center;gap:6px;margin-bottom:8px;padding:6px 8px;border-radius:6px;background:var(--accent);color:#fff;font-size:.72rem">
+            <span id="sbx-target-banner-text" style="flex:1"></span>
+            <button class="btn btn-secondary btn-sm" style="padding:2px 6px;font-size:.68rem" onclick="sbxCancelTargetGroup()">✕</button>
+          </div>
           <input type="text" id="sbx-search" class="form-input" placeholder="Search player, team, set…" style="margin-bottom:8px" oninput="renderSandboxInventoryList()">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.78rem;color:var(--text2)">
             <label style="display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sbx-select-all-cb" onchange="sbxToggleSelectAll(this)" style="accent-color:var(--accent)"> Select All</label>
@@ -504,9 +508,12 @@ select option{background:var(--surface2);}
           <div style="margin-bottom:10px">
             <button class="btn btn-secondary btn-sm" style="width:100%;font-size:.7rem;padding:6px 4px" onclick="moveSelectedToSolo()">➡️ Move Selected to Solo Listings</button>
           </div>
-          <div id="sbx-existing-group-row" style="display:none;gap:6px;margin-bottom:10px">
-            <select id="sbx-existing-group-select" class="form-input" style="flex:1;font-size:.72rem;padding:4px 6px"></select>
-            <button class="btn btn-secondary btn-sm" style="font-size:.7rem;padding:6px 8px;white-space:nowrap" onclick="addSelectedToExistingGroup()">➕ Add</button>
+          <div id="sbx-existing-group-row" style="display:none;flex-direction:column;gap:4px;margin-bottom:10px">
+            <div style="font-size:.7rem;font-weight:600;color:var(--text2)">Add to Existing Group</div>
+            <div style="display:flex;gap:6px">
+              <select id="sbx-existing-group-select" class="form-input" style="flex:1;font-size:.72rem;padding:4px 6px"></select>
+              <button class="btn btn-secondary btn-sm" style="font-size:.7rem;padding:6px 8px;white-space:nowrap" onclick="addSelectedToExistingGroup()">➕ Add to Selected Group</button>
+            </div>
           </div>
           <div id="sbx-inventory-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
@@ -2074,6 +2081,7 @@ function sbxStorageKey(){return'sfc_sandbox_'+(typeof CC!=='undefined'?CC:'busin
 let sbxState={soloIds:[],groups:[]};
 let sbxPool=[];// in_collection cards eligible for the sandbox, from cardCache
 let selectedSandboxCardIds=[];// transient multi-select checkbox array in the inventory panel
+let sbxTargetGroupId=null;// transient: set when "+ Add Cards to This Lot" was clicked on a specific group
 
 function loadSandboxState(){
   let saved=null;
@@ -2095,6 +2103,7 @@ function clearSandboxState(){
   if(!confirm('Clear all Solo, Custom Lot, and Multi-Variation groupings in the Sandbox?'))return;
   sbxState={soloIds:[],groups:[]};
   selectedSandboxCardIds=[];
+  sbxCancelTargetGroup();
   saveSandboxState();
   renderSandbox();
 }
@@ -2251,9 +2260,36 @@ function sbxRefreshExistingGroupDropdown(){
     return;
   }
   row.style.display='flex';
-  const prevValue=sel.value;
+  const prevValue=sbxTargetGroupId||sel.value;
   sel.innerHTML=sbxState.groups.map(g=>`<option value="${g.id}">${sbxEsc(g.name)} (${g.type==='variation'?'Multi-Variation':'Custom Lot'})</option>`).join('');
   if(sbxState.groups.some(g=>g.id===prevValue))sel.value=prevValue;
+}
+
+function sbxStartAddToGroup(groupId){
+  const group=sbxState.groups.find(g=>g.id===groupId);
+  if(!group)return;
+  sbxTargetGroupId=groupId;
+  sbxRefreshExistingGroupDropdown();
+  const sel=document.getElementById('sbx-existing-group-select');
+  if(sel)sel.value=groupId;
+  const banner=document.getElementById('sbx-target-banner');
+  const bannerText=document.getElementById('sbx-target-banner-text');
+  if(banner&&bannerText){
+    bannerText.textContent=`📌 Adding cards to "${group.name}" — check cards below, then click "Add to Selected Group".`;
+    banner.style.display='flex';
+  }
+  renderSandboxGroups();
+  document.getElementById('sbx-inv-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('sbx-search')?.focus();
+  showToast(`Pick cards to add to "${group.name}"`,'success');
+}
+
+function sbxCancelTargetGroup(){
+  if(!sbxTargetGroupId)return;
+  sbxTargetGroupId=null;
+  const banner=document.getElementById('sbx-target-banner');
+  if(banner)banner.style.display='none';
+  renderSandboxGroups();
 }
 
 function addSelectedToExistingGroup(){
@@ -2267,6 +2303,9 @@ function addSelectedToExistingGroup(){
     if(!group.cardIds.includes(id)){group.cardIds.push(id);added++;}
   });
   selectedSandboxCardIds=[];
+  sbxTargetGroupId=null;
+  const banner=document.getElementById('sbx-target-banner');
+  if(banner)banner.style.display='none';
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxGroups();
@@ -2334,6 +2373,7 @@ function renameSandboxGroup(groupId,newName){
 function deleteSandboxGroup(groupId){
   if(!confirm('Remove this group? Its cards will return to Sandbox Inventory.'))return;
   sbxState.groups=sbxState.groups.filter(g=>g.id!==groupId);
+  if(sbxTargetGroupId===groupId)sbxCancelTargetGroup();
   saveSandboxState();
   renderSandboxInventoryList();
   renderSandboxGroups();
@@ -2342,11 +2382,17 @@ function deleteSandboxGroup(groupId){
 function sbxRenderGroupCard(g){
   const byId={};sbxPool.forEach(c=>byId[String(c.id)]=c);
   const children=(g.cardIds||[]).map(id=>byId[String(id)]).filter(Boolean);
-  return`<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface2)">
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+  const totalValue=children.reduce((sum,c)=>sum+sbxPrice(c),0);
+  const isTarget=sbxTargetGroupId===g.id;
+  return`<div style="border:1px solid ${isTarget?'var(--accent)':'var(--border)'};border-radius:8px;padding:10px;background:var(--surface2)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
       <input type="text" value="${sbxEsc(g.name)}" class="form-input" style="flex:1;font-size:.8rem;padding:4px 6px" onchange="renameSandboxGroup('${g.id}',this.value)">
       <button class="btn btn-secondary btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="copySandboxGroup('${g.id}',this)">📋 Copy</button>
       <button class="btn btn-danger btn-sm" style="padding:3px 6px;font-size:.7rem" onclick="deleteSandboxGroup('${g.id}')">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px">
+      <span style="font-size:.72rem;color:var(--text2)">${children.length} card${children.length===1?'':'s'} · $${totalValue.toFixed(2)} total</span>
+      <button class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:.7rem;white-space:nowrap" onclick="sbxStartAddToGroup('${g.id}')">${isTarget?'📌 Picking cards…':'+ Add Cards to This Lot'}</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:4px">
       ${children.length?children.map(c=>`
